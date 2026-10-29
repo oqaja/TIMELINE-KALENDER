@@ -154,7 +154,10 @@ const statusEl=()=>document.getElementById('status');
 function setStatus(t){const s=statusEl();if(s)s.textContent=t}
 
 // fallback: browser-only storage when the page can't save itself
-function lsLoad(){try{const v=localStorage.getItem(LS);if(v){const d=JSON.parse(v);if(d&&Array.isArray(d.items)&&state.items.length===0){state=d;if(!state.brandColors)state.brandColors={}}}}catch(e){}}
+// Outside Claude (e.g. GitHub Pages) the browser copy is the source of truth.
+// Inside Claude the data embedded in the page wins (it syncs across devices).
+const inClaude=!!(window.claude&&window.claude.use);
+function lsLoad(){try{const v=localStorage.getItem(LS);if(v){const d=JSON.parse(v);if(d&&Array.isArray(d.items)&&(!inClaude||state.items.length===0)){state=d;if(!state.brandColors)state.brandColors={}}}}catch(e){}}
 function lsSave(){try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}}
 
 const now=new Date();
