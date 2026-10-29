@@ -104,6 +104,7 @@ input:focus,select:focus{outline:2px solid #111;outline-offset:-1px}
       <div class="month" id="monthLbl"></div>
       <button class="icon" id="next" aria-label="Bulan berikutnya">›</button>
       <button id="todayBtn">Hari ini</button>
+      <button class="icon" id="sheetBtn" title="Sambungan Google Sheet">⚙</button>
     </div>
   </header>
   <div class="bar" id="filters"></div>
@@ -115,7 +116,7 @@ input:focus,select:focus{outline:2px solid #111;outline-offset:-1px}
   <div class="modal" id="modal"></div>
 </div>
 
-<script type="application/json" id="app-data">{"items":[{"id":"mvt8vpa8f4xp","title":"Preview design carousel","type":"carousel","brand":"Cheetah","date":"2026-10-03"}],"brandColors":{}}</script>
+<script type="application/json" id="app-data">{"items":[],"brandColors":{}}</script>
 <script id="app-js">
 (function(){
 const TYPES=[
@@ -157,6 +158,47 @@ function setStatus(t){const s=statusEl();if(s)s.textContent=t}
 // Outside Claude (e.g. GitHub Pages) the browser copy is the source of truth.
 // Inside Claude the data embedded in the page wins (it syncs across devices).
 const inClaude=!!(window.claude&&window.claude.use);
+// ---- Google Sheet sync (GitHub Pages version)
+const SHEET_API='';               // URL Web App Apps Script (…/exec)
+const SHEET_URL='https://docs.google.com/spreadsheets/d/1SITTxYVeoH1cX9lG6EicitGIr5DBKwy7pStQu5KPFk4/edit';
+let API='';try{API=localStorage.getItem('sp-timeline-api')||SHEET_API}catch(e){API=SHEET_API}
+if(inClaude)API='';
+let synced=null, queue=[], busy=false, remoteOk=false;
+const snap=st=>({items:Object.fromEntries(st.items.map(i=>[i.id,JSON.stringify([i.date,i.title,i.type,i.brand||''])])),colors:{...st.brandColors}});
+async function apiGet(){const r=await fetch(API,{cache:'no-store'});const d=await r.json();if(!d||!Array.isArray(d.items))throw new Error('bad');return d}
+async function apiPost(op){const r=await fetch(API,{method:'POST',body:JSON.stringify(op)});const d=await r.json();if(!d.ok)throw new Error(d.error||'gagal');return d}
+function diffOps(){
+  const now=snap(state), ops=[];
+  for(const it of state.items){if(synced.items[it.id]!==now.items[it.id])ops.push({op:'upsert',item:it})}
+  for(const id in synced.items){if(!(id in now.items))ops.push({op:'delete',id})}
+  for(const b in now.colors){if(synced.colors[b]!==now.colors[b])ops.push({op:'color',brand:b,color:now.colors[b]})}
+  synced=now;return ops;
+}
+async function flush(){
+  if(busy)return;busy=true;
+  while(queue.length){
+    setStatus('Menyimpan ke Sheet…');
+    try{await apiPost(queue[0]);queue.shift()}
+    catch(e){setStatus('Gagal simpan ke Sheet — dicoba lagi');busy=false;setTimeout(flush,8000);return}
+  }
+  busy=false;setStatus('Tersimpan di Sheet');
+}
+function syncRemote(){if(!API||!synced)return;queue.push(...diffOps());if(queue.length)flush()}
+async function pull(force){
+  if(!API)return;
+  if(!force&&(busy||queue.length||back.classList.contains('show')||document.body.classList.contains('dragging')))return;
+  try{
+    const d=await apiGet();
+    if(!d.brandColors)d.brandColors={};
+    if(force&&!d.items.length&&state.items.length){ // first connect: move browser data into the empty sheet
+      setStatus('Mindahin data browser ke Sheet…');
+      const res=await apiPost({op:'bulk',items:state.items,brandColors:state.brandColors});
+      Object.assign(d,res.data);
+    }
+    if(JSON.stringify(d)!==JSON.stringify({items:state.items,brandColors:state.brandColors})){state={items:d.items,brandColors:d.brandColors||{}};lsSave();render()}
+    synced=snap(state);remoteOk=true;setStatus('Tersambung ke Sheet');
+  }catch(e){setStatus(synced?'Offline — pakai data terakhir':'Gagal nyambung ke Sheet (cek ⚙)')}
+}
 function lsLoad(){try{const v=localStorage.getItem(LS);if(v){const d=JSON.parse(v);if(d&&Array.isArray(d.items)&&(!inClaude||state.items.length===0)){state=d;if(!state.brandColors)state.brandColors={}}}}catch(e){}}
 function lsSave(){try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}}
 
@@ -177,7 +219,7 @@ function renderFilters(){
   const inMonth=state.items.filter(i=>i.date.startsWith(prefix));
   const f=document.getElementById('filters');
   f.innerHTML=`<span class="mode"><span data-m="brand" class="${mode==='brand'?'on':''}">Warna: Brand</span><span data-m="type" class="${mode==='type'?'on':''}">Warna: Jenis</span></span>`+TYPES.map(t=>`<span class="chip-f ${hidden.has(t.id)?'off':''}" data-t="${t.id}"><span class="dot" style="background:${t.color}"></span>${t.name} <span class="count">${inMonth.filter(i=>i.type===t.id).length}</span></span>`).join('')
-   +`<span class="status" id="status">${canPublish?'Tersimpan':'Mode lokal (cuma di browser ini)'}</span>`;
+   +`<span class="status" id="status">${canPublish?'Tersimpan':API?(remoteOk?'Tersambung ke Sheet':'Nyambung ke Sheet…'):'Mode lokal (cuma di browser ini)'}</span>`;
   f.querySelectorAll('.chip-f').forEach(el=>el.onclick=()=>{const t=el.dataset.t;hidden.has(t)?hidden.delete(t):hidden.add(t);render()});
   f.querySelectorAll('.mode span').forEach(el=>el.onclick=()=>{mode=el.dataset.m;try{localStorage.setItem('sp-timeline-mode',mode)}catch(e){};render()});
   const bb=document.getElementById('brandBar');
@@ -388,6 +430,7 @@ function cleanBody(){
       <div class="month" id="monthLbl"></div>
       <button class="icon" id="next" aria-label="Bulan berikutnya">›</button>
       <button id="todayBtn">Hari ini</button>
+      <button class="icon" id="sheetBtn" title="Sambungan Google Sheet">⚙</button>
     </div>
   </header>
   <div class="bar" id="filters"></div>
@@ -403,6 +446,7 @@ function cleanBody(){
 }
 function save(){
   lsSave();
+  if(API){syncRemote();return}
   if(!canPublish){setStatus('Mode lokal (cuma di browser ini)');return}
   setStatus('Menyimpan…');
   clearTimeout(timer);
@@ -422,8 +466,30 @@ document.getElementById('next').onclick=()=>{viewM++;if(viewM>11){viewM=0;viewY+
 document.getElementById('todayBtn').onclick=()=>{viewY=now.getFullYear();viewM=now.getMonth();render()};
 addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(render,150)});
 
+function openSheet(){
+  modal.innerHTML=`<h2>Google Sheet</h2><div class="sub">Tempel URL Web App dari Apps Script (berakhiran <b>/exec</b>) biar data sinkron di semua device.</div>
+   <label for="apiIn">URL Web App</label><input id="apiIn" value="${esc(API)}" placeholder="https://script.google.com/macros/s/…/exec">
+   <div class="err" id="apiErr"></div>
+   <div class="sub" style="margin-top:10px"><a href="${SHEET_URL}" target="_blank" rel="noopener">Buka Google Sheet-nya ↗</a></div>
+   <div class="row"><span class="sp"></span><button id="cl">Batal</button><button class="primary" id="ok">Sambungkan</button></div>`;
+  modal.querySelector('#cl').onclick=close;
+  modal.querySelector('#ok').onclick=async()=>{
+    const v=modal.querySelector('#apiIn').value.trim();const err=modal.querySelector('#apiErr');
+    if(v&&!/^https:\/\/script\.google(usercontent)?\.com\/.+/.test(v)){err.textContent='URL-nya harus dari script.google.com';return}
+    try{localStorage.setItem('sp-timeline-api',v)}catch(e){}
+    API=v;synced=null;remoteOk=false;close();render();
+    if(API)await pull(true);
+  };
+  back.classList.add('show');
+}
+document.getElementById('sheetBtn').onclick=openSheet;
+if(inClaude)document.getElementById('sheetBtn').style.display='none';
+
 lsLoad();
 render();
+if(API)pull(true);
+setInterval(()=>pull(false),30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull(false)});
 if(window.claude&&claude.use){
   claude.use('artifact').then(a=>{if(a){artifact=a;canPublish=true;renderFilters()}}).catch(()=>{});
 }

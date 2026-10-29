@@ -7,3 +7,15 @@ Kalender produksi konten. Klik tanggal untuk menambah konten, klik konten untuk 
 - Satu file `index.html`, tanpa build
 
 Catatan: versi GitHub Pages menyimpan data di browser masing-masing (localStorage), jadi data tidak otomatis sinkron antar perangkat.
+
+## Sinkron ke Google Sheet
+
+Data disimpan di Google Sheet "TIMELINE KALENDER — Shoe Police" (tab KONTEN dan BRAND), jadi bisa dibuka dari device mana pun.
+
+Setup sekali:
+1. Buka Sheet-nya → **Ekstensi → Apps Script**.
+2. Hapus isi `Code.gs`, tempel isi file [`apps-script/Code.gs`](apps-script/Code.gs), simpan.
+3. **Deploy → Deployment baru** → jenis **Aplikasi web**, Jalankan sebagai **Saya**, Akses **Siapa saja** → Deploy, izinkan akses.
+4. Salin URL yang berakhiran `/exec`, tempel di tombol ⚙ di kalender (atau isi `SHEET_API` di `index.html`).
+
+Konten juga bisa ditambah langsung di Sheet: isi TANGGAL (yyyy-mm-dd), JUDUL KONTEN, JENIS KONTEN, BRAND TAP IN, kosongkan ID (terisi otomatis).
