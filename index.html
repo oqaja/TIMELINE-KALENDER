@@ -225,7 +225,7 @@ function renderFilters(){
   const inMonth=state.items.filter(i=>i.date.startsWith(prefix));
   const f=document.getElementById('filters');
   f.innerHTML=`<span class="mode"><span data-m="brand" class="${mode==='brand'?'on':''}">Warna: Brand</span><span data-m="type" class="${mode==='type'?'on':''}">Warna: Jenis</span></span>`+TYPES.map(t=>`<span class="chip-f ${hidden.has(t.id)?'off':''}" data-t="${t.id}"><span class="dot" style="background:${t.color}"></span>${t.name} <span class="count">${inMonth.filter(i=>i.type===t.id).length}</span></span>`).join('')
-   +`<span class="status" id="status">${canPublish?'Tersimpan':API?(remoteOk?'Tersambung ke Sheet':'Nyambung ke Sheet…'):'Mode lokal (cuma di browser ini)'}</span>`;
+   +`<span class="status" id="status">${canPublish?'Tersimpan':API?(remoteOk?'Tersambung ke Sheet':'Nyambung ke Sheet…'):(inClaude?'Mode lokal (cuma di browser ini)':'Belum nyambung ke Sheet — klik ⚙')}</span>`;
   f.querySelectorAll('.chip-f').forEach(el=>el.onclick=()=>{const t=el.dataset.t;hidden.has(t)?hidden.delete(t):hidden.add(t);render()});
   f.querySelectorAll('.mode span').forEach(el=>el.onclick=()=>{mode=el.dataset.m;try{localStorage.setItem('sp-timeline-mode',mode)}catch(e){};render()});
   const bb=document.getElementById('brandBar');
