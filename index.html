@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Timeline Produksi Konten — Shoe Police</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style id="app-css">
+:root{
+  --bg:#f4f3ef; --card:#fff; --ink:#111; --muted:#777; --line:#e3e1da;
+  --accent:#111; --today:#ffd400;
+  --c-carousel:#2f6bff; --c-short:#ff4d2e; --c-long:#12a150; --c-story:#9b3dff;
+  --head:'Futura','Futura PT','Century Gothic','Plus Jakarta Sans',sans-serif;
+  --body:'Plus Jakarta Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body)}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px}
+h1{font-family:var(--head);font-weight:800;font-size:20px;letter-spacing:.5px;margin:0;text-transform:uppercase}
+h1 small{display:block;font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0}
+.nav{display:flex;align-items:center;gap:6px}
+.nav .month{font-family:var(--head);font-weight:700;font-size:18px;min-width:170px;text-align:center;text-transform:uppercase}
+button{font-family:var(--body);cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:14px;font-weight:600}
+button:hover{border-color:#bbb}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.danger{color:#c62828;border-color:#f1c4c4}
+.icon{padding:8px 11px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.chip-f{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:13px;font-weight:600;cursor:pointer;user-select:none}
+.chip-f.off{opacity:.35}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.count{color:var(--muted);font-weight:500}
+.status{margin-left:auto;font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);background:var(--line);gap:1px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.dow{background:#111;color:#fff;font-family:var(--head);font-size:12px;font-weight:700;text-align:center;padding:8px 0;letter-spacing:1px}
+.day{background:var(--card);min-height:112px;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-width:0}
+.day:hover{background:#fafaf7}
+.day.out{background:#f8f7f3;color:#bbb}
+.day .num{font-size:13px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.day.today .num span{background:var(--today);color:#111;border-radius:6px;padding:0 6px}
+.day .add{opacity:0;font-size:16px;color:var(--muted);line-height:1}
+.day:hover .add{opacity:1}
+.item{display:block;font-size:12px;line-height:1.25;padding:4px 6px;border-radius:7px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.item .b{font-weight:500;opacity:.85}
+.more{font-size:11px;color:var(--muted);font-weight:600}
+.item{cursor:grab;touch-action:none}
+.day.drop{outline:2px dashed #111;outline-offset:-3px;background:#fff8d6}
+.ghost{position:fixed;pointer-events:none;z-index:30;opacity:.92;transform:rotate(-2deg);box-shadow:0 8px 20px rgba(0,0,0,.25);font-size:12px!important;height:auto!important;padding:4px 8px!important;max-width:200px}
+.ghost .b{display:inline!important}
+body.dragging,body.dragging *{cursor:grabbing!important;user-select:none;-webkit-user-select:none}
+.item.src{opacity:.35}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111;color:#fff;font-size:13px;font-weight:600;padding:9px 14px;border-radius:999px;z-index:40;display:flex;gap:10px;align-items:center}
+.toast button{background:none;border:0;color:var(--today);padding:0;font-size:13px}
+/* modal */
+.back{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.back.show{display:flex}
+.modal{background:var(--card);width:100%;max-width:440px;border-radius:18px 18px 0 0;padding:18px;max-height:88vh;overflow:auto}
+@media(min-width:640px){.back{align-items:center}.modal{border-radius:18px}}
+.modal h2{font-family:var(--head);font-size:17px;margin:0 0 4px;text-transform:uppercase}
+.modal .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+label{display:block;font-size:12px;font-weight:700;margin:12px 0 5px;text-transform:uppercase;letter-spacing:.5px}
+input,select{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+input:focus,select:focus{outline:2px solid #111;outline-offset:-1px}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tg{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.5px;background:rgba(0,0,0,.28);border-radius:4px;padding:1px 4px;margin-right:4px;vertical-align:1px}
+.mode{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--card)}
+.mode span{padding:6px 11px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted)}
+.mode span.on{background:#111;color:#fff}
+.bar.brands{margin-top:-2px}
+.chip-f.brand{cursor:pointer}
+.chip-f.brand:after{content:'✎';font-size:11px;color:var(--muted);margin-left:2px}
+.sw{display:flex;flex-wrap:wrap;gap:6px}
+.sw i{width:28px;height:28px;border-radius:8px;cursor:pointer;border:2px solid transparent;display:block}
+.sw i.on{border-color:#111;box-shadow:inset 0 0 0 2px #fff}
+.seg button{padding:10px 4px;font-size:13px}
+.seg button.on{color:#fff}
+.row{display:flex;gap:8px;margin-top:18px}
+.row .sp{flex:1}
+.list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.li{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px;cursor:pointer}
+.li:hover{border-color:#bbb}
+.li .t{font-weight:700;font-size:14px}
+.li .m{font-size:12px;color:var(--muted)}
+.empty{color:var(--muted);font-size:14px;padding:6px 0 10px}
+.err{color:#c62828;font-size:13px;margin-top:8px;min-height:1em}
+@media(max-width:640px){
+  .wrap{padding:10px}
+  .day{min-height:74px;padding:4px}
+  .item{font-size:0;padding:0;height:9px;border-radius:4px}
+  .item .b{display:none}
+  .day .add{display:none}
+  .nav .month{min-width:120px;font-size:15px}
+  .dow{font-size:10px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
+    <div class="nav">
+      <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
+      <div class="month" id="monthLbl"></div>
+      <button class="icon" id="next" aria-label="Bulan berikutnya">›</button>
+      <button id="todayBtn">Hari ini</button>
+    </div>
+  </header>
+  <div class="bar" id="filters"></div>
+  <div class="bar brands" id="brandBar"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="back" id="back">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script type="application/json" id="app-data">{"items":[{"id":"mvt8vpa8f4xp","title":"Preview design carousel","type":"carousel","brand":"Cheetah","date":"2026-10-03"}],"brandColors":{}}</script>
+<script id="app-js">
+(function(){
+const TYPES=[
+  {id:'carousel',name:'Carousel',color:'var(--c-carousel)'},
+  {id:'short',name:'Vid.Pendek',color:'var(--c-short)'},
+  {id:'long',name:'Vid.Panjang',color:'var(--c-long)'},
+  {id:'story',name:'Story',color:'var(--c-story)'}
+];
+const TAG={carousel:'CRS',short:'PDK',long:'PJG',story:'STR'};
+const PALETTE=['#2f6bff','#ff4d2e','#12a150','#9b3dff','#ff9f0a','#00a5b5','#e0338a','#7a5230','#5c6b00','#d6336c','#1d3f8f','#c9a400','#0f7a5c','#ff6f91','#444444'];
+const NOBRAND='#8a8a8a';
+const T=Object.fromEntries(TYPES.map(t=>[t.id,t]));
+const BULAN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const HARI=['SEN','SEL','RAB','KAM','JUM','SAB','MIN'];
+const LS='sp-timeline-v1';
+
+let state;
+try{state=JSON.parse(document.getElementById('app-data').textContent)}catch(e){state={items:[]}}
+if(!state||!Array.isArray(state.items))state={items:[]};
+if(!state.brandColors||typeof state.brandColors!=='object')state.brandColors={};
+let mode='brand';try{mode=localStorage.getItem('sp-timeline-mode')||'brand'}catch(e){}
+const bkey=b=>b.trim().toLowerCase();
+function brandColor(b){
+  if(!b)return NOBRAND;
+  const k=bkey(b);
+  if(!state.brandColors[k]){
+    const used=new Set(Object.values(state.brandColors));
+    state.brandColors[k]=PALETTE.find(c=>!used.has(c))||PALETTE[Object.keys(state.brandColors).length%PALETTE.length];
+  }
+  return state.brandColors[k];
+}
+const colorOf=it=>mode==='brand'?brandColor(it.brand):(T[it.type]||TYPES[0]).color;
+
+let artifact=null, canPublish=false;
+const statusEl=()=>document.getElementById('status');
+function setStatus(t){const s=statusEl();if(s)s.textContent=t}
+
+// fallback: browser-only storage when the page can't save itself
+function lsLoad(){try{const v=localStorage.getItem(LS);if(v){const d=JSON.parse(v);if(d&&Array.isArray(d.items)&&state.items.length===0){state=d;if(!state.brandColors)state.brandColors={}}}}catch(e){}}
+function lsSave(){try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}}
+
+const now=new Date();
+let viewY=now.getFullYear(), viewM=now.getMonth();
+const hidden=new Set();
+
+const pad=n=>String(n).padStart(2,'0');
+const key=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
+const todayKey=key(now.getFullYear(),now.getMonth(),now.getDate());
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fmtDate(k){const [y,m,d]=k.split('-').map(Number);const dt=new Date(y,m-1,d);const h=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][dt.getDay()];return `${h}, ${d} ${BULAN[m-1]} ${y}`}
+const byDate=k=>state.items.filter(i=>i.date===k);
+const brands=()=>[...new Set(state.items.map(i=>i.brand).filter(Boolean))].sort();
+
+function renderFilters(){
+  const prefix=`${viewY}-${pad(viewM+1)}`;
+  const inMonth=state.items.filter(i=>i.date.startsWith(prefix));
+  const f=document.getElementById('filters');
+  f.innerHTML=`<span class="mode"><span data-m="brand" class="${mode==='brand'?'on':''}">Warna: Brand</span><span data-m="type" class="${mode==='type'?'on':''}">Warna: Jenis</span></span>`+TYPES.map(t=>`<span class="chip-f ${hidden.has(t.id)?'off':''}" data-t="${t.id}"><span class="dot" style="background:${t.color}"></span>${t.name} <span class="count">${inMonth.filter(i=>i.type===t.id).length}</span></span>`).join('')
+   +`<span class="status" id="status">${canPublish?'Tersimpan':'Mode lokal (cuma di browser ini)'}</span>`;
+  f.querySelectorAll('.chip-f').forEach(el=>el.onclick=()=>{const t=el.dataset.t;hidden.has(t)?hidden.delete(t):hidden.add(t);render()});
+  f.querySelectorAll('.mode span').forEach(el=>el.onclick=()=>{mode=el.dataset.m;try{localStorage.setItem('sp-timeline-mode',mode)}catch(e){};render()});
+  const bb=document.getElementById('brandBar');
+  if(mode!=='brand'){bb.innerHTML='';bb.style.display='none';return}
+  bb.style.display='';
+  const names={};inMonth.forEach(i=>{if(i.brand){const k=bkey(i.brand);names[k]=names[k]||{name:i.brand,n:0};names[k].n++}});
+  const noB=inMonth.filter(i=>!i.brand).length;
+  bb.innerHTML=Object.values(names).sort((a,b)=>b.n-a.n).map(o=>`<span class="chip-f brand" data-b="${esc(o.name)}"><span class="dot" style="background:${brandColor(o.name)}"></span>${esc(o.name)} <span class="count">${o.n}</span></span>`).join('')
+    +(noB?`<span class="chip-f" style="cursor:default"><span class="dot" style="background:${NOBRAND}"></span>Non brand <span class="count">${noB}</span></span>`:'')
+    +(!inMonth.length?'<span class="count" style="font-size:13px">Belum ada konten bulan ini</span>':'');
+  bb.querySelectorAll('.chip-f.brand').forEach(el=>el.onclick=()=>openBrandColor(el.dataset.b));
+}
+
+function render(){
+  document.getElementById('monthLbl').textContent=`${BULAN[viewM]} ${viewY}`;
+  renderFilters();
+  const g=document.getElementById('grid');
+  let html=HARI.map(h=>`<div class="dow">${h}</div>`).join('');
+  const first=new Date(viewY,viewM,1);
+  const offset=(first.getDay()+6)%7; // Monday first
+  const start=new Date(viewY,viewM,1-offset);
+  const weeks=Math.ceil((offset+new Date(viewY,viewM+1,0).getDate())/7);
+  const mobile=matchMedia('(max-width:640px)').matches;
+  const max=mobile?5:3;
+  for(let i=0;i<weeks*7;i++){
+    const d=new Date(start);d.setDate(start.getDate()+i);
+    const k=key(d.getFullYear(),d.getMonth(),d.getDate());
+    const items=byDate(k).filter(it=>!hidden.has(it.type));
+    const cls=['day'];if(d.getMonth()!==viewM)cls.push('out');if(k===todayKey)cls.push('today');
+    html+=`<div class="${cls.join(' ')}" data-k="${k}"><div class="num"><span>${d.getDate()}</span><span class="add">+</span></div>`
+      +items.slice(0,max).map(it=>`<div class="item" data-id="${it.id}" style="background:${colorOf(it)}" title="${(T[it.type]||TYPES[0]).name} · ${esc(it.title)}${it.brand?' — '+esc(it.brand):''}">${mode==='brand'?`<span class="tg">${TAG[it.type]||''}</span>`:''}${esc(it.title)}${it.brand&&mode!=='brand'?` <span class="b">· ${esc(it.brand)}</span>`:''}</div>`).join('')
+      +(items.length>max?`<div class="more">+${items.length-max} lagi</div>`:'')
+      +`</div>`;
+  }
+  g.innerHTML=html;
+  g.querySelectorAll('.item').forEach(attachDrag);
+  g.querySelectorAll('.day').forEach(el=>el.onclick=e=>{
+    if(justDragged)return;
+    const it=e.target.closest('.item');
+    if(it&&!mobile){openForm(state.items.find(x=>x.id===it.dataset.id));return}
+    const k=el.dataset.k;
+    byDate(k).length?openDay(k):openForm(null,k);
+  });
+}
+
+// ---- drag & drop (mouse: drag; touch: hold ~0.3s then drag)
+let justDragged=false;
+function attachDrag(el){
+  el.addEventListener('pointerdown',e=>{
+    if(e.button!==0)return;
+    const id=el.dataset.id, sx=e.clientX, sy=e.clientY, touch=e.pointerType!=='mouse';
+    let active=false, ghost=null, over=null, holdT=null, cancelled=false;
+    const begin=()=>{
+      active=true;
+      ghost=el.cloneNode(true);ghost.classList.add('ghost');ghost.style.width=Math.max(el.offsetWidth,140)+'px';
+      document.body.appendChild(ghost);document.body.classList.add('dragging');el.classList.add('src');
+      if(navigator.vibrate)try{navigator.vibrate(15)}catch(_){}
+      move(lastX,lastY);
+    };
+    let lastX=sx,lastY=sy;
+    const move=(x,y)=>{
+      ghost.style.left=(x-20)+'px';ghost.style.top=(y-14)+'px';
+      const t=document.elementFromPoint(x,y);const d=t&&t.closest('.day');
+      if(d!==over){if(over)over.classList.remove('drop');over=d;if(over)over.classList.add('drop')}
+    };
+    if(touch)holdT=setTimeout(()=>{if(!cancelled)begin()},300);
+    const onMove=ev=>{
+      lastX=ev.clientX;lastY=ev.clientY;
+      if(!active){
+        const dist=Math.hypot(ev.clientX-sx,ev.clientY-sy);
+        if(touch){if(dist>8){cancelled=true;clearTimeout(holdT)}return}
+        if(dist>5)begin();else return;
+      }
+      ev.preventDefault();move(ev.clientX,ev.clientY);
+    };
+    const onUp=()=>{
+      clearTimeout(holdT);
+      removeEventListener('pointermove',onMove);removeEventListener('pointerup',onUp);removeEventListener('pointercancel',onUp);
+      if(!active)return;
+      document.body.classList.remove('dragging');ghost.remove();el.classList.remove('src');
+      if(over)over.classList.remove('drop');
+      justDragged=true;setTimeout(()=>justDragged=false,50);
+      const it=state.items.find(x=>x.id===id);
+      if(over&&it&&over.dataset.k!==it.date){
+        const from=it.date;it.date=over.dataset.k;
+        state.items.sort((a,b)=>a.date.localeCompare(b.date));
+        save();render();
+        toast(`Dipindah ke ${fmtDate(it.date)}`,()=>{it.date=from;state.items.sort((a,b)=>a.date.localeCompare(b.date));save();render()});
+      }
+    };
+    addEventListener('pointermove',onMove,{passive:false});addEventListener('pointerup',onUp);addEventListener('pointercancel',onUp);
+  });
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+}
+let toastEl=null,toastT=null;
+function toast(msg,undo){
+  if(toastEl)toastEl.remove();clearTimeout(toastT);
+  toastEl=document.createElement('div');toastEl.className='toast';
+  toastEl.innerHTML=`<span>${esc(msg)}</span>${undo?'<button>Batalin</button>':''}`;
+  document.body.appendChild(toastEl);
+  if(undo)toastEl.querySelector('button').onclick=()=>{undo();toastEl.remove();toastEl=null};
+  toastT=setTimeout(()=>{if(toastEl){toastEl.remove();toastEl=null}},4000);
+}
+
+const back=document.getElementById('back'), modal=document.getElementById('modal');
+function close(){back.classList.remove('show')}
+back.onclick=e=>{if(e.target===back)close()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+
+function openDay(k){
+  const items=byDate(k);
+  modal.innerHTML=`<h2>${fmtDate(k)}</h2><div class="sub">${items.length} konten</div>
+   <div class="list">${items.map(it=>`<div class="li" data-id="${it.id}"><span class="dot" style="background:${colorOf(it)}"></span><div><div class="t">${esc(it.title)}</div><div class="m">${(T[it.type]||TYPES[0]).name}${it.brand?' · '+esc(it.brand):''}</div></div></div>`).join('')}</div>
+   <div class="row"><button id="cl">Tutup</button><span class="sp"></span><button class="primary" id="ad">+ Tambah konten</button></div>`;
+  modal.querySelectorAll('.li').forEach(el=>el.onclick=()=>openForm(state.items.find(x=>x.id===el.dataset.id)));
+  modal.querySelector('#cl').onclick=close;
+  modal.querySelector('#ad').onclick=()=>openForm(null,k);
+  back.classList.add('show');
+}
+
+function swatches(sel){return `<div class="sw">${PALETTE.map(c=>`<i data-c="${c}" style="background:${c}" class="${c===sel?'on':''}"></i>`).join('')}</div>`}
+function openBrandColor(name){
+  let sel=brandColor(name);
+  modal.innerHTML=`<h2>Warna ${esc(name)}</h2><div class="sub">Berlaku buat semua konten brand ini</div>${swatches(sel)}
+   <div class="row"><span class="sp"></span><button id="cl">Batal</button><button class="primary" id="ok">Simpan</button></div>`;
+  modal.querySelectorAll('.sw i').forEach(el=>el.onclick=()=>{sel=el.dataset.c;modal.querySelectorAll('.sw i').forEach(x=>x.classList.toggle('on',x===el))});
+  modal.querySelector('#cl').onclick=close;
+  modal.querySelector('#ok').onclick=()=>{state.brandColors[bkey(name)]=sel;save();close();render()};
+  back.classList.add('show');
+}
+function openForm(item,k){
+  const isNew=!item;
+  const cur=item?{...item}:{title:'',type:'carousel',brand:'',date:k};
+  modal.innerHTML=`<h2>${isNew?'Tambah Konten':'Edit Konten'}</h2><div class="sub">${fmtDate(cur.date)}</div>
+   <form id="f">
+    <label for="fTitle">Judul Konten</label>
+    <input id="fTitle" value="${esc(cur.title)}" placeholder="mis. Bedah Samba OG" autocomplete="off">
+    <label>Jenis Konten</label>
+    <div class="seg">${TYPES.map(t=>`<button type="button" data-t="${t.id}">${t.name}</button>`).join('')}</div>
+    <label for="fBrand">Brand Tap In</label>
+    <input id="fBrand" list="brandList" value="${esc(cur.brand)}" placeholder="kosongin kalau bukan brand tap in" autocomplete="off">
+    <div id="bcWrap" style="margin-top:8px"></div>
+    <datalist id="brandList">${brands().map(b=>`<option value="${esc(b)}">`).join('')}</datalist>
+    <label for="fDate">Tanggal</label>
+    <input id="fDate" type="date" value="${cur.date}">
+    <div class="err" id="fErr"></div>
+    <div class="row">
+      ${isNew?'':'<button type="button" class="danger" id="del">Hapus</button>'}
+      <span class="sp"></span>
+      <button type="button" id="cancel">Batal</button>
+      <button type="submit" class="primary">${isNew?'Tambah':'Simpan'}</button>
+    </div>
+   </form>`;
+  const segs=modal.querySelectorAll('.seg button');
+  const paint=()=>segs.forEach(b=>{const on=b.dataset.t===cur.type;b.classList.toggle('on',on);b.style.background=on?T[b.dataset.t].color:'';b.style.borderColor=on?T[b.dataset.t].color:''});
+  segs.forEach(b=>b.onclick=()=>{cur.type=b.dataset.t;paint()});paint();
+  let pickColor=null;
+  const bIn=modal.querySelector('#fBrand'), bcWrap=modal.querySelector('#bcWrap');
+  const paintBC=()=>{const v=bIn.value.trim();if(!v){bcWrap.innerHTML='';pickColor=null;return}
+    const k=bkey(v);const existing=state.brandColors[k];
+    const sel=pickColor||existing||PALETTE.find(c=>!new Set(Object.values(state.brandColors)).has(c))||PALETTE[0];
+    bcWrap.innerHTML=swatches(sel);
+    bcWrap.querySelectorAll('i').forEach(el=>el.onclick=()=>{pickColor=el.dataset.c;paintBC()});};
+  bIn.addEventListener('input',()=>{pickColor=null;paintBC()});paintBC();
+  modal.querySelector('#cancel').onclick=close;
+  const del=modal.querySelector('#del');
+  if(del){let armed=false;del.onclick=()=>{
+    if(!armed){armed=true;del.textContent='Yakin hapus?';return}
+    state.items=state.items.filter(x=>x.id!==item.id);save();close();render();
+  }}
+  modal.querySelector('#f').onsubmit=e=>{
+    e.preventDefault();
+    const title=modal.querySelector('#fTitle').value.trim();
+    const date=modal.querySelector('#fDate').value;
+    if(!title){modal.querySelector('#fErr').textContent='Judul konten wajib diisi.';return}
+    if(!date){modal.querySelector('#fErr').textContent='Tanggal wajib diisi.';return}
+    const bv=modal.querySelector('#fBrand').value.trim();
+    if(bv&&pickColor)state.brandColors[bkey(bv)]=pickColor;
+    if(bv)brandColor(bv);
+    const rec={id:item?item.id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),title,type:cur.type,brand:modal.querySelector('#fBrand').value.trim(),date};
+    if(isNew)state.items.push(rec);else state.items=state.items.map(x=>x.id===rec.id?rec:x);
+    state.items.sort((a,b)=>a.date.localeCompare(b.date));
+    save();close();render();
+  };
+  back.classList.add('show');
+  setTimeout(()=>modal.querySelector('#fTitle').focus(),50);
+}
+
+// saving: publish a new version of this page with the data embedded
+let timer=null;
+function buildDoc(){
+  const css=document.getElementById('app-css').textContent;
+  const js=document.getElementById('app-js').textContent;
+  const json=JSON.stringify(state).replace(/</g,'\\u003c');
+  const head='\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>Timeline Produksi Konten — Shoe Police</title>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">\n';
+  return '<!DOCTYPE html>\n<html lang="id">\n<head>'+head+'<style id="app-css">'+css+'</style>\n</head>\n<body>'
+    +cleanBody()
+    +'<script type="application/json" id="app-data">'+json+'</'+'script>\n<script id="app-js">'+js+'</'+'script>\n</body>\n</html>\n';
+}
+function cleanBody(){
+  // static shell only — never the rendered calendar
+  return `
+<div class="wrap">
+  <header>
+    <h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
+    <div class="nav">
+      <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
+      <div class="month" id="monthLbl"></div>
+      <button class="icon" id="next" aria-label="Bulan berikutnya">›</button>
+      <button id="todayBtn">Hari ini</button>
+    </div>
+  </header>
+  <div class="bar" id="filters"></div>
+  <div class="bar brands" id="brandBar"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="back" id="back">
+  <div class="modal" id="modal"></div>
+</div>
+
+`;
+}
+function save(){
+  lsSave();
+  if(!canPublish){setStatus('Mode lokal (cuma di browser ini)');return}
+  setStatus('Menyimpan…');
+  clearTimeout(timer);
+  timer=setTimeout(async()=>{
+    try{await artifact.publish(buildDoc());setStatus('Tersimpan')}
+    catch(e){
+      const c=e&&(e.code||e.name||e.message)||'';
+      if(String(c).includes('conflict'))setStatus('Ada perubahan dari device lain, memuat ulang…');
+      else if(/not_granted|not_writer/.test(String(c))){canPublish=false;setStatus('Mode lihat saja')}
+      else setStatus('Gagal simpan — coba lagi');
+    }
+  },700);
+}
+
+document.getElementById('prev').onclick=()=>{viewM--;if(viewM<0){viewM=11;viewY--}render()};
+document.getElementById('next').onclick=()=>{viewM++;if(viewM>11){viewM=0;viewY++}render()};
+document.getElementById('todayBtn').onclick=()=>{viewY=now.getFullYear();viewM=now.getMonth();render()};
+addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(render,150)});
+
+lsLoad();
+render();
+if(window.claude&&claude.use){
+  claude.use('artifact').then(a=>{if(a){artifact=a;canPublish=true;renderFilters()}}).catch(()=>{});
+}
+})();
+</script>
+</body>
+</html>
