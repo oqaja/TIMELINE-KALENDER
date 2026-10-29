@@ -162,6 +162,12 @@ const inClaude=!!(window.claude&&window.claude.use);
 const SHEET_API='';               // URL Web App Apps Script (…/exec)
 const SHEET_URL='https://docs.google.com/spreadsheets/d/1SITTxYVeoH1cX9lG6EicitGIr5DBKwy7pStQu5KPFk4/edit';
 let API='';try{API=localStorage.getItem('sp-timeline-api')||SHEET_API}catch(e){API=SHEET_API}
+// one-time setup link: …/timeline-kalender/#api=<URL Web App>  → disimpan di browser, lalu dihapus dari alamat
+if(location.hash.indexOf('#api=')===0){
+  const v=decodeURIComponent(location.hash.slice(5));
+  if(/^https:\/\/script\.google\.com\/.+\/exec$/.test(v)){API=v;try{localStorage.setItem('sp-timeline-api',v)}catch(e){}}
+  try{history.replaceState(null,'',location.pathname+location.search)}catch(e){location.hash=''}
+}
 if(inClaude)API='';
 let synced=null, queue=[], busy=false, remoteOk=false;
 const snap=st=>({items:Object.fromEntries(st.items.map(i=>[i.id,JSON.stringify([i.date,i.title,i.type,i.brand||''])])),colors:{...st.brandColors}});
