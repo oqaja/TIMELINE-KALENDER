@@ -88,6 +88,7 @@ input:focus,select:focus{outline:2px solid #111;outline-offset:-1px}
 .sec{border-top:1px solid var(--line);margin-top:16px;padding-top:4px}
 .sec h3{font-family:var(--head);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin:10px 0 0;color:#111}
 .g{display:grid;grid-template-columns:repeat(3,1fr);gap:0 10px}
+.g.g4{grid-template-columns:repeat(4,1fr)}
 .g2{display:grid;grid-template-columns:repeat(2,1fr);gap:0 10px}
 .up{display:grid;grid-template-columns:40px 1fr 1.2fr 2fr;gap:6px 8px;align-items:center;margin-top:8px}
 .up .h{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
@@ -95,8 +96,11 @@ input:focus,select:focus{outline:2px solid #111;outline-offset:-1px}
 .up select,.up input{padding:8px 8px;font-size:14px}
 textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;min-height:70px;resize:vertical}
 .modal select{appearance:auto}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.cp{padding:7px 11px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;user-select:none;background:#fff}
+.cp.on{background:#111;color:#fff;border-color:#111}
 .ok{font-weight:800}
-@media(max-width:640px){.g{grid-template-columns:repeat(2,1fr)}.up{grid-template-columns:30px 1fr 1fr}.up .pid{grid-column:2/4}.up .h.pidh{display:none}}
+@media(max-width:640px){.g,.g.g4{grid-template-columns:repeat(2,1fr)}.up{grid-template-columns:30px 1fr 1fr}.up .pid{grid-column:2/4}.up .h.pidh{display:none}}
 @media(max-width:640px){
   .wrap{padding:10px}
   .day{min-height:74px;padding:4px}
@@ -152,7 +156,8 @@ const OPT={
 };
 const BRAND_LIST=['Startinnglane','Brodo','Unerd','Ortuseight','910','Mills','Weidenmann','Hijack/Akross','Ardiles','Patrobas','Azawear','DBL Media','Spenco','Gumi','Andre Anthony','Geoff Max','Anta','1489','Mario Minardi','Compass','Startstruck','Koku Footwear','Fordive','Humblezing','Erajaya','3Second','Kanky','UNKL347','Stayhoops','DSL','Bodypack','Kluk','Porto X','Outdoor pro & adv','Brooks','Eiger','Footstep','Gahalu','Hoka','Fixch','Ballerbro','Evil','Aerostreet','Portee',"Don's original",'Brisleblack','Barbatos','Piero','Erke','Topscore','Blibli','Guardbasket','Cartenz','Vionic Insole'];
 const PLAT=[['YT','YouTube'],['IG','Instagram'],['TT','TikTok'],['FB','Facebook']];
-const EXTRA=['akun','segmen','jamYT','jamIG','jamTT','jamFB','producer','writing','shooting','designer','editor','talent1','talent2','production','stYT','stIG','stTT','stFB','idYT','idIG','idTT','idFB','catatan','eventId'];
+const XCOL={cover:'COVER/THUMB'}; // kolom tambahan: key kalender -> header sheet
+const EXTRA=['cover','akun','segmen','jamYT','jamIG','jamTT','jamFB','producer','writing','shooting','designer','editor','talent1','talent2','production','stYT','stIG','stTT','stFB','idYT','idIG','idTT','idFB','catatan','eventId'];
 const ALLK=['id','date','title','type','brand',...EXTRA];
 const T=Object.fromEntries(TYPES.map(t=>[t.id,t]));
 const BULAN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -197,8 +202,10 @@ if(location.hash.indexOf('#api=')===0){
 if(inClaude)API='';
 let synced=null, queue=[], busy=false, remoteOk=false;
 const snap=st=>({items:Object.fromEntries(st.items.map(i=>[i.id,JSON.stringify(ALLK.map(k=>i[k]==null?'':String(i[k])))])),colors:{...st.brandColors}});
-async function apiGet(){const r=await fetch(API,{cache:'no-store'});const d=await r.json();if(!d||!Array.isArray(d.items))throw new Error('bad');return d}
-async function apiPost(op){const r=await fetch(API,{method:'POST',body:JSON.stringify(op)});const d=await r.json();if(!d.ok)throw new Error(d.error||'gagal');return d}
+async function apiGet(){const r=await fetch(API,{cache:'no-store'});const d=await r.json();if(!d||!Array.isArray(d.items))throw new Error('bad');d.items=d.items.map(fromRemote);return d}
+function toRemote(it){const o={...it,cols:{}};for(const k in XCOL){o.cols[XCOL[k]]=it[k]||'';delete o[k]}return o}
+function fromRemote(it){const o={...it};for(const k in XCOL)o[k]=(it.cols&&it.cols[XCOL[k]])||'';delete o.cols;return o}
+async function apiPost(op){if(op.op==='upsert')op={...op,item:toRemote(op.item)};if(op.op==='bulk')op={...op,items:op.items.map(toRemote)};const r=await fetch(API,{method:'POST',body:JSON.stringify(op)});const d=await r.json();if(!d.ok)throw new Error(d.error||'gagal');return d}
 function diffOps(){
   const now=snap(state), ops=[];
   for(const it of state.items){if(synced.items[it.id]!==now.items[it.id])ops.push({op:'upsert',item:it})}
@@ -225,7 +232,7 @@ async function pull(force){
     if(force&&!d.items.length&&state.items.length){ // first connect: move browser data into the empty sheet
       setStatus('Mindahin data browser ke Sheet…');
       const res=await apiPost({op:'bulk',items:state.items,brandColors:state.brandColors});
-      Object.assign(d,res.data);
+      Object.assign(d,res.data);d.items=d.items.map(fromRemote);
     }
     if(JSON.stringify(d)!==JSON.stringify({items:state.items,brandColors:state.brandColors})){state={items:d.items,brandColors:d.brandColors||{}};lsSave();render()}
     synced=snap(state);remoteOk=true;setStatus('Tersambung ke Sheet');
@@ -390,6 +397,8 @@ function openForm(item,k){
   const sel=(key,label,opts,bare)=>{const v=cur[key]||'';const list=v&&!opts.includes(v)?[v,...opts]:opts;
     const h=`<select data-k="${key}"${bare?` aria-label="${key}"`:''}><option value="">—</option>${list.map(o=>`<option${o===v?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
     return bare?h:`<div><label>${label}</label>${h}</div>`};
+  const segSel=String(cur.segmen||'').split(/\s*,\s*/).filter(Boolean);
+  const segOpts=[...OPT.segmen,...segSel.filter(v=>!OPT.segmen.includes(v))];
   modal.classList.add('wide');
   modal.innerHTML=`<h2>${isNew?'Tambah Konten':'Edit Konten'}</h2><div class="sub">${fmtDate(cur.date)}</div>
    <form id="f">
@@ -404,14 +413,15 @@ function openForm(item,k){
     <div class="g">
       <div><label for="fDate">Tanggal</label><input id="fDate" type="date" value="${cur.date}"></div>
       ${sel('akun','Akun',OPT.akun)}
-      ${sel('segmen','Segmen',OPT.segmen)}
     </div>
+    <label>Segmen <span style="font-weight:500;text-transform:none;color:var(--muted)">(bisa pilih lebih dari satu)</span></label>
+    <div class="chips" id="segChips">${segOpts.map(o=>`<span class="cp${segSel.includes(o)?' on':''}" data-v="${esc(o)}">${esc(o)}</span>`).join('')}</div>
     <div class="sec"><h3>Tim</h3><div class="g">
       ${sel('producer','Producer',OPT.tim)}${sel('designer','Designer',OPT.tim)}${sel('editor','Editor',OPT.tim)}
       ${sel('talent1','Talent 1',OPT.tim)}${sel('talent2','Talent 2',OPT.tim)}
     </div></div>
-    <div class="sec"><h3>Progres</h3><div class="g">
-      ${sel('writing','Writing',OPT.cek)}${sel('shooting','Shooting',OPT.cek)}${sel('production','Production',OPT.cek)}
+    <div class="sec"><h3>Progres</h3><div class="g g4">
+      ${sel('writing','Writing',OPT.cek)}${sel('shooting','Shooting',OPT.cek)}${sel('production','Production',OPT.cek)}${sel('cover','Cover/Thumb',OPT.cek)}
     </div></div>
     <div class="sec"><h3>Upload</h3><div class="up">
       <span></span><span class="h">Jam up</span><span class="h">Status</span><span class="h pidh">Post ID</span>
@@ -429,6 +439,7 @@ function openForm(item,k){
       <button type="submit" class="primary">${isNew?'Tambah':'Simpan'}</button>
     </div>
    </form>`;
+  modal.querySelectorAll('#segChips .cp').forEach(el=>el.onclick=()=>el.classList.toggle('on'));
   const segs=modal.querySelectorAll('.seg button');
   const paint=()=>segs.forEach(b=>{const on=b.dataset.t===cur.type;b.classList.toggle('on',on);b.style.background=on?T[b.dataset.t].color:'';b.style.borderColor=on?T[b.dataset.t].color:''});
   segs.forEach(b=>b.onclick=()=>{cur.type=b.dataset.t;paint()});paint();
@@ -458,6 +469,7 @@ function openForm(item,k){
     const rec={id:item?item.id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),title,type:cur.type,brand:modal.querySelector('#fBrand').value.trim(),date};
     EXTRA.forEach(k2=>rec[k2]='');
     modal.querySelectorAll('[data-k]').forEach(el=>{rec[el.dataset.k]=el.value.trim()});
+    rec.segmen=[...modal.querySelectorAll('#segChips .cp.on')].map(el=>el.dataset.v).join(', ');
     if(isNew)state.items.push(rec);else state.items=state.items.map(x=>x.id===rec.id?rec:x);
     state.items.sort((a,b)=>a.date.localeCompare(b.date));
     save();close();render();

@@ -3,6 +3,8 @@
  * Pasang di: Google Sheet > Ekstensi > Apps Script, lalu Deploy sebagai Web App.
  *
  * Kolom dibaca berdasarkan NAMA HEADER di baris 1 (urutan kolom bebas).
+ * Kolom tambahan di luar daftar FIELDS tetap ikut terbaca/tersimpan lewat item.cols {HEADER: nilai},
+ * jadi kolom baru cukup ditambah dari sisi kalender — script tidak perlu di-deploy ulang.
  * Tab KONTEN : ID | TANGGAL | JUDUL KONTEN | JENIS KONTEN | BRAND TAP IN | AKUN | SEGMEN | ... | DIUBAH
  * Tab BRAND  : BRAND | WARNA
  */
@@ -25,6 +27,17 @@ function sh_(name) { return SpreadsheetApp.getActive().getSheetByName(name); }
 function out_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
+function ensureCol_(map, header) {
+  const h = String(header).trim().toUpperCase();
+  let i = map._head.indexOf(h);
+  if (i >= 0) return i + 1;
+  const ks = sh_('KONTEN');
+  if (ks.getMaxColumns() <= map._width) ks.insertColumnsAfter(map._width, 1);
+  map._width++;
+  ks.getRange(1, map._width).setValue(h);
+  map._head.push(h);
+  return map._width;
+}
 // pastikan semua header ada (yang belum ada ditambah di kanan), kembalikan {key: kolom (1-based)}
 function cols_() {
   const ks = sh_('KONTEN');
@@ -43,6 +56,7 @@ function cols_() {
     map[k] = i + 1;
   });
   map._width = lastCol;
+  map._head = head;
   return map;
 }
 function typeId_(v) {
@@ -78,6 +92,9 @@ function read_() {
       if (!title || !date) return;
       const it = {};
       Object.keys(FIELDS).forEach(function (k) { if (k !== 'updated') it[k] = String(r[c[k] - 1] || '').trim(); });
+      const known = Object.keys(FIELDS).map(function (k) { return FIELDS[k]; });
+      it.cols = {};
+      c._head.forEach(function (h, j) { if (h && known.indexOf(h) < 0) it.cols[h] = String(r[j] || '').trim(); });
       it.title = title; it.date = date; it.type = typeId_(it.type);
       if (!it.id) { it.id = newId_(); ks.getRange(i + 2, c.id).setValue(it.id); } // baris yang diisi manual di sheet
       items.push(it);
@@ -105,6 +122,7 @@ function rowOf_(id, c) {
 function upsert_(it) {
   if (!it || !it.id || !it.title || !it.date) return;
   const ks = sh_('KONTEN'), c = cols_();
+  Object.keys(it.cols || {}).forEach(function (h) { ensureCol_(c, h); });
   const r = rowOf_(it.id, c);
   const row = r > 0 ? r : ks.getLastRow() + 1;
   const range = ks.getRange(row, 1, 1, c._width);
@@ -115,6 +133,10 @@ function upsert_(it) {
     else if (k === 'type') v = JENIS[it.type] || 'Carousel';
     else v = it[k] == null ? '' : String(it[k]);
     vals[c[k] - 1] = v;
+  });
+  Object.keys(it.cols || {}).forEach(function (h) {
+    const j = c._head.indexOf(String(h).trim().toUpperCase());
+    if (j >= 0) vals[j] = it.cols[h] == null ? '' : String(it.cols[h]);
   });
   range.setNumberFormat('@'); // POST ID panjang jangan jadi angka
   range.setValues([vals]);
