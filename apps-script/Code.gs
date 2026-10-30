@@ -7,6 +7,7 @@
  * jadi kolom baru cukup ditambah dari sisi kalender — script tidak perlu di-deploy ulang.
  * Tab KONTEN : ID | TANGGAL | JUDUL KONTEN | JENIS KONTEN | BRAND TAP IN | AKUN | SEGMEN | ... | DIUBAH
  * Tab BRAND  : BRAND | WARNA
+ * Tab OPSI   : DAFTAR | NILAI   (pilihan tambahan: akun, segmen, tim, status — dibuat otomatis)
  */
 const TZ = 'Asia/Jakarta';
 const JENIS = { carousel: 'Carousel', short: 'Vid.Pendek', long: 'Vid.Panjang', story: 'Story' };
@@ -76,6 +77,26 @@ function date_(v) {
   if (m) return m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
   return '';
 }
+function opsiSheet_() {
+  let s = sh_('OPSI');
+  if (!s) { s = SpreadsheetApp.getActive().insertSheet('OPSI'); s.getRange(1, 1, 1, 2).setValues([['DAFTAR', 'NILAI']]).setFontWeight('bold'); s.setFrozenRows(1); }
+  return s;
+}
+function readOpsi_() {
+  const s = opsiSheet_(), last = s.getLastRow(), o = {};
+  if (last > 1) s.getRange(2, 1, last - 1, 2).getDisplayValues().forEach(function (r) {
+    const l = String(r[0]).trim().toLowerCase(), v = String(r[1]).trim();
+    if (l && v) { o[l] = o[l] || []; if (o[l].indexOf(v) < 0) o[l].push(v); }
+  });
+  return o;
+}
+function addOpsi_(list, value) {
+  const l = String(list || '').trim().toLowerCase(), v = String(value || '').trim();
+  if (!l || !v) return;
+  const cur = readOpsi_()[l] || [];
+  if (cur.some(function (x) { return x.toLowerCase() === v.toLowerCase(); })) return;
+  opsiSheet_().appendRow([l, v]);
+}
 function newId_() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
 function read_() {
@@ -109,7 +130,7 @@ function read_() {
     });
   }
   items.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
-  return { items: items, brandColors: brandColors };
+  return { items: items, brandColors: brandColors, options: readOpsi_() };
 }
 
 function rowOf_(id, c) {
@@ -165,6 +186,7 @@ function doPost(e) {
     if (op.op === 'upsert') upsert_(op.item);
     else if (op.op === 'delete') remove_(op.id);
     else if (op.op === 'color') color_(op.brand, op.color);
+    else if (op.op === 'option') addOpsi_(op.list, op.value);
     else if (op.op === 'bulk') { // pindahan data lama dari browser, cuma kalau sheet masih kosong
       if (read_().items.length === 0) {
         (op.items || []).forEach(upsert_);

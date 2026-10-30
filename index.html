@@ -99,6 +99,7 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .cp{padding:7px 11px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;user-select:none;background:#fff}
 .cp.on{background:#111;color:#fff;border-color:#111}
+.cp.add{border-style:dashed;color:var(--muted)}
 .ok{font-weight:800}
 @media(max-width:640px){.g,.g.g4{grid-template-columns:repeat(2,1fr)}.up{grid-template-columns:30px 1fr 1fr}.up .pid{grid-column:2/4}.up .h.pidh{display:none}}
 @media(max-width:640px){
@@ -159,6 +160,28 @@ const PLAT=[['YT','YouTube'],['IG','Instagram'],['TT','TikTok'],['FB','Facebook'
 const XCOL={cover:'COVER/THUMB'}; // kolom tambahan: key kalender -> header sheet
 const EXTRA=['cover','akun','segmen','jamYT','jamIG','jamTT','jamFB','producer','writing','shooting','designer','editor','talent1','talent2','production','stYT','stIG','stTT','stFB','idYT','idIG','idTT','idFB','catatan','eventId'];
 const ALLK=['id','date','title','type','brand',...EXTRA];
+// daftar yang bisa ditambah + field yang memakainya
+const LISTOF={akun:'akun',producer:'tim',designer:'tim',editor:'tim',talent1:'tim',talent2:'tim',stYT:'status',stIG:'status',stTT:'status',stFB:'status'};
+const LISTNAME={akun:'Akun',segmen:'Segmen',tim:'Orang / Tim',status:'Status'};
+const opts=l=>{const base=l==='tim'?OPT.tim:OPT[l]||[];const add=(state.options&&state.options[l])||[];return [...base,...add.filter(v=>!base.includes(v))]};
+function addOption(list,value){
+  value=String(value||'').trim();if(!value)return false;
+  if(opts(list).some(v=>v.toLowerCase()===value.toLowerCase()))return true;
+  state.options[list]=[...(state.options[list]||[]),value];lsSave();
+  if(API){queue.push({op:'option',list,value});flush()}
+  return true;
+}
+function mini(title,onOk){
+  const w=document.createElement('div');w.className='back show';w.style.zIndex=60;
+  w.innerHTML=`<div class="modal" style="max-width:360px"><h2>${esc(title)}</h2><input id="miniIn" autocomplete="off" placeholder="Ketik nama baru"><div class="err" id="miniErr"></div><div class="row"><span class="sp"></span><button id="miniNo">Batal</button><button class="primary" id="miniOk">Tambah</button></div></div>`;
+  document.body.appendChild(w);
+  const inp=w.querySelector('#miniIn'),done=()=>w.remove();
+  const ok=()=>{const v=inp.value.trim();if(!v){w.querySelector('#miniErr').textContent='Isi dulu namanya.';return}onOk(v);done()};
+  w.querySelector('#miniOk').onclick=ok;w.querySelector('#miniNo').onclick=()=>{onOk(null);done()};
+  w.onclick=e=>{if(e.target===w){onOk(null);done()}};
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();ok()}if(e.key==='Escape'){e.stopPropagation();onOk(null);done()}});
+  setTimeout(()=>inp.focus(),30);
+}
 const T=Object.fromEntries(TYPES.map(t=>[t.id,t]));
 const BULAN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const HARI=['SEN','SEL','RAB','KAM','JUM','SAB','MIN'];
@@ -168,6 +191,7 @@ let state;
 try{state=JSON.parse(document.getElementById('app-data').textContent)}catch(e){state={items:[]}}
 if(!state||!Array.isArray(state.items))state={items:[]};
 if(!state.brandColors||typeof state.brandColors!=='object')state.brandColors={};
+if(!state.options||typeof state.options!=='object')state.options={};
 let mode='brand';try{mode=localStorage.getItem('sp-timeline-mode')||'brand'}catch(e){}
 const bkey=b=>b.trim().toLowerCase();
 function brandColor(b){
@@ -234,11 +258,12 @@ async function pull(force){
       const res=await apiPost({op:'bulk',items:state.items,brandColors:state.brandColors});
       Object.assign(d,res.data);d.items=d.items.map(fromRemote);
     }
-    if(JSON.stringify(d)!==JSON.stringify({items:state.items,brandColors:state.brandColors})){state={items:d.items,brandColors:d.brandColors||{}};lsSave();render()}
+    if(!d.options)d.options={};
+    if(JSON.stringify({i:d.items,b:d.brandColors,o:d.options})!==JSON.stringify({i:state.items,b:state.brandColors,o:state.options})){state={items:d.items,brandColors:d.brandColors||{},options:d.options};lsSave();render()}
     synced=snap(state);remoteOk=true;setStatus('Tersambung ke Sheet');
   }catch(e){setStatus(synced?'Offline — pakai data terakhir':'Gagal nyambung ke Sheet (cek ⚙)')}
 }
-function lsLoad(){try{const v=localStorage.getItem(LS);if(v){const d=JSON.parse(v);if(d&&Array.isArray(d.items)&&(!inClaude||state.items.length===0)){state=d;if(!state.brandColors)state.brandColors={}}}}catch(e){}}
+function lsLoad(){try{const v=localStorage.getItem(LS);if(v){const d=JSON.parse(v);if(d&&Array.isArray(d.items)&&(!inClaude||state.items.length===0)){state=d;if(!state.brandColors)state.brandColors={};if(!state.options)state.options={}}}}catch(e){}}
 function lsSave(){try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}}
 
 const now=new Date();
@@ -394,11 +419,12 @@ function openBrandColor(name){
 function openForm(item,k){
   const isNew=!item;
   const cur=item?{...item}:{title:'',type:'carousel',brand:'',date:k};
-  const sel=(key,label,opts,bare)=>{const v=cur[key]||'';const list=v&&!opts.includes(v)?[v,...opts]:opts;
-    const h=`<select data-k="${key}"${bare?` aria-label="${key}"`:''}><option value="">—</option>${list.map(o=>`<option${o===v?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  const optHtml=(key,o,v)=>{const list=v&&!o.includes(v)?[v,...o]:o;return `<option value="">—</option>${list.map(x=>`<option${x===v?' selected':''}>${esc(x)}</option>`).join('')}${LISTOF[key]?'<option value="__add">+ Tambah baru…</option>':''}`};
+  const sel=(key,label,o,bare)=>{const v=cur[key]||'';if(LISTOF[key])o=opts(LISTOF[key]);
+    const h=`<select data-k="${key}"${bare?` aria-label="${key}"`:''}>${optHtml(key,o,v)}</select>`;
     return bare?h:`<div><label>${label}</label>${h}</div>`};
   const segSel=String(cur.segmen||'').split(/\s*,\s*/).filter(Boolean);
-  const segOpts=[...OPT.segmen,...segSel.filter(v=>!OPT.segmen.includes(v))];
+  const segOpts=[...opts('segmen'),...segSel.filter(v=>!opts('segmen').includes(v))];
   modal.classList.add('wide');
   modal.innerHTML=`<h2>${isNew?'Tambah Konten':'Edit Konten'}</h2><div class="sub">${fmtDate(cur.date)}</div>
    <form id="f">
@@ -415,7 +441,7 @@ function openForm(item,k){
       ${sel('akun','Akun',OPT.akun)}
     </div>
     <label>Segmen <span style="font-weight:500;text-transform:none;color:var(--muted)">(bisa pilih lebih dari satu)</span></label>
-    <div class="chips" id="segChips">${segOpts.map(o=>`<span class="cp${segSel.includes(o)?' on':''}" data-v="${esc(o)}">${esc(o)}</span>`).join('')}</div>
+    <div class="chips" id="segChips">${segOpts.map(o=>`<span class="cp${segSel.includes(o)?' on':''}" data-v="${esc(o)}">${esc(o)}</span>`).join('')}<span class="cp add" id="segAdd">+ Tambah</span></div>
     <div class="sec"><h3>Tim</h3><div class="g">
       ${sel('producer','Producer',OPT.tim)}${sel('designer','Designer',OPT.tim)}${sel('editor','Editor',OPT.tim)}
       ${sel('talent1','Talent 1',OPT.tim)}${sel('talent2','Talent 2',OPT.tim)}
@@ -439,7 +465,22 @@ function openForm(item,k){
       <button type="submit" class="primary">${isNew?'Tambah':'Simpan'}</button>
     </div>
    </form>`;
-  modal.querySelectorAll('#segChips .cp').forEach(el=>el.onclick=()=>el.classList.toggle('on'));
+  modal.querySelectorAll('#segChips .cp:not(.add)').forEach(el=>el.onclick=()=>el.classList.toggle('on'));
+  modal.querySelector('#segAdd').onclick=()=>mini('Tambah Segmen',v=>{if(!v)return;
+    let ex=[...modal.querySelectorAll('#segChips .cp:not(.add)')].find(c=>c.dataset.v.toLowerCase()===v.toLowerCase());
+    if(!ex){addOption('segmen',v);ex=document.createElement('span');ex.className='cp';ex.dataset.v=v;ex.textContent=v;ex.onclick=()=>ex.classList.toggle('on');modal.querySelector('#segAdd').before(ex)}
+    ex.classList.add('on')});
+  modal.querySelectorAll('select[data-k]').forEach(s=>{if(!LISTOF[s.dataset.k])return;s.dataset.prev=s.value;
+    s.addEventListener('change',()=>{
+      if(s.value!=='__add'){s.dataset.prev=s.value;return}
+      const list=LISTOF[s.dataset.k];
+      mini('Tambah '+LISTNAME[list],v=>{
+        if(!v){s.value=s.dataset.prev||'';return}
+        addOption(list,v);
+        const val=opts(list).find(x=>x.toLowerCase()===v.toLowerCase())||v;
+        modal.querySelectorAll('select[data-k]').forEach(o=>{if(LISTOF[o.dataset.k]!==list)return;const keep=o===s?val:o.value;o.innerHTML=optHtml(o.dataset.k,opts(list),keep);o.value=keep;o.dataset.prev=keep});
+      });
+    })});
   const segs=modal.querySelectorAll('.seg button');
   const paint=()=>segs.forEach(b=>{const on=b.dataset.t===cur.type;b.classList.toggle('on',on);b.style.background=on?T[b.dataset.t].color:'';b.style.borderColor=on?T[b.dataset.t].color:''});
   segs.forEach(b=>b.onclick=()=>{cur.type=b.dataset.t;paint()});paint();
@@ -468,7 +509,7 @@ function openForm(item,k){
     if(bv)brandColor(bv);
     const rec={id:item?item.id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),title,type:cur.type,brand:modal.querySelector('#fBrand').value.trim(),date};
     EXTRA.forEach(k2=>rec[k2]='');
-    modal.querySelectorAll('[data-k]').forEach(el=>{rec[el.dataset.k]=el.value.trim()});
+    modal.querySelectorAll('[data-k]').forEach(el=>{const v=el.value.trim();rec[el.dataset.k]=v==='__add'?'':v});
     rec.segmen=[...modal.querySelectorAll('#segChips .cp.on')].map(el=>el.dataset.v).join(', ');
     if(isNew)state.items.push(rec);else state.items=state.items.map(x=>x.id===rec.id?rec:x);
     state.items.sort((a,b)=>a.date.localeCompare(b.date));
