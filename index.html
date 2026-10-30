@@ -423,7 +423,8 @@ function mountSwatches(box,sel,onPick){
     <div class="swc"><input type="color" aria-label="Pilih warna custom"><input class="hex" maxlength="7" placeholder="#RRGGBB" aria-label="Kode hex"><span>warna custom / hex</span></div>`;
   const pick=box.querySelector('input[type=color]'),hex=box.querySelector('.hex');
   const show=c=>{box.querySelectorAll('.sw i').forEach(i=>i.classList.toggle('on',i.dataset.c===c));pick.value=c;if(document.activeElement!==hex){hex.value=c.toUpperCase()};hex.classList.remove('bad')};
-  const set=c=>{c=normHex(c);if(!c)return;if(!box.querySelector(`.sw i[data-c="${c}"]`)){const i=document.createElement('i');i.dataset.c=c;i.title=c.toUpperCase();i.style.background=c;i.onclick=()=>set(c);box.querySelector('.sw').appendChild(i)}show(c);onPick(c)};
+  // pilih warna: cuma ganti pilihan, palet tidak ditambah (warna custom baru muncul di palet setelah disimpan ke brand)
+  const set=c=>{c=normHex(c);if(!c)return;show(c);onPick(c)};
   box.querySelectorAll('.sw i').forEach(i=>i.onclick=()=>set(i.dataset.c));
   pick.addEventListener('input',()=>set(pick.value));
   hex.addEventListener('input',()=>{const c=normHex(hex.value);hex.classList.toggle('bad',!!hex.value&&!c&&hex.value.replace('#','').length>=6);if(c&&hex.value.replace('#','').length===6)set(c)});
