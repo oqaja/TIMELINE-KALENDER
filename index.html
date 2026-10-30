@@ -84,6 +84,19 @@ input:focus,select:focus{outline:2px solid #111;outline-offset:-1px}
 .li .m{font-size:12px;color:var(--muted)}
 .empty{color:var(--muted);font-size:14px;padding:6px 0 10px}
 .err{color:#c62828;font-size:13px;margin-top:8px;min-height:1em}
+.modal.wide{max-width:760px}
+.sec{border-top:1px solid var(--line);margin-top:16px;padding-top:4px}
+.sec h3{font-family:var(--head);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin:10px 0 0;color:#111}
+.g{display:grid;grid-template-columns:repeat(3,1fr);gap:0 10px}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:0 10px}
+.up{display:grid;grid-template-columns:40px 1fr 1.2fr 2fr;gap:6px 8px;align-items:center;margin-top:8px}
+.up .h{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.up b{font-size:13px}
+.up select,.up input{padding:8px 8px;font-size:14px}
+textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;min-height:70px;resize:vertical}
+.modal select{appearance:auto}
+.ok{font-weight:800}
+@media(max-width:640px){.g{grid-template-columns:repeat(2,1fr)}.up{grid-template-columns:30px 1fr 1fr}.up .pid{grid-column:2/4}.up .h.pidh{display:none}}
 @media(max-width:640px){
   .wrap{padding:10px}
   .day{min-height:74px;padding:4px}
@@ -128,6 +141,19 @@ const TYPES=[
 const TAG={carousel:'CRS',short:'PDK',long:'PJG',story:'STR'};
 const PALETTE=['#2f6bff','#ff4d2e','#12a150','#9b3dff','#ff9f0a','#00a5b5','#e0338a','#7a5230','#5c6b00','#d6336c','#1d3f8f','#c9a400','#0f7a5c','#ff6f91','#444444'];
 const NOBRAND='#8a8a8a';
+// pilihan dropdown, sama dengan DASHBOARD KULTURAMA > KALENDER KONTEN
+const OPT={
+  akun:['SP','FP','NSP'],
+  segmen:['Bedah Sepatu','Detective Shoe','Tierlist/Rekomendasi','Liputan','Versus','Info A1','Stitch N/S','BAP','Cutting','Running','Outdoor','Basket','Kulit/Boots','Sneakers','Voli','Safety','Tactical'],
+  tim:['April','Robbi','Budi','Bimar','Yuli','Oky','Umi','Dimas','Herry','Prana'],
+  cek:['✅','❌'],
+  status:['Acc','Scheduled','Uploaded','Gagal'],
+  jam:Array.from({length:96},(_,i)=>String(Math.floor(i/4)).padStart(2,'0')+'.'+String(i%4*15).padStart(2,'0'))
+};
+const BRAND_LIST=['Startinnglane','Brodo','Unerd','Ortuseight','910','Mills','Weidenmann','Hijack/Akross','Ardiles','Patrobas','Azawear','DBL Media','Spenco','Gumi','Andre Anthony','Geoff Max','Anta','1489','Mario Minardi','Compass','Startstruck','Koku Footwear','Fordive','Humblezing','Erajaya','3Second','Kanky','UNKL347','Stayhoops','DSL','Bodypack','Kluk','Porto X','Outdoor pro & adv','Brooks','Eiger','Footstep','Gahalu','Hoka','Fixch','Ballerbro','Evil','Aerostreet','Portee',"Don's original",'Brisleblack','Barbatos','Piero','Erke','Topscore','Blibli','Guardbasket','Cartenz','Vionic Insole'];
+const PLAT=[['YT','YouTube'],['IG','Instagram'],['TT','TikTok'],['FB','Facebook']];
+const EXTRA=['akun','segmen','jamYT','jamIG','jamTT','jamFB','producer','writing','shooting','designer','editor','talent1','talent2','production','stYT','stIG','stTT','stFB','idYT','idIG','idTT','idFB','catatan','eventId'];
+const ALLK=['id','date','title','type','brand',...EXTRA];
 const T=Object.fromEntries(TYPES.map(t=>[t.id,t]));
 const BULAN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 const HARI=['SEN','SEL','RAB','KAM','JUM','SAB','MIN'];
@@ -170,7 +196,7 @@ if(location.hash.indexOf('#api=')===0){
 }
 if(inClaude)API='';
 let synced=null, queue=[], busy=false, remoteOk=false;
-const snap=st=>({items:Object.fromEntries(st.items.map(i=>[i.id,JSON.stringify([i.date,i.title,i.type,i.brand||''])])),colors:{...st.brandColors}});
+const snap=st=>({items:Object.fromEntries(st.items.map(i=>[i.id,JSON.stringify(ALLK.map(k=>i[k]==null?'':String(i[k])))])),colors:{...st.brandColors}});
 async function apiGet(){const r=await fetch(API,{cache:'no-store'});const d=await r.json();if(!d||!Array.isArray(d.items))throw new Error('bad');return d}
 async function apiPost(op){const r=await fetch(API,{method:'POST',body:JSON.stringify(op)});const d=await r.json();if(!d.ok)throw new Error(d.error||'gagal');return d}
 function diffOps(){
@@ -218,7 +244,7 @@ const todayKey=key(now.getFullYear(),now.getMonth(),now.getDate());
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function fmtDate(k){const [y,m,d]=k.split('-').map(Number);const dt=new Date(y,m-1,d);const h=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][dt.getDay()];return `${h}, ${d} ${BULAN[m-1]} ${y}`}
 const byDate=k=>state.items.filter(i=>i.date===k);
-const brands=()=>[...new Set(state.items.map(i=>i.brand).filter(Boolean))].sort();
+const brands=()=>[...new Set([...state.items.map(i=>i.brand).filter(Boolean),...BRAND_LIST])].sort((a,b)=>a.localeCompare(b));
 
 function renderFilters(){
   const prefix=`${viewY}-${pad(viewM+1)}`;
@@ -256,7 +282,7 @@ function render(){
     const items=byDate(k).filter(it=>!hidden.has(it.type));
     const cls=['day'];if(d.getMonth()!==viewM)cls.push('out');if(k===todayKey)cls.push('today');
     html+=`<div class="${cls.join(' ')}" data-k="${k}"><div class="num"><span>${d.getDate()}</span><span class="add">+</span></div>`
-      +items.slice(0,max).map(it=>`<div class="item" data-id="${it.id}" style="background:${colorOf(it)}" title="${(T[it.type]||TYPES[0]).name} · ${esc(it.title)}${it.brand?' — '+esc(it.brand):''}">${mode==='brand'?`<span class="tg">${TAG[it.type]||''}</span>`:''}${esc(it.title)}${it.brand&&mode!=='brand'?` <span class="b">· ${esc(it.brand)}</span>`:''}</div>`).join('')
+      +items.slice(0,max).map(it=>`<div class="item" data-id="${it.id}" style="background:${colorOf(it)}" title="${(T[it.type]||TYPES[0]).name} · ${esc(it.title)}${it.brand?' — '+esc(it.brand):''}">${mode==='brand'?`<span class="tg">${TAG[it.type]||''}</span>`:''}${it.production==='✅'?'✓ ':''}${esc(it.title)}${it.brand&&mode!=='brand'?` <span class="b">· ${esc(it.brand)}</span>`:''}</div>`).join('')
       +(items.length>max?`<div class="more">+${items.length-max} lagi</div>`:'')
       +`</div>`;
   }
@@ -331,14 +357,15 @@ function toast(msg,undo){
 }
 
 const back=document.getElementById('back'), modal=document.getElementById('modal');
-function close(){back.classList.remove('show')}
+function close(){back.classList.remove('show');modal.classList.remove('wide')}
 back.onclick=e=>{if(e.target===back)close()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
 
 function openDay(k){
+  modal.classList.remove('wide');
   const items=byDate(k);
   modal.innerHTML=`<h2>${fmtDate(k)}</h2><div class="sub">${items.length} konten</div>
-   <div class="list">${items.map(it=>`<div class="li" data-id="${it.id}"><span class="dot" style="background:${colorOf(it)}"></span><div><div class="t">${esc(it.title)}</div><div class="m">${(T[it.type]||TYPES[0]).name}${it.brand?' · '+esc(it.brand):''}</div></div></div>`).join('')}</div>
+   <div class="list">${items.map(it=>`<div class="li" data-id="${it.id}"><span class="dot" style="background:${colorOf(it)}"></span><div><div class="t">${esc(it.title)}</div><div class="m">${[(T[it.type]||TYPES[0]).name,it.brand,it.akun,it.segmen,it.producer&&('Prod: '+it.producer),it.production==='✅'&&'Production ✅'].filter(Boolean).map(esc).join(' · ')}</div></div></div>`).join('')}</div>
    <div class="row"><button id="cl">Tutup</button><span class="sp"></span><button class="primary" id="ad">+ Tambah konten</button></div>`;
   modal.querySelectorAll('.li').forEach(el=>el.onclick=()=>openForm(state.items.find(x=>x.id===el.dataset.id)));
   modal.querySelector('#cl').onclick=close;
@@ -348,6 +375,7 @@ function openDay(k){
 
 function swatches(sel){return `<div class="sw">${PALETTE.map(c=>`<i data-c="${c}" style="background:${c}" class="${c===sel?'on':''}"></i>`).join('')}</div>`}
 function openBrandColor(name){
+  modal.classList.remove('wide');
   let sel=brandColor(name);
   modal.innerHTML=`<h2>Warna ${esc(name)}</h2><div class="sub">Berlaku buat semua konten brand ini</div>${swatches(sel)}
    <div class="row"><span class="sp"></span><button id="cl">Batal</button><button class="primary" id="ok">Simpan</button></div>`;
@@ -359,6 +387,10 @@ function openBrandColor(name){
 function openForm(item,k){
   const isNew=!item;
   const cur=item?{...item}:{title:'',type:'carousel',brand:'',date:k};
+  const sel=(key,label,opts,bare)=>{const v=cur[key]||'';const list=v&&!opts.includes(v)?[v,...opts]:opts;
+    const h=`<select data-k="${key}"${bare?` aria-label="${key}"`:''}><option value="">—</option>${list.map(o=>`<option${o===v?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
+    return bare?h:`<div><label>${label}</label>${h}</div>`};
+  modal.classList.add('wide');
   modal.innerHTML=`<h2>${isNew?'Tambah Konten':'Edit Konten'}</h2><div class="sub">${fmtDate(cur.date)}</div>
    <form id="f">
     <label for="fTitle">Judul Konten</label>
@@ -369,8 +401,26 @@ function openForm(item,k){
     <input id="fBrand" list="brandList" value="${esc(cur.brand)}" placeholder="kosongin kalau bukan brand tap in" autocomplete="off">
     <div id="bcWrap" style="margin-top:8px"></div>
     <datalist id="brandList">${brands().map(b=>`<option value="${esc(b)}">`).join('')}</datalist>
-    <label for="fDate">Tanggal</label>
-    <input id="fDate" type="date" value="${cur.date}">
+    <div class="g">
+      <div><label for="fDate">Tanggal</label><input id="fDate" type="date" value="${cur.date}"></div>
+      ${sel('akun','Akun',OPT.akun)}
+      ${sel('segmen','Segmen',OPT.segmen)}
+    </div>
+    <div class="sec"><h3>Tim</h3><div class="g">
+      ${sel('producer','Producer',OPT.tim)}${sel('designer','Designer',OPT.tim)}${sel('editor','Editor',OPT.tim)}
+      ${sel('talent1','Talent 1',OPT.tim)}${sel('talent2','Talent 2',OPT.tim)}
+    </div></div>
+    <div class="sec"><h3>Progres</h3><div class="g">
+      ${sel('writing','Writing',OPT.cek)}${sel('shooting','Shooting',OPT.cek)}${sel('production','Production',OPT.cek)}
+    </div></div>
+    <div class="sec"><h3>Upload</h3><div class="up">
+      <span></span><span class="h">Jam up</span><span class="h">Status</span><span class="h pidh">Post ID</span>
+      ${PLAT.map(([c,n])=>`<b title="${n}">${c}</b>${sel('jam'+c,'',OPT.jam,true)}${sel('st'+c,'',OPT.status,true)}<input class="pid" data-k="id${c}" value="${esc(cur['id'+c]||'')}" placeholder="Post ID ${c}" autocomplete="off">`).join('')}
+    </div></div>
+    <div class="sec"><h3>Lainnya</h3>
+      <label for="fCat">Catatan</label><textarea id="fCat" data-k="catatan">${esc(cur.catatan||'')}</textarea>
+      <label>Event ID</label><input data-k="eventId" value="${esc(cur.eventId||'')}" autocomplete="off">
+    </div>
     <div class="err" id="fErr"></div>
     <div class="row">
       ${isNew?'':'<button type="button" class="danger" id="del">Hapus</button>'}
@@ -406,6 +456,8 @@ function openForm(item,k){
     if(bv&&pickColor)state.brandColors[bkey(bv)]=pickColor;
     if(bv)brandColor(bv);
     const rec={id:item?item.id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),title,type:cur.type,brand:modal.querySelector('#fBrand').value.trim(),date};
+    EXTRA.forEach(k2=>rec[k2]='');
+    modal.querySelectorAll('[data-k]').forEach(el=>{rec[el.dataset.k]=el.value.trim()});
     if(isNew)state.items.push(rec);else state.items=state.items.map(x=>x.id===rec.id?rec:x);
     state.items.sort((a,b)=>a.date.localeCompare(b.date));
     save();close();render();
@@ -473,6 +525,7 @@ document.getElementById('todayBtn').onclick=()=>{viewY=now.getFullYear();viewM=n
 addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(render,150)});
 
 function openSheet(){
+  modal.classList.remove('wide');
   modal.innerHTML=`<h2>Google Sheet</h2><div class="sub">Tempel URL Web App dari Apps Script (berakhiran <b>/exec</b>) biar data sinkron di semua device.</div>
    <label for="apiIn">URL Web App</label><input id="apiIn" value="${esc(API)}" placeholder="https://script.google.com/macros/s/…/exec">
    <div class="err" id="apiErr"></div>

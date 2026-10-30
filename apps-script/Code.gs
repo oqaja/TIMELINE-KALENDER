@@ -2,19 +2,52 @@
  * TIMELINE KALENDER — penghubung Google Sheet <-> kalender (GitHub Pages)
  * Pasang di: Google Sheet > Ekstensi > Apps Script, lalu Deploy sebagai Web App.
  *
- * Tab KONTEN : ID | TANGGAL | JUDUL KONTEN | JENIS KONTEN | BRAND TAP IN | DIUBAH
+ * Kolom dibaca berdasarkan NAMA HEADER di baris 1 (urutan kolom bebas).
+ * Tab KONTEN : ID | TANGGAL | JUDUL KONTEN | JENIS KONTEN | BRAND TAP IN | AKUN | SEGMEN | ... | DIUBAH
  * Tab BRAND  : BRAND | WARNA
  */
 const TZ = 'Asia/Jakarta';
 const JENIS = { carousel: 'Carousel', short: 'Vid.Pendek', long: 'Vid.Panjang', story: 'Story' };
 
+// key di kalender  ->  nama header di sheet
+const FIELDS = {
+  id: 'ID', date: 'TANGGAL', title: 'JUDUL KONTEN', type: 'JENIS KONTEN', brand: 'BRAND TAP IN',
+  akun: 'AKUN', segmen: 'SEGMEN',
+  jamYT: 'JAM UP YT', jamIG: 'JAM UP IG', jamTT: 'JAM UP TT', jamFB: 'JAM UP FB',
+  producer: 'PRODUCER', writing: 'WRITING', shooting: 'SHOOTING', designer: 'DESIGNER', editor: 'EDITOR',
+  talent1: 'TALENT 1', talent2: 'TALENT 2', production: 'PRODUCTION',
+  stYT: 'STATUS YT', stIG: 'STATUS IG', stTT: 'STATUS TT', stFB: 'STATUS FB',
+  idYT: 'POST ID YT', idIG: 'POST ID IG', idTT: 'POST ID TT', idFB: 'POST ID FB',
+  catatan: 'CATATAN', eventId: 'EVENT ID', updated: 'DIUBAH'
+};
+
 function sh_(name) { return SpreadsheetApp.getActive().getSheetByName(name); }
 function out_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
+// pastikan semua header ada (yang belum ada ditambah di kanan), kembalikan {key: kolom (1-based)}
+function cols_() {
+  const ks = sh_('KONTEN');
+  let lastCol = Math.max(ks.getLastColumn(), 1);
+  const head = ks.getRange(1, 1, 1, lastCol).getDisplayValues()[0].map(function (h) { return String(h).trim().toUpperCase(); });
+  const map = {};
+  Object.keys(FIELDS).forEach(function (k) {
+    let i = head.indexOf(FIELDS[k]);
+    if (i < 0) {
+      if (ks.getMaxColumns() <= lastCol) ks.insertColumnsAfter(lastCol, 1);
+      lastCol++;
+      ks.getRange(1, lastCol).setValue(FIELDS[k]);
+      head.push(FIELDS[k]);
+      i = lastCol - 1;
+    }
+    map[k] = i + 1;
+  });
+  map._width = lastCol;
+  return map;
+}
 function typeId_(v) {
   const s = String(v || '').toLowerCase().replace(/[^a-z]/g, '');
-  if (s.indexOf('carousel') === 0 || s === 'crs') return 'carousel';
+  if (s.indexOf('carousel') === 0 || s === 'crs' || s === 'desain') return 'carousel';
   if (s.indexOf('story') === 0 || s === 'str') return 'story';
   if (s.indexOf('panjang') >= 0 || s === 'pjg' || s === 'long') return 'long';
   if (s.indexOf('pendek') >= 0 || s === 'pdk' || s === 'short') return 'short';
@@ -33,51 +66,60 @@ function newId_() { return Date.now().toString(36) + Math.random().toString(36).
 
 function read_() {
   const ks = sh_('KONTEN'), bs = sh_('BRAND');
+  const c = cols_();
   const items = [];
   const last = ks.getLastRow();
   if (last > 1) {
-    const vals = ks.getRange(2, 1, last - 1, 6).getValues();
-    vals.forEach(function (r, i) {
-      const title = String(r[2] || '').trim();
-      const date = date_(r[1]);
+    const rng = ks.getRange(2, 1, last - 1, c._width);
+    const raw = rng.getValues(), disp = rng.getDisplayValues();
+    disp.forEach(function (r, i) {
+      const title = String(r[c.title - 1] || '').trim();
+      const date = date_(raw[i][c.date - 1]);
       if (!title || !date) return;
-      let id = String(r[0] || '').trim();
-      if (!id) { id = newId_(); ks.getRange(i + 2, 1).setValue(id); } // baris yang diisi manual di sheet
-      items.push({ id: id, date: date, title: title, type: typeId_(r[3]), brand: String(r[4] || '').trim() });
+      const it = {};
+      Object.keys(FIELDS).forEach(function (k) { if (k !== 'updated') it[k] = String(r[c[k] - 1] || '').trim(); });
+      it.title = title; it.date = date; it.type = typeId_(it.type);
+      if (!it.id) { it.id = newId_(); ks.getRange(i + 2, c.id).setValue(it.id); } // baris yang diisi manual di sheet
+      items.push(it);
     });
   }
   const brandColors = {};
   const bl = bs.getLastRow();
   if (bl > 1) {
     bs.getRange(2, 1, bl - 1, 2).getValues().forEach(function (r) {
-      const b = String(r[0] || '').trim().toLowerCase(), c = String(r[1] || '').trim();
-      if (b && /^#[0-9a-f]{6}$/i.test(c)) brandColors[b] = c;
+      const b = String(r[0] || '').trim().toLowerCase(), col = String(r[1] || '').trim();
+      if (b && /^#[0-9a-f]{6}$/i.test(col)) brandColors[b] = col;
     });
   }
   items.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
   return { items: items, brandColors: brandColors };
 }
 
-function rowOf_(id) {
+function rowOf_(id, c) {
   const ks = sh_('KONTEN'), last = ks.getLastRow();
   if (last < 2) return -1;
-  const ids = ks.getRange(2, 1, last - 1, 1).getValues();
+  const ids = ks.getRange(2, c.id, last - 1, 1).getDisplayValues();
   for (let i = 0; i < ids.length; i++) if (String(ids[i][0]) === String(id)) return i + 2;
   return -1;
 }
-function rowData_(it) {
-  return [it.id, it.date, it.title, JENIS[it.type] || 'Carousel', it.brand || '',
-    Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')];
-}
 function upsert_(it) {
   if (!it || !it.id || !it.title || !it.date) return;
-  const ks = sh_('KONTEN');
-  const r = rowOf_(it.id);
+  const ks = sh_('KONTEN'), c = cols_();
+  const r = rowOf_(it.id, c);
   const row = r > 0 ? r : ks.getLastRow() + 1;
-  ks.getRange(row, 2).setNumberFormat('@');
-  ks.getRange(row, 1, 1, 6).setValues([rowData_(it)]);
+  const range = ks.getRange(row, 1, 1, c._width);
+  const vals = r > 0 ? range.getValues()[0] : new Array(c._width).fill('');
+  Object.keys(FIELDS).forEach(function (k) {
+    let v;
+    if (k === 'updated') v = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
+    else if (k === 'type') v = JENIS[it.type] || 'Carousel';
+    else v = it[k] == null ? '' : String(it[k]);
+    vals[c[k] - 1] = v;
+  });
+  range.setNumberFormat('@'); // POST ID panjang jangan jadi angka
+  range.setValues([vals]);
 }
-function remove_(id) { const r = rowOf_(id); if (r > 0) sh_('KONTEN').deleteRow(r); }
+function remove_(id) { const c = cols_(); const r = rowOf_(id, c); if (r > 0) sh_('KONTEN').deleteRow(r); }
 function color_(brand, color) {
   const b = String(brand || '').trim().toLowerCase();
   if (!b || !/^#[0-9a-f]{6}$/i.test(color)) return;

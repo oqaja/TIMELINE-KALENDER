@@ -2,7 +2,7 @@
 
 Kalender produksi konten. Klik tanggal untuk menambah konten, klik konten untuk edit/hapus, dan drag & drop konten untuk memindahkan tanggal.
 
-- Field: Judul Konten, Jenis Konten (Carousel, Vid.Pendek, Vid.Panjang, Story), Brand Tap In
+- Field: semua kolom KALENDER KONTEN (DASHBOARD KULTURAMA) — Judul, Jenis, Brand Tap In, Akun, Segmen, Jam Up & Status & Post ID per platform, Producer, Designer, Editor, Talent, Writing/Shooting/Production, Catatan, Event ID
 - Warna per brand tap in (bisa diganti), atau warna per jenis konten
 - Satu file `index.html`, tanpa build
 
