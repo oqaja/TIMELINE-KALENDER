@@ -15,7 +15,21 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body)}
-.wrap{max-width:1100px;margin:0 auto;padding:16px}
+.wrap{max-width:1340px;margin:0 auto;padding:16px}
+.main{display:flex;gap:14px;align-items:flex-start}
+.main .grid{flex:1;min-width:0}
+.side{width:220px;flex:none;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 10px;position:sticky;top:12px}
+.side h4{font-family:var(--head);font-size:12px;letter-spacing:1px;text-transform:uppercase;margin:2px 6px 2px}
+.side .sub2{font-size:11px;color:var(--muted);margin:0 6px 8px}
+.bi{display:flex;align-items:center;gap:8px;padding:7px 6px;border-radius:9px;font-size:13px;font-weight:600}
+.bi.brand{cursor:pointer}
+.bi.brand:hover{background:#f3f2ee}
+.bi .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bi .count{font-weight:600}
+.bi .ed{font-size:11px;color:var(--muted);opacity:0}
+.bi.brand:hover .ed{opacity:1}
+.side .none{font-size:13px;color:var(--muted);padding:4px 6px}
+@media(max-width:900px){.main{flex-direction:column;align-items:stretch}.side{width:100%;position:static}.bi .ed{opacity:1}}
 header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px}
 h1{font-family:var(--head);font-weight:800;font-size:20px;letter-spacing:.5px;margin:0;text-transform:uppercase}
 h1 small{display:block;font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0}
@@ -132,8 +146,10 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
     </div>
   </header>
   <div class="bar" id="filters"></div>
-  <div class="bar brands" id="brandBar"></div>
-  <div class="grid" id="grid"></div>
+  <div class="main">
+    <div class="grid" id="grid"></div>
+    <aside class="side" id="brandBar"></aside>
+  </div>
 </div>
 
 <div class="back" id="back">
@@ -299,10 +315,11 @@ function renderFilters(){
   bb.style.display='';
   const names={};inMonth.forEach(i=>{if(i.brand){const k=bkey(i.brand);names[k]=names[k]||{name:i.brand,n:0};names[k].n++}});
   const noB=inMonth.filter(i=>!i.brand).length;
-  bb.innerHTML=Object.values(names).sort((a,b)=>b.n-a.n).map(o=>`<span class="chip-f brand" data-b="${esc(o.name)}"><span class="dot" style="background:${brandColor(o.name)}"></span>${esc(o.name)} <span class="count">${o.n}</span></span>`).join('')
-    +(noB?`<span class="chip-f" style="cursor:default"><span class="dot" style="background:${NOBRAND}"></span>Non brand <span class="count">${noB}</span></span>`:'')
-    +(!inMonth.length?'<span class="count" style="font-size:13px">Belum ada konten bulan ini</span>':'');
-  bb.querySelectorAll('.chip-f.brand').forEach(el=>el.onclick=()=>openBrandColor(el.dataset.b));
+  bb.innerHTML=`<h4>Brand Tap In</h4><div class="sub2">${BULAN[viewM]} ${viewY} · klik buat ganti warna</div>`
+    +Object.values(names).sort((a,b)=>b.n-a.n).map(o=>`<div class="bi brand" data-b="${esc(o.name)}" title="Ganti warna ${esc(o.name)}"><span class="dot" style="background:${brandColor(o.name)}"></span><span class="nm">${esc(o.name)}</span><span class="count">${o.n}</span><span class="ed">✎</span></div>`).join('')
+    +(noB?`<div class="bi"><span class="dot" style="background:${NOBRAND}"></span><span class="nm">Non brand</span><span class="count">${noB}</span><span class="ed" style="visibility:hidden">✎</span></div>`:'')
+    +(!inMonth.length?'<div class="none">Belum ada konten bulan ini</div>':'');
+  bb.querySelectorAll('.bi.brand').forEach(el=>el.onclick=()=>openBrandColor(el.dataset.b));
 }
 
 function render(){
@@ -569,8 +586,10 @@ function cleanBody(){
     </div>
   </header>
   <div class="bar" id="filters"></div>
-  <div class="bar brands" id="brandBar"></div>
-  <div class="grid" id="grid"></div>
+  <div class="main">
+    <div class="grid" id="grid"></div>
+    <aside class="side" id="brandBar"></aside>
+  </div>
 </div>
 
 <div class="back" id="back">
