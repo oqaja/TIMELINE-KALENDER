@@ -73,6 +73,11 @@ input:focus,select:focus{outline:2px solid #111;outline-offset:-1px}
 .sw{display:flex;flex-wrap:wrap;gap:6px}
 .sw i{width:28px;height:28px;border-radius:8px;cursor:pointer;border:2px solid transparent;display:block}
 .sw i.on{border-color:#111;box-shadow:inset 0 0 0 2px #fff}
+.swc{display:flex;align-items:center;gap:8px;margin-top:8px}
+.swc input[type=color]{width:40px;height:34px;padding:2px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;flex:none}
+.swc .hex{width:120px;font-family:ui-monospace,Menlo,monospace;font-size:14px;padding:7px 10px;text-transform:uppercase}
+.swc .hex.bad{border-color:#c62828;outline-color:#c62828}
+.swc span{font-size:12px;color:var(--muted)}
 .seg button{padding:10px 4px;font-size:13px}
 .seg button.on{color:#fff}
 .row{display:flex;gap:8px;margin-top:18px}
@@ -203,6 +208,8 @@ function brandColor(b){
   }
   return state.brandColors[k];
 }
+const textOn=c=>{const m=/^#([0-9a-f]{6})$/i.exec(c||'');if(!m)return '#fff';const n=parseInt(m[1],16),f=v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)};
+  const L=.2126*f(n>>16&255)+.7152*f(n>>8&255)+.0722*f(n&255);return L>.45?'#111':'#fff'};
 const colorOf=it=>mode==='brand'?brandColor(it.brand):(T[it.type]||TYPES[0]).color;
 
 let artifact=null, canPublish=false;
@@ -314,7 +321,7 @@ function render(){
     const items=byDate(k).filter(it=>!hidden.has(it.type));
     const cls=['day'];if(d.getMonth()!==viewM)cls.push('out');if(k===todayKey)cls.push('today');
     html+=`<div class="${cls.join(' ')}" data-k="${k}"><div class="num"><span>${d.getDate()}</span><span class="add">+</span></div>`
-      +items.slice(0,max).map(it=>`<div class="item" data-id="${it.id}" style="background:${colorOf(it)}" title="${(T[it.type]||TYPES[0]).name} · ${esc(it.title)}${it.brand?' — '+esc(it.brand):''}">${mode==='brand'?`<span class="tg">${TAG[it.type]||''}</span>`:''}${it.production==='✅'?'✓ ':''}${esc(it.title)}${it.brand&&mode!=='brand'?` <span class="b">· ${esc(it.brand)}</span>`:''}</div>`).join('')
+      +items.slice(0,max).map(it=>`<div class="item" data-id="${it.id}" style="background:${colorOf(it)};color:${textOn(colorOf(it))}" title="${(T[it.type]||TYPES[0]).name} · ${esc(it.title)}${it.brand?' — '+esc(it.brand):''}">${mode==='brand'?`<span class="tg">${TAG[it.type]||''}</span>`:''}${it.production==='✅'?'✓ ':''}${esc(it.title)}${it.brand&&mode!=='brand'?` <span class="b">· ${esc(it.brand)}</span>`:''}</div>`).join('')
       +(items.length>max?`<div class="more">+${items.length-max} lagi</div>`:'')
       +`</div>`;
   }
@@ -405,13 +412,29 @@ function openDay(k){
   back.classList.add('show');
 }
 
-function swatches(sel){return `<div class="sw">${PALETTE.map(c=>`<i data-c="${c}" style="background:${c}" class="${c===sel?'on':''}"></i>`).join('')}</div>`}
+const normHex=v=>{v=String(v||'').trim().replace(/^#?/,'#');if(/^#[0-9a-f]{3}$/i.test(v))v='#'+v.slice(1).split('').map(x=>x+x).join('');return /^#[0-9a-f]{6}$/i.test(v)?v.toLowerCase():null};
+// pilihan warna: palet + warna custom yang sudah dipakai + color picker & kolom hex
+function mountSwatches(box,sel,onPick){
+  sel=normHex(sel)||PALETTE[0];
+  const used=[...new Set(Object.values(state.brandColors).map(normHex).filter(c=>c&&!PALETTE.includes(c)))];
+  const all=[...PALETTE,...used];if(!all.includes(sel))all.push(sel);
+  box.innerHTML=`<div class="sw">${all.map(c=>`<i data-c="${c}" title="${c.toUpperCase()}" style="background:${c}"></i>`).join('')}</div>
+    <div class="swc"><input type="color" aria-label="Pilih warna custom"><input class="hex" maxlength="7" placeholder="#RRGGBB" aria-label="Kode hex"><span>warna custom / hex</span></div>`;
+  const pick=box.querySelector('input[type=color]'),hex=box.querySelector('.hex');
+  const show=c=>{box.querySelectorAll('.sw i').forEach(i=>i.classList.toggle('on',i.dataset.c===c));pick.value=c;if(document.activeElement!==hex){hex.value=c.toUpperCase()};hex.classList.remove('bad')};
+  const set=c=>{c=normHex(c);if(!c)return;if(!box.querySelector(`.sw i[data-c="${c}"]`)){const i=document.createElement('i');i.dataset.c=c;i.title=c.toUpperCase();i.style.background=c;i.onclick=()=>set(c);box.querySelector('.sw').appendChild(i)}show(c);onPick(c)};
+  box.querySelectorAll('.sw i').forEach(i=>i.onclick=()=>set(i.dataset.c));
+  pick.addEventListener('input',()=>set(pick.value));
+  hex.addEventListener('input',()=>{const c=normHex(hex.value);hex.classList.toggle('bad',!!hex.value&&!c&&hex.value.replace('#','').length>=6);if(c&&hex.value.replace('#','').length===6)set(c)});
+  hex.addEventListener('blur',()=>{const c=normHex(hex.value);if(c)set(c);else show(normHex(pick.value))});
+  show(sel);
+}
 function openBrandColor(name){
   modal.classList.remove('wide');
   let sel=brandColor(name);
-  modal.innerHTML=`<h2>Warna ${esc(name)}</h2><div class="sub">Berlaku buat semua konten brand ini</div>${swatches(sel)}
+  modal.innerHTML=`<h2>Warna ${esc(name)}</h2><div class="sub">Berlaku buat semua konten brand ini</div><div id="swBox"></div>
    <div class="row"><span class="sp"></span><button id="cl">Batal</button><button class="primary" id="ok">Simpan</button></div>`;
-  modal.querySelectorAll('.sw i').forEach(el=>el.onclick=()=>{sel=el.dataset.c;modal.querySelectorAll('.sw i').forEach(x=>x.classList.toggle('on',x===el))});
+  mountSwatches(modal.querySelector('#swBox'),sel,c=>sel=c);
   modal.querySelector('#cl').onclick=close;
   modal.querySelector('#ok').onclick=()=>{state.brandColors[bkey(name)]=sel;save();close();render()};
   back.classList.add('show');
@@ -489,8 +512,7 @@ function openForm(item,k){
   const paintBC=()=>{const v=bIn.value.trim();if(!v){bcWrap.innerHTML='';pickColor=null;return}
     const k=bkey(v);const existing=state.brandColors[k];
     const sel=pickColor||existing||PALETTE.find(c=>!new Set(Object.values(state.brandColors)).has(c))||PALETTE[0];
-    bcWrap.innerHTML=swatches(sel);
-    bcWrap.querySelectorAll('i').forEach(el=>el.onclick=()=>{pickColor=el.dataset.c;paintBC()});};
+    mountSwatches(bcWrap,sel,c=>pickColor=c);};
   bIn.addEventListener('input',()=>{pickColor=null;paintBC()});paintBC();
   modal.querySelector('#cancel').onclick=close;
   const del=modal.querySelector('#del');
