@@ -202,7 +202,7 @@ const EXTRA=['cover','akun','segmen','jamYT','jamIG','jamTT','jamFB','producer',
 const ALLK=['id','date','title','type','brand',...EXTRA];
 // daftar yang bisa ditambah + field yang memakainya
 const LISTOF={akun:'akun',producer:'tim',designer:'tim',editor:'tim',talent1:'tim',talent2:'tim',stYT:'status',stIG:'status',stTT:'status',stFB:'status'};
-const LISTNAME={akun:'Akun',segmen:'Segmen',tim:'Orang / Tim',status:'Status'};
+const LISTNAME={akun:'Akun',segmen:'Segmen',tim:'Orang / Tim',status:'Status',brand:'Brand Tap In'};
 const opts=l=>{const base=l==='tim'?OPT.tim:OPT[l]||[];const fromSheet=(state.lists&&state.lists[l])||[];const add=(state.options&&state.options[l])||[];return [...new Set([...base,...fromSheet,...add])]};
 function addOption(list,value){
   value=String(value||'').trim();if(!value)return false;
@@ -388,7 +388,7 @@ const todayKey=key(now.getFullYear(),now.getMonth(),now.getDate());
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function fmtDate(k){const [y,m,d]=k.split('-').map(Number);const dt=new Date(y,m-1,d);const h=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][dt.getDay()];return `${h}, ${d} ${BULAN[m-1]} ${y}`}
 const byDate=k=>state.items.filter(i=>i.date===k);
-const brands=()=>[...new Set([...state.items.flatMap(i=>String(i.brand||'').split(/\s*,\s*/)).filter(Boolean),...BRAND_LIST,...((state.lists&&state.lists.brand)||[])])].sort((a,b)=>a.localeCompare(b));
+const brands=()=>[...new Set([...state.items.flatMap(i=>String(i.brand||'').split(/\s*,\s*/)).filter(Boolean),...BRAND_LIST,...((state.lists&&state.lists.brand)||[]),...((state.options&&state.options.brand)||[])])].sort((a,b)=>a.localeCompare(b,'id',{sensitivity:'base'}));
 
 function renderFilters(){
   const prefix=`${viewY}-${pad(viewM+1)}`;
@@ -552,6 +552,8 @@ function openForm(item,k){
   const isNew=!item;
   const cur=item?{...item}:{title:'',type:'carousel',brand:'',date:k,src:API?'kk':'pv'};
   if(!cur.src)cur.src='pv';
+  const brandOpts=v=>{const l=brands();if(v&&!l.includes(v))l.unshift(v);
+    return `<option value="">— Bukan brand tap in</option>${l.map(b=>`<option${b===v?' selected':''}>${esc(b)}</option>`).join('')}<option value="__add">+ Tambah brand baru…</option>`};
   const optHtml=(key,o,v)=>{const list=v&&!o.includes(v)?[v,...o]:o;return `<option value="">—</option>${list.map(x=>`<option${x===v?' selected':''}>${esc(x)}</option>`).join('')}${LISTOF[key]?'<option value="__add">+ Tambah baru…</option>':''}`};
   const sel=(key,label,o,bare)=>{const v=cur[key]||'';if(LISTOF[key])o=opts(LISTOF[key]);
     const h=`<select data-k="${key}"${bare?` aria-label="${key}"`:''}>${optHtml(key,o,v)}</select>`;
@@ -568,9 +570,8 @@ function openForm(item,k){
     <label>Jenis Konten</label>
     <div class="seg">${TYPES.map(t=>`<button type="button" data-t="${t.id}">${t.name}</button>`).join('')}</div>
     <label for="fBrand">Brand Tap In</label>
-    <input id="fBrand" list="brandList" value="${esc(cur.brand)}" placeholder="kosongin kalau bukan brand tap in" autocomplete="off">
+    <select id="fBrand">${brandOpts(cur.brand)}</select>
     <div id="bcWrap" style="margin-top:8px"></div>
-    <datalist id="brandList">${brands().map(b=>`<option value="${esc(b)}">`).join('')}</datalist>
     <div class="g">
       <div><label for="fDate">Tanggal</label><input id="fDate" type="date" value="${cur.date}"></div>
       ${sel('akun','Akun',OPT.akun)}
@@ -629,7 +630,18 @@ function openForm(item,k){
     const k=bkey(v);const existing=state.brandColors[k];
     const sel=pickColor||existing||PALETTE.find(c=>!new Set(Object.values(state.brandColors)).has(c))||PALETTE[0];
     mountSwatches(bcWrap,sel,c=>pickColor=c);};
-  bIn.addEventListener('input',()=>{pickColor=null;paintBC()});paintBC();
+  bIn.dataset.prev=bIn.value;
+  bIn.addEventListener('change',()=>{
+    if(bIn.value!=='__add'){bIn.dataset.prev=bIn.value;pickColor=null;paintBC();return}
+    bIn.value=bIn.dataset.prev||'';
+    mini('Tambah Brand Tap In',v=>{if(!v)return;
+      const ex=brands().find(b=>b.toLowerCase()===v.toLowerCase());
+      if(!ex)addOption('brand',v);
+      const val=ex||v;bIn.innerHTML=brandOpts(val);bIn.value=val;bIn.dataset.prev=val;pickColor=null;paintBC();
+      if(!ex&&cur.src==='kk')toast(`"${val}" ditambah. Di KALENDER KONTEN bakal ditandain merah sampai brand ini masuk dropdown sheet.`);
+    });
+  });
+  paintBC();
   modal.querySelector('#cancel').onclick=close;
   const del=modal.querySelector('#del');
   if(del){let armed=false;del.onclick=()=>{
@@ -642,6 +654,7 @@ function openForm(item,k){
     const date=modal.querySelector('#fDate').value;
     if(!title){modal.querySelector('#fErr').textContent='Judul konten wajib diisi.';return}
     if(!date){modal.querySelector('#fErr').textContent='Tanggal wajib diisi.';return}
+    if(modal.querySelector('#fBrand').value==='__add')modal.querySelector('#fBrand').value='';
     const bv=modal.querySelector('#fBrand').value.trim();
     if(bv&&pickColor)state.brandColors[bkey(bv)]=pickColor;
     if(bv)brandColor(bv);
