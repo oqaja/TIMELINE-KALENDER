@@ -211,6 +211,25 @@ function addOption(list,value){
   if(API){queue.push({op:'option',list,value});flush()}
   return true;
 }
+function pinDialog(onDone){
+  const w=document.createElement('div');w.className='back show';w.style.zIndex=70;
+  w.innerHTML=`<div class="modal" style="max-width:340px"><h2>Masukin PIN</h2><div class="sub">Buat nambah, ngedit, atau ngehapus konten. Cukup sekali di browser ini.</div>
+    <input id="pinIn" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN"><div class="err" id="pinErr"></div>
+    <div class="row"><span class="sp"></span><button id="pinNo">Batal</button><button class="primary" id="pinOk">Lanjut</button></div></div>`;
+  document.body.appendChild(w);
+  const inp=w.querySelector('#pinIn'),err=w.querySelector('#pinErr'),ok=w.querySelector('#pinOk');
+  const finish=v=>{w.remove();onDone(v)};
+  const go=async()=>{const v=inp.value.trim();if(!v){err.textContent='Isi PIN-nya dulu.';return}
+    ok.disabled=true;ok.textContent='Ngecek…';
+    try{const r=await fetch(API,{method:'POST',body:JSON.stringify({op:'checkPin',pin:v})});const d=await r.json();
+      if(d.ok)return finish(v);
+      const m=String(d.error||'');err.textContent=/pin_wrong/.test(m)?'PIN salah.':/pin_locked/.test(m)?'Kebanyakan salah, tunggu 15 menit.':/pin_not_set/.test(m)?'PIN belum diatur di Apps Script.':'Gagal ngecek PIN.';
+    }catch(e){err.textContent='Gagal nyambung, cek internet.'}
+    ok.disabled=false;ok.textContent='Lanjut'};
+  ok.onclick=go;w.querySelector('#pinNo').onclick=()=>finish(null);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();go()}if(e.key==='Escape'){e.stopPropagation();finish(null)}});
+  setTimeout(()=>inp.focus(),30);
+}
 function mini(title,onOk){
   const w=document.createElement('div');w.className='back show';w.style.zIndex=60;
   w.innerHTML=`<div class="modal" style="max-width:360px"><h2>${esc(title)}</h2><input id="miniIn" autocomplete="off" placeholder="Ketik nama baru"><div class="err" id="miniErr"></div><div class="row"><span class="sp"></span><button id="miniNo">Batal</button><button class="primary" id="miniOk">Tambah</button></div></div>`;
@@ -256,9 +275,12 @@ function setStatus(t){const s=statusEl();if(s)s.textContent=t}
 // Inside Claude the data embedded in the page wins (it syncs across devices).
 const inClaude=!!(window.claude&&window.claude.use);
 // ---- Google Sheet sync (GitHub Pages version)
-const SHEET_API='';               // URL Web App Apps Script (…/exec)
+// URL Web App Apps Script — boleh publik: tanpa PIN, script cuma bisa dibaca (perubahan ditolak)
+const SHEET_API='https://script.google.com/macros/s/AKfycbzUB9lNskcj27yuAs2rG4GbmMlV4OseKd0RpNj_9XXDw6_5TRwpackXX_DxKLV-ypyEPw/exec';
 const SHEET_URL='https://docs.google.com/spreadsheets/d/1SITTxYVeoH1cX9lG6EicitGIr5DBKwy7pStQu5KPFk4/edit';
 let API='';try{API=localStorage.getItem('sp-timeline-api')||SHEET_API}catch(e){API=SHEET_API}
+let PIN='';try{PIN=localStorage.getItem('sp-timeline-pin')||''}catch(e){}
+const savePin=v=>{PIN=v||'';try{v?localStorage.setItem('sp-timeline-pin',v):localStorage.removeItem('sp-timeline-pin')}catch(e){}};
 // one-time setup link: …/timeline-kalender/#api=<URL Web App>  → disimpan di browser, lalu dihapus dari alamat
 if(location.hash.indexOf('#api=')===0){
   const v=decodeURIComponent(location.hash.slice(5));
@@ -277,7 +299,7 @@ async function apiGet(){
   d.items=d.items.map(fromRemote).map(i=>({...i,src:'pv'}));return d}
 function toRemote(it){const o={...it,cols:{}};for(const k in XCOL){o.cols[XCOL[k]]=it[k]||'';delete o[k]}return o}
 function fromRemote(it){const o={...it};for(const k in XCOL)o[k]=(it.cols&&it.cols[XCOL[k]])||'';delete o.cols;return o}
-async function apiPost(op){if(op.op==='upsert')op={...op,item:toRemote(op.item)};if(op.op==='bulk')op={...op,items:op.items.map(toRemote)};const r=await fetch(API,{method:'POST',body:JSON.stringify(op)});const d=await r.json();if(!d.ok)throw new Error(d.error||'gagal');return d}
+async function apiPost(op){if(op.op==='upsert')op={...op,item:toRemote(op.item)};if(op.op==='bulk')op={...op,items:op.items.map(toRemote)};op={...op,pin:PIN};const r=await fetch(API,{method:'POST',body:JSON.stringify(op)});const d=await r.json();if(!d.ok)throw new Error(d.error||'gagal');return d}
 function diffOps(){
   const now=snap(state), ops=[];
   for(const it of state.items){
@@ -291,8 +313,18 @@ function diffOps(){
   for(const b in now.colors){if(synced.colors[b]!==now.colors[b])ops.push({op:'color',brand:b,color:now.colors[b]})}
   synced=now;return ops;
 }
+let askingPin=false;
+function dropPending(msg){queue.length=0;busy=false;toast(msg);pull(false,true)}
+function askPin(then){
+  if(askingPin)return;askingPin=true;
+  pinDialog(async v=>{askingPin=false;
+    if(v==null){dropPending('Perubahan dibatalin — butuh PIN buat ngedit.');return}
+    then(v)});
+}
 async function flush(){
-  if(busy)return;busy=true;
+  if(busy)return;
+  if(!PIN&&queue.length){askPin(v=>{savePin(v);flush()});return}
+  busy=true;
   while(queue.length){
     setStatus('Menyimpan ke Sheet…');
     const op=queue[0];
@@ -300,7 +332,11 @@ async function flush(){
       const res=await apiPost(op);queue.shift();
       if(op.cid&&res&&res.row){const it=state.items.find(x=>x.id===op.cid);if(it)it.row=res.row;if(synced&&synced.items[op.cid])synced.items[op.cid].row=res.row}
     }catch(e){
-      const m=String(e.message||e),mm=m.match(/(notfound|dobel): (.*)/);
+      const m=String(e.message||e),pm=m.match(/(pin_wrong|pin_locked|pin_not_set): (.*)/);
+      if(pm){busy=false;
+        if(pm[1]==='pin_wrong'){savePin('');askPin(v=>{savePin(v);flush()});toast('PIN salah, coba lagi.');return}
+        dropPending(pm[2]+'.');return}
+      const mm=m.match(/(notfound|dobel): (.*)/);
       if(mm){ // baris di KALENDER KONTEN berubah/hilang → buang perubahan yang antre, tarik ulang data
         queue.length=0;busy=false;toast('Gagal simpan: '+mm[2]+'. Data ditarik ulang.');pull(false,true);return}
       setStatus('Gagal simpan ke Sheet — dicoba lagi');busy=false;setTimeout(flush,8000);return}
@@ -310,7 +346,7 @@ async function flush(){
 function syncRemote(){if(!API||!synced)return;queue.push(...diffOps());if(queue.length)flush()}
 let localRev=0,pulling=false,lastSync=null;
 const hhmm=d=>String(d.getHours()).padStart(2,'0')+'.'+String(d.getMinutes()).padStart(2,'0');
-const syncLabel=()=>lastSync?`Tersinkron ${hhmm(lastSync)}`:'Tersambung ke Sheet';
+const syncLabel=()=>(lastSync?`Tersinkron ${hhmm(lastSync)}`:'Tersambung ke Sheet')+(PIN?'':' · mode lihat');
 async function pull(force,manual){
   if(!API||pulling)return;
   if(!force&&!manual&&(busy||queue.length||back.classList.contains('show')||document.body.classList.contains('dragging')))return;
@@ -699,13 +735,16 @@ function openSheet(){
    <label for="apiIn">URL Web App</label><input id="apiIn" value="${esc(API)}" placeholder="https://script.google.com/macros/s/…/exec">
    <div class="err" id="apiErr"></div>
    <div class="sub" style="margin-top:10px"><a href="${SHEET_URL}" target="_blank" rel="noopener">Buka Google Sheet-nya ↗</a></div>
-   ${API?`<div class="sec"><h3>Sambungin HP / device lain</h3>
+   <div class="sec"><h3>PIN edit</h3><div class="row" style="margin-top:8px;align-items:center"><span class="sub" style="margin:0;flex:1">${PIN?'PIN udah kesimpen di browser ini ✓':'Belum ada PIN — kalender cuma bisa dilihat.'}</span>
+     <button type="button" id="pinBtn">${PIN?'Lupain PIN':'Masukin PIN'}</button></div></div>
+   ${API&&API!==SHEET_API?`<div class="sec"><h3>Sambungin HP / device lain</h3>
      <div class="sub" style="margin:6px 0 10px">Scan QR ini pakai kamera HP, atau kirim link-nya. Sekali buka di tiap device, langsung nyambung. Jangan disebar ke luar tim.</div>
      <div class="qrbox"><div id="qr">Bikin QR…</div><div style="flex:1;min-width:0"><input id="setupLink" readonly value="${esc(setupLink())}"><div class="row" style="margin-top:8px"><button id="cpLink">Copy link</button><span class="err" id="cpMsg" style="margin:0;color:var(--muted)"></span></div></div></div>
    </div>`:''}
    <div class="row"><span class="sp"></span><button id="cl">Tutup</button><button class="primary" id="ok">Sambungkan</button></div>`;
   modal.querySelector('#cl').onclick=close;
-  if(API){
+  modal.querySelector('#pinBtn').onclick=()=>{if(PIN){savePin('');openSheet()}else pinDialog(v=>{if(v)savePin(v);openSheet()})};
+  if(API&&API!==SHEET_API){
     showQR(modal.querySelector('#qr'),setupLink());
     modal.querySelector('#setupLink').onclick=e=>e.target.select();
     modal.querySelector('#cpLink').onclick=async()=>{const m=modal.querySelector('#cpMsg');

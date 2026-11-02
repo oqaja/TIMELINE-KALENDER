@@ -26,3 +26,10 @@ Konten juga bisa ditambah langsung di Sheet: isi TANGGAL (yyyy-mm-dd), JUDUL KON
 - **Preview** cuma disimpan di tab KONTEN pada Sheet TIMELINE KALENDER — tidak pernah masuk KALENDER KONTEN. Tampil bergaris dengan label PV.
 - Kalender menarik KALENDER KONTEN per rentang bulan (bulan sebelum s/d sesudah yang dibuka).
 - Akun yang men-deploy Apps Script harus punya akses edit ke DASHBOARD KULTURAMA V1.
+
+## Auto-nyambung + PIN edit
+
+- URL Web App sudah ditanam di `index.html` (`SHEET_API`), jadi kalender langsung nyambung di browser/device mana pun.
+- Semua perubahan (tambah/edit/hapus/warna/opsi) wajib PIN. PIN **tidak** ada di kode — atur di Apps Script → ⚙ Setelan project → Properti skrip → `EDIT_PIN`.
+- Tanpa `EDIT_PIN`, script menolak semua perubahan (kalender cuma bisa dilihat). Salah PIN 10x → dikunci 15 menit.
+- PIN diminta sekali per browser, lalu diingat. Hapus lewat ⚙ → "Lupain PIN".

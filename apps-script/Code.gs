@@ -12,6 +12,10 @@
  * Konten beneran dibaca & ditulis langsung ke DASHBOARD KULTURAMA V1 > KALENDER KONTEN.
  * Di sana struktur kolom TIDAK diubah: baris dicari lewat EVENT ID, atau judul + tanggal,
  * dan yang ditulis cuma sel yang berubah (biar catatan/status dari otomasi lain nggak ketimpa).
+ *
+ * PIN EDIT: semua perubahan (tambah/edit/hapus) wajib bawa PIN. PIN TIDAK ditulis di kode ini —
+ * isi lewat Apps Script > Setelan project (⚙) > Properti skrip:  EDIT_PIN = <pin kamu>
+ * Tanpa EDIT_PIN, semua perubahan ditolak (kalender cuma bisa dilihat).
  * Tab OPSI   : DAFTAR | NILAI   (pilihan tambahan: akun, segmen, tim, status — dibuat otomatis)
  */
 const TZ = 'Asia/Jakarta';
@@ -302,7 +306,24 @@ function doGet(e) {
   return out_(data);
 }
 
+// ---- PIN: cek + kunci sementara kalau salah terus (anti tebak-tebakan)
+function pinCheck_(pin) {
+  const want = PropertiesService.getScriptProperties().getProperty('EDIT_PIN');
+  if (!want) throw new Error('pin_not_set: PIN belum diatur di Properti skrip (EDIT_PIN)');
+  const cache = CacheService.getScriptCache();
+  const fails = Number(cache.get('pin_fails') || 0);
+  if (fails >= 10) throw new Error('pin_locked: kebanyakan salah PIN, coba lagi 15 menit lagi');
+  if (String(pin || '') !== String(want)) {
+    cache.put('pin_fails', String(fails + 1), 900);
+    throw new Error('pin_wrong: PIN salah');
+  }
+}
+
 function doPost(e) {
+  let op0 = {};
+  try { op0 = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (err) {}
+  try { pinCheck_(op0.pin); } catch (err) { return out_({ ok: false, error: String(err) }); }
+  if (op0.op === 'checkPin') return out_({ ok: true });
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
