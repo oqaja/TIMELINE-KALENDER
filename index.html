@@ -126,6 +126,16 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
 .cp{padding:7px 11px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;user-select:none;background:#fff}
 .cp.on{background:#111;color:#fff;border-color:#111}
 .cp.add{border-style:dashed;color:var(--muted)}
+.item.pv{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.32) 0 3px,transparent 3px 7px)!important;outline:1px dashed rgba(0,0,0,.35);outline-offset:-1px}
+.tg.pvt{background:rgba(255,255,255,.85);color:#111;opacity:1;border-radius:3px;padding:0 3px}
+.pvdot{background:repeating-linear-gradient(135deg,#999 0 2px,#fff 2px 4px);border:1px solid #999}
+.srcseg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 0 6px}
+.srcseg button{text-align:left;padding:9px 12px;line-height:1.2}
+.srcseg button small{display:block;font-weight:500;font-size:11px;color:var(--muted)}
+.srcseg button.on{background:#111;color:#fff;border-color:#111}
+.srcseg button.on small{color:#ccc}
+.srcnote{font-size:12px;font-weight:600;padding:7px 10px;border-radius:8px;margin:2px 0 4px;background:#f1f6ff;color:#1d3f8f}
+.srcnote.pv{background:#f4f4f2;color:#555;border:1px dashed #bbb}
 .ok{font-weight:800}
 @media(max-width:640px){.g,.g.g4{grid-template-columns:repeat(2,1fr)}.up{grid-template-columns:30px 1fr 1fr}.up .pid{grid-column:2/4}.up .h.pidh{display:none}}
 @media(max-width:640px){
@@ -168,12 +178,12 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
 <script id="app-js">
 (function(){
 const TYPES=[
-  {id:'carousel',name:'Carousel',color:'var(--c-carousel)'},
-  {id:'short',name:'Vid.Pendek',color:'var(--c-short)'},
-  {id:'long',name:'Vid.Panjang',color:'var(--c-long)'},
+  {id:'carousel',name:'Desain',color:'var(--c-carousel)'},
+  {id:'short',name:'Video Pendek',color:'var(--c-short)'},
+  {id:'long',name:'Video Panjang',color:'var(--c-long)'},
   {id:'story',name:'Story',color:'var(--c-story)'}
 ];
-const TAG={carousel:'CRS',short:'PDK',long:'PJG',story:'STR'};
+const TAG={carousel:'DSN',short:'PDK',long:'PJG',story:'STR'};
 const PALETTE=['#2f6bff','#ff4d2e','#12a150','#9b3dff','#ff9f0a','#00a5b5','#e0338a','#7a5230','#5c6b00','#d6336c','#1d3f8f','#c9a400','#0f7a5c','#ff6f91','#444444'];
 const NOBRAND='#8a8a8a';
 // pilihan dropdown, sama dengan DASHBOARD KULTURAMA > KALENDER KONTEN
@@ -193,7 +203,7 @@ const ALLK=['id','date','title','type','brand',...EXTRA];
 // daftar yang bisa ditambah + field yang memakainya
 const LISTOF={akun:'akun',producer:'tim',designer:'tim',editor:'tim',talent1:'tim',talent2:'tim',stYT:'status',stIG:'status',stTT:'status',stFB:'status'};
 const LISTNAME={akun:'Akun',segmen:'Segmen',tim:'Orang / Tim',status:'Status'};
-const opts=l=>{const base=l==='tim'?OPT.tim:OPT[l]||[];const add=(state.options&&state.options[l])||[];return [...base,...add.filter(v=>!base.includes(v))]};
+const opts=l=>{const base=l==='tim'?OPT.tim:OPT[l]||[];const fromSheet=(state.lists&&state.lists[l])||[];const add=(state.options&&state.options[l])||[];return [...new Set([...base,...fromSheet,...add])]};
 function addOption(list,value){
   value=String(value||'').trim();if(!value)return false;
   if(opts(list).some(v=>v.toLowerCase()===value.toLowerCase()))return true;
@@ -257,15 +267,27 @@ if(location.hash.indexOf('#api=')===0){
 }
 if(inClaude)API='';
 let synced=null, queue=[], busy=false, remoteOk=false;
-const snap=st=>({items:Object.fromEntries(st.items.map(i=>[i.id,JSON.stringify(ALLK.map(k=>i[k]==null?'':String(i[k])))])),colors:{...st.brandColors}});
-async function apiGet(){const r=await fetch(API,{cache:'no-store'});const d=await r.json();if(!d||!Array.isArray(d.items))throw new Error('bad');d.items=d.items.map(fromRemote);return d}
+const nv=v=>v==null?'':String(v);
+const snap=st=>({items:Object.fromEntries(st.items.map(i=>{const o={src:i.src||'pv',row:i.row};ALLK.forEach(k=>o[k]=nv(i[k]));return [i.id,o]})),colors:{...st.brandColors}});
+const refOf=o=>({row:o.row,eventId:o.eventId,title:o.title,date:o.date});
+let viewRange={from:'',to:''},kkErr='';
+async function apiGet(){
+  const u=API+(API.includes('?')?'&':'?')+'from='+viewRange.from+'&to='+viewRange.to;
+  const r=await fetch(u,{cache:'no-store'});const d=await r.json();if(!d||!Array.isArray(d.items))throw new Error('bad');
+  d.items=d.items.map(fromRemote).map(i=>({...i,src:'pv'}));return d}
 function toRemote(it){const o={...it,cols:{}};for(const k in XCOL){o.cols[XCOL[k]]=it[k]||'';delete o[k]}return o}
 function fromRemote(it){const o={...it};for(const k in XCOL)o[k]=(it.cols&&it.cols[XCOL[k]])||'';delete o.cols;return o}
 async function apiPost(op){if(op.op==='upsert')op={...op,item:toRemote(op.item)};if(op.op==='bulk')op={...op,items:op.items.map(toRemote)};const r=await fetch(API,{method:'POST',body:JSON.stringify(op)});const d=await r.json();if(!d.ok)throw new Error(d.error||'gagal');return d}
 function diffOps(){
   const now=snap(state), ops=[];
-  for(const it of state.items){if(synced.items[it.id]!==now.items[it.id])ops.push({op:'upsert',item:it})}
-  for(const id in synced.items){if(!(id in now.items))ops.push({op:'delete',id})}
+  for(const it of state.items){
+    const o=synced.items[it.id], n=now.items[it.id], kk=(it.src||'pv')==='kk';
+    if(!o){ops.push(kk?{op:'kkAdd',item:{...it},cid:it.id}:{op:'upsert',item:it});continue}
+    const ch={};ALLK.forEach(k=>{if(k!=='id'&&o[k]!==n[k])ch[k]=n[k]});
+    if(!Object.keys(ch).length)continue;
+    ops.push(kk?{op:'kkUpdate',ref:refOf(o),changes:ch,cid:it.id}:{op:'upsert',item:it});
+  }
+  for(const id in synced.items){if(!(id in now.items)){const o=synced.items[id];ops.push(o.src==='kk'?{op:'kkDelete',ref:refOf(o)}:{op:'delete',id})}}
   for(const b in now.colors){if(synced.colors[b]!==now.colors[b])ops.push({op:'color',brand:b,color:now.colors[b]})}
   synced=now;return ops;
 }
@@ -273,8 +295,15 @@ async function flush(){
   if(busy)return;busy=true;
   while(queue.length){
     setStatus('Menyimpan ke Sheet…');
-    try{await apiPost(queue[0]);queue.shift()}
-    catch(e){setStatus('Gagal simpan ke Sheet — dicoba lagi');busy=false;setTimeout(flush,8000);return}
+    const op=queue[0];
+    try{
+      const res=await apiPost(op);queue.shift();
+      if(op.cid&&res&&res.row){const it=state.items.find(x=>x.id===op.cid);if(it)it.row=res.row;if(synced&&synced.items[op.cid])synced.items[op.cid].row=res.row}
+    }catch(e){
+      const m=String(e.message||e),mm=m.match(/(notfound|dobel): (.*)/);
+      if(mm){ // baris di KALENDER KONTEN berubah/hilang → buang perubahan yang antre, tarik ulang data
+        queue.length=0;busy=false;toast('Gagal simpan: '+mm[2]+'. Data ditarik ulang.');pull(false,true);return}
+      setStatus('Gagal simpan ke Sheet — dicoba lagi');busy=false;setTimeout(flush,8000);return}
   }
   busy=false;lastSync=new Date();setStatus('Tersimpan di Sheet '+hhmm(lastSync));
 }
@@ -293,14 +322,14 @@ async function pull(force,manual){
     // ada perubahan lokal selama narik data → jangan timpa, coba lagi nanti
     if(rev!==localRev||busy||queue.length){pulling=false;if(sb)sb.classList.remove('spin');return}
     if(!d.brandColors)d.brandColors={};
-    if(force&&!d.items.length&&state.items.length){ // first connect: move browser data into the empty sheet
-      setStatus('Mindahin data browser ke Sheet…');
-      const res=await apiPost({op:'bulk',items:state.items,brandColors:state.brandColors});
-      Object.assign(d,res.data);d.items=d.items.map(fromRemote);
-    }
     if(!d.options)d.options={};
-    if(JSON.stringify({i:d.items,b:d.brandColors,o:d.options})!==JSON.stringify({i:state.items,b:state.brandColors,o:state.options})){state={items:d.items,brandColors:d.brandColors||{},options:d.options};lsSave();render()}
-    synced=snap(state);remoteOk=true;lastSync=new Date();setStatus(syncLabel());
+    kkErr=d.kk?'':(d.kkError||'KALENDER KONTEN tidak bisa dibaca');
+    const kkItems=d.kk?d.kk.map(i=>({...i,src:'kk'})):state.items.filter(i=>i.src==='kk');
+    const all=[...d.items,...kkItems].sort((a,b)=>a.date.localeCompare(b.date));
+    const next={items:all,brandColors:d.brandColors||{},options:d.options,lists:d.lists||state.lists||{}};
+    loaded={...viewRange};
+    if(JSON.stringify(next)!==JSON.stringify({items:state.items,brandColors:state.brandColors,options:state.options,lists:state.lists})){state=next;lsSave();render()}
+    synced=snap(state);remoteOk=true;lastSync=new Date();setStatus(kkErr?'⚠ '+kkErr.slice(0,80):syncLabel());
   }catch(e){setStatus(synced?'Offline — pakai data terakhir':'Gagal nyambung ke Sheet (cek ⚙)')}
   pulling=false;if(sb)sb.classList.remove('spin');
 }
@@ -308,8 +337,14 @@ function lsLoad(){try{const v=localStorage.getItem(LS);if(v){const d=JSON.parse(
 function lsSave(){try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}}
 
 const now=new Date();
-let viewY=now.getFullYear(), viewM=now.getMonth();
-const hidden=new Set();
+let viewY=now.getFullYear(), viewM=now.getMonth(), loaded={from:'',to:''};
+// rentang yang ditarik dari KALENDER KONTEN: bulan sebelum s/d bulan sesudah yang lagi dibuka
+function setRange(){const a=new Date(viewY,viewM-1,1),b=new Date(viewY,viewM+2,0);
+  const f=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  viewRange={from:f(a),to:f(b)}}
+function navTo(){setRange();render();const mf=`${viewY}-${String(viewM+1).padStart(2,'0')}-01`;if(API&&(!loaded.from||mf<loaded.from||mf>loaded.to||viewRange.to>loaded.to||viewRange.from<loaded.from))pull(false,true)}
+setRange();
+const hidden=new Set();let hidePv=false;
 
 const pad=n=>String(n).padStart(2,'0');
 const key=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
@@ -317,15 +352,17 @@ const todayKey=key(now.getFullYear(),now.getMonth(),now.getDate());
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function fmtDate(k){const [y,m,d]=k.split('-').map(Number);const dt=new Date(y,m-1,d);const h=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][dt.getDay()];return `${h}, ${d} ${BULAN[m-1]} ${y}`}
 const byDate=k=>state.items.filter(i=>i.date===k);
-const brands=()=>[...new Set([...state.items.map(i=>i.brand).filter(Boolean),...BRAND_LIST])].sort((a,b)=>a.localeCompare(b));
+const brands=()=>[...new Set([...state.items.flatMap(i=>String(i.brand||'').split(/\s*,\s*/)).filter(Boolean),...BRAND_LIST,...((state.lists&&state.lists.brand)||[])])].sort((a,b)=>a.localeCompare(b));
 
 function renderFilters(){
   const prefix=`${viewY}-${pad(viewM+1)}`;
   const inMonth=state.items.filter(i=>i.date.startsWith(prefix));
   const f=document.getElementById('filters');
   f.innerHTML=`<span class="mode"><span data-m="brand" class="${mode==='brand'?'on':''}">Warna: Brand</span><span data-m="type" class="${mode==='type'?'on':''}">Warna: Jenis</span></span>`+TYPES.map(t=>`<span class="chip-f ${hidden.has(t.id)?'off':''}" data-t="${t.id}"><span class="dot" style="background:${t.color}"></span>${t.name} <span class="count">${inMonth.filter(i=>i.type===t.id).length}</span></span>`).join('')
+   +`<span class="chip-f pvchip ${hidePv?'off':''}" id="pvChip"><span class="dot pvdot"></span>Preview <span class="count">${inMonth.filter(i=>i.src!=='kk').length}</span></span>`
    +`<span class="status" id="status">${canPublish?'Tersimpan':API?(remoteOk?syncLabel():'Narik data dari Sheet…'):(inClaude?'Mode lokal (cuma di browser ini)':'Belum nyambung ke Sheet — klik ⚙')}</span>`;
-  f.querySelectorAll('.chip-f').forEach(el=>el.onclick=()=>{const t=el.dataset.t;hidden.has(t)?hidden.delete(t):hidden.add(t);render()});
+  f.querySelectorAll('.chip-f[data-t]').forEach(el=>el.onclick=()=>{const t=el.dataset.t;hidden.has(t)?hidden.delete(t):hidden.add(t);render()});
+  const pvc=f.querySelector('#pvChip');if(pvc)pvc.onclick=()=>{hidePv=!hidePv;render()};
   f.querySelectorAll('.mode span').forEach(el=>el.onclick=()=>{mode=el.dataset.m;try{localStorage.setItem('sp-timeline-mode',mode)}catch(e){};render()});
   const bb=document.getElementById('brandBar');
   if(mode!=='brand'){bb.innerHTML='';bb.style.display='none';return}
@@ -353,10 +390,10 @@ function render(){
   for(let i=0;i<weeks*7;i++){
     const d=new Date(start);d.setDate(start.getDate()+i);
     const k=key(d.getFullYear(),d.getMonth(),d.getDate());
-    const items=byDate(k).filter(it=>!hidden.has(it.type));
+    const items=byDate(k).filter(it=>!hidden.has(it.type)&&!(hidePv&&it.src!=='kk'));
     const cls=['day'];if(d.getMonth()!==viewM)cls.push('out');if(k===todayKey)cls.push('today');
     html+=`<div class="${cls.join(' ')}" data-k="${k}"><div class="num"><span>${d.getDate()}</span><span class="add">+</span></div>`
-      +items.slice(0,max).map(it=>`<div class="item" data-id="${it.id}" style="background:${colorOf(it)};color:${textOn(colorOf(it))}" title="${(T[it.type]||TYPES[0]).name} · ${esc(it.title)}${it.brand?' — '+esc(it.brand):''}">${mode==='brand'?`<span class="tg">${TAG[it.type]||''}</span>`:''}${it.production==='✅'?'✓ ':''}${esc(it.title)}${it.brand&&mode!=='brand'?` <span class="b">· ${esc(it.brand)}</span>`:''}</div>`).join('')
+      +items.slice(0,max).map(it=>`<div class="item${it.src==='kk'?'':' pv'}" data-id="${it.id}" style="background:${colorOf(it)};color:${textOn(colorOf(it))}" title="${it.src==='kk'?'':'PREVIEW · '}${(T[it.type]||TYPES[0]).name} · ${esc(it.title)}${it.brand?' — '+esc(it.brand):''}">${it.src==='kk'?'':'<span class="tg pvt">PV</span>'}${mode==='brand'?`<span class="tg">${TAG[it.type]||''}</span>`:''}${it.production==='✅'?'✓ ':''}${esc(it.title)}${it.brand&&mode!=='brand'?` <span class="b">· ${esc(it.brand)}</span>`:''}</div>`).join('')
       +(items.length>max?`<div class="more">+${items.length-max} lagi</div>`:'')
       +`</div>`;
   }
@@ -439,7 +476,7 @@ function openDay(k){
   modal.classList.remove('wide');
   const items=byDate(k);
   modal.innerHTML=`<h2>${fmtDate(k)}</h2><div class="sub">${items.length} konten</div>
-   <div class="list">${items.map(it=>`<div class="li" data-id="${it.id}"><span class="dot" style="background:${colorOf(it)}"></span><div><div class="t">${esc(it.title)}</div><div class="m">${[(T[it.type]||TYPES[0]).name,it.brand,it.akun,it.segmen,it.producer&&('Prod: '+it.producer),it.production==='✅'&&'Production ✅'].filter(Boolean).map(esc).join(' · ')}</div></div></div>`).join('')}</div>
+   <div class="list">${items.map(it=>`<div class="li" data-id="${it.id}"><span class="dot" style="background:${colorOf(it)}"></span><div><div class="t">${esc(it.title)}</div><div class="m">${[it.src==='kk'?'':'PREVIEW',(T[it.type]||TYPES[0]).name,it.brand,it.akun,it.segmen,it.producer&&('Prod: '+it.producer),it.production==='✅'&&'Production ✅'].filter(Boolean).map(esc).join(' · ')}</div></div></div>`).join('')}</div>
    <div class="row"><button id="cl">Tutup</button><span class="sp"></span><button class="primary" id="ad">+ Tambah konten</button></div>`;
   modal.querySelectorAll('.li').forEach(el=>el.onclick=()=>openForm(state.items.find(x=>x.id===el.dataset.id)));
   modal.querySelector('#cl').onclick=close;
@@ -477,7 +514,8 @@ function openBrandColor(name){
 }
 function openForm(item,k){
   const isNew=!item;
-  const cur=item?{...item}:{title:'',type:'carousel',brand:'',date:k};
+  const cur=item?{...item}:{title:'',type:'carousel',brand:'',date:k,src:API?'kk':'pv'};
+  if(!cur.src)cur.src='pv';
   const optHtml=(key,o,v)=>{const list=v&&!o.includes(v)?[v,...o]:o;return `<option value="">—</option>${list.map(x=>`<option${x===v?' selected':''}>${esc(x)}</option>`).join('')}${LISTOF[key]?'<option value="__add">+ Tambah baru…</option>':''}`};
   const sel=(key,label,o,bare)=>{const v=cur[key]||'';if(LISTOF[key])o=opts(LISTOF[key]);
     const h=`<select data-k="${key}"${bare?` aria-label="${key}"`:''}>${optHtml(key,o,v)}</select>`;
@@ -485,8 +523,10 @@ function openForm(item,k){
   const segSel=String(cur.segmen||'').split(/\s*,\s*/).filter(Boolean);
   const segOpts=[...opts('segmen'),...segSel.filter(v=>!opts('segmen').includes(v))];
   modal.classList.add('wide');
-  modal.innerHTML=`<h2>${isNew?'Tambah Konten':'Edit Konten'}</h2><div class="sub">${fmtDate(cur.date)}</div>
+  modal.innerHTML=`<h2>${isNew?'Tambah Konten':'Edit '+(cur.src==='kk'?'Konten':'Preview')}</h2><div class="sub">${fmtDate(cur.date)}</div>
    <form id="f">
+    ${isNew&&API?`<div class="srcseg" id="srcSeg"><button type="button" data-s="kk">Konten <small>masuk KALENDER KONTEN</small></button><button type="button" data-s="pv">Preview <small>cuma di kalender ini</small></button></div>`
+      :`<div class="srcnote ${cur.src}">${cur.src==='kk'?'Konten · tersimpan di DASHBOARD KULTURAMA → KALENDER KONTEN':'Preview · cuma di kalender ini, nggak masuk KALENDER KONTEN'}</div>`}
     <label for="fTitle">Judul Konten</label>
     <input id="fTitle" value="${esc(cur.title)}" placeholder="mis. Bedah Samba OG" autocomplete="off">
     <label>Jenis Konten</label>
@@ -524,6 +564,10 @@ function openForm(item,k){
       <button type="submit" class="primary">${isNew?'Tambah':'Simpan'}</button>
     </div>
    </form>`;
+  const srcSeg=modal.querySelector('#srcSeg');
+  if(srcSeg){const paintS=()=>srcSeg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.s===cur.src));
+    srcSeg.querySelectorAll('button').forEach(b=>b.onclick=()=>{cur.src=b.dataset.s;paintS();const ev=modal.querySelector('[data-k=eventId]');if(ev)ev.readOnly=cur.src==='kk'});paintS();}
+  if(cur.src==='kk'){const ev=modal.querySelector('[data-k=eventId]');if(ev){ev.readOnly=true;ev.title='Diisi otomatis sama sistem KALENDER KONTEN'}}
   modal.querySelectorAll('#segChips .cp:not(.add)').forEach(el=>el.onclick=()=>el.classList.toggle('on'));
   modal.querySelector('#segAdd').onclick=()=>mini('Tambah Segmen',v=>{if(!v)return;
     let ex=[...modal.querySelectorAll('#segChips .cp:not(.add)')].find(c=>c.dataset.v.toLowerCase()===v.toLowerCase());
@@ -553,7 +597,7 @@ function openForm(item,k){
   modal.querySelector('#cancel').onclick=close;
   const del=modal.querySelector('#del');
   if(del){let armed=false;del.onclick=()=>{
-    if(!armed){armed=true;del.textContent='Yakin hapus?';return}
+    if(!armed){armed=true;del.textContent=cur.src==='kk'?'Yakin? Kehapus juga dari KALENDER KONTEN':'Yakin hapus?';return}
     state.items=state.items.filter(x=>x.id!==item.id);save();close();render();
   }}
   modal.querySelector('#f').onsubmit=e=>{
@@ -569,6 +613,8 @@ function openForm(item,k){
     EXTRA.forEach(k2=>rec[k2]='');
     modal.querySelectorAll('[data-k]').forEach(el=>{const v=el.value.trim();rec[el.dataset.k]=v==='__add'?'':v});
     rec.segmen=[...modal.querySelectorAll('#segChips .cp.on')].map(el=>el.dataset.v).join(', ');
+    rec.src=cur.src||'pv';if(item&&item.row)rec.row=item.row;if(item&&item.jenis)rec.jenis=item.jenis;
+    if(rec.src==='kk'&&item)rec.eventId=item.eventId||'';
     if(isNew)state.items.push(rec);else state.items=state.items.map(x=>x.id===rec.id?rec:x);
     state.items.sort((a,b)=>a.date.localeCompare(b.date));
     save();close();render();
@@ -634,9 +680,9 @@ function save(){
   },700);
 }
 
-document.getElementById('prev').onclick=()=>{viewM--;if(viewM<0){viewM=11;viewY--}render()};
-document.getElementById('next').onclick=()=>{viewM++;if(viewM>11){viewM=0;viewY++}render()};
-document.getElementById('todayBtn').onclick=()=>{viewY=now.getFullYear();viewM=now.getMonth();render()};
+document.getElementById('prev').onclick=()=>{viewM--;if(viewM<0){viewM=11;viewY--}navTo()};
+document.getElementById('next').onclick=()=>{viewM++;if(viewM>11){viewM=0;viewY++}navTo()};
+document.getElementById('todayBtn').onclick=()=>{viewY=now.getFullYear();viewM=now.getMonth();navTo()};
 addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(render,150)});
 
 const setupLink=()=>location.origin+location.pathname+'#api='+encodeURIComponent(API);

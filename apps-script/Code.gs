@@ -6,11 +6,16 @@
  * Kolom tambahan di luar daftar FIELDS tetap ikut terbaca/tersimpan lewat item.cols {HEADER: nilai},
  * jadi kolom baru cukup ditambah dari sisi kalender — script tidak perlu di-deploy ulang.
  * Tab KONTEN : ID | TANGGAL | JUDUL KONTEN | JENIS KONTEN | BRAND TAP IN | AKUN | SEGMEN | ... | DIUBAH
+ * Tab KONTEN : sekarang khusus PREVIEW (tidak pernah masuk ke KALENDER KONTEN)
  * Tab BRAND  : BRAND | WARNA
+ *
+ * Konten beneran dibaca & ditulis langsung ke DASHBOARD KULTURAMA V1 > KALENDER KONTEN.
+ * Di sana struktur kolom TIDAK diubah: baris dicari lewat EVENT ID, atau judul + tanggal,
+ * dan yang ditulis cuma sel yang berubah (biar catatan/status dari otomasi lain nggak ketimpa).
  * Tab OPSI   : DAFTAR | NILAI   (pilihan tambahan: akun, segmen, tim, status — dibuat otomatis)
  */
 const TZ = 'Asia/Jakarta';
-const JENIS = { carousel: 'Carousel', short: 'Vid.Pendek', long: 'Vid.Panjang', story: 'Story' };
+const JENIS = { carousel: 'Desain', short: 'Video Pendek', long: 'Video Panjang', story: 'Story' };
 
 // key di kalender  ->  nama header di sheet
 const FIELDS = {
@@ -75,6 +80,11 @@ function date_(v) {
   if (m) return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
   m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/); // dd/mm/yyyy
   if (m) return m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+  m = s.match(/^(\d{1,2})[\s\-]([A-Za-z]{3})[A-Za-z]*[\s\-](\d{4})$/); // 02-Nov-2026 / 30-Okt-2026
+  if (m) {
+    const mon = { jan: 1, feb: 2, mar: 3, apr: 4, mei: 5, may: 5, jun: 6, jul: 7, agu: 8, ags: 8, aug: 8, sep: 9, okt: 10, oct: 10, nov: 11, des: 12, dec: 12 }[m[2].toLowerCase()];
+    if (mon) return m[3] + '-' + ('0' + mon).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+  }
   return '';
 }
 function opsiSheet_() {
@@ -176,7 +186,121 @@ function color_(brand, color) {
   bs.appendRow([b, color]);
 }
 
-function doGet() { return out_(read_()); }
+// ===================== KALENDER KONTEN (DASHBOARD KULTURAMA V1) =====================
+const DASH_ID = '1raiIO1HccW7IxN9bh9BqUJ7DOHDVBN05GKRQ5xrrfeI';
+const DASH_TAB = 'KALENDER KONTEN';
+const KK = {
+  date: 'TANGGAL', title: 'JUDUL KONTEN', akun: 'AKUN', segmen: 'SEGMEN',
+  jamYT: 'JAM UP YT', jamIG: 'JAM UP IG', jamTT: 'JAM UP TT', jamFB: 'JAM UP FB',
+  type: 'JENIS KONTEN', producer: 'PRODUCER', writing: 'WRITING', shooting: 'SHOOTING',
+  designer: 'DESIGNER', editor: 'EDITOR', talent1: 'TALENT 1', talent2: 'TALENT 2',
+  production: 'PRODUCTION', cover: 'COVER/THUMB',
+  stYT: 'STATUS YT', stIG: 'STATUS IG', stTT: 'STATUS TT', stFB: 'STATUS FB',
+  idYT: 'POST ID YT', idIG: 'POST ID IG', idTT: 'POST ID TT', idFB: 'POST ID FB',
+  brand: 'BRAND TAP IN', catatan: 'CATATAN', eventId: 'EVENT ID'
+};
+const KK_TEXT = ['jamYT', 'jamIG', 'jamTT', 'jamFB', 'idYT', 'idIG', 'idTT', 'idFB']; // simpan sebagai teks
+let kkSs_ = null;
+function kkBook_() { return kkSs_ || (kkSs_ = SpreadsheetApp.openById(DASH_ID)); }
+function kkSheet_() { return kkBook_().getSheetByName(DASH_TAB); }
+function kkCols_(sh) {
+  const w = sh.getLastColumn();
+  const head = sh.getRange(1, 1, 1, w).getDisplayValues()[0].map(function (h) { return String(h).trim().toUpperCase(); });
+  const c = { _width: w };
+  Object.keys(KK).forEach(function (k) { c[k] = head.indexOf(KK[k]) + 1; }); // 0 = kolom tidak ada
+  if (!c.date || !c.title) throw new Error('Kolom TANGGAL / JUDUL KONTEN tidak ketemu di ' + DASH_TAB);
+  return c;
+}
+function kkDate_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, kkBook_().getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+  return date_(v);
+}
+function kkRead_(from, to) {
+  const sh = kkSheet_(), c = kkCols_(sh), last = sh.getLastRow(), items = [];
+  if (last < 2) return items;
+  const rng = sh.getRange(2, 1, last - 1, c._width), raw = rng.getValues(), disp = rng.getDisplayValues();
+  for (let i = 0; i < raw.length; i++) {
+    const title = String(disp[i][c.title - 1] || '').trim();
+    const date = kkDate_(raw[i][c.date - 1]) || date_(disp[i][c.date - 1]);
+    if (!title || !date) continue;
+    if ((from && date < from) || (to && date > to)) continue;
+    const it = { src: 'kk', row: i + 2 };
+    Object.keys(KK).forEach(function (k) { it[k] = c[k] ? String(disp[i][c[k] - 1] || '').trim() : ''; });
+    it.title = title; it.date = date;
+    it.jenis = it.type; it.type = typeId_(it.type);
+    it.id = it.eventId ? 'ev:' + it.eventId : 'row:' + it.row;
+    items.push(it);
+  }
+  return items;
+}
+// pilihan dropdown langsung dari aturan validasi di KALENDER KONTEN
+function kkLists_() {
+  const sh = kkSheet_(), c = kkCols_(sh), row = Math.max(2, sh.getLastRow());
+  const want = { akun: 'akun', segmen: 'segmen', producer: 'tim', stYT: 'status', brand: 'brand' }, out = {};
+  Object.keys(want).forEach(function (k) {
+    if (!c[k]) return;
+    try {
+      const rule = sh.getRange(row, c[k]).getDataValidation();
+      if (rule && String(rule.getCriteriaType()) === 'VALUE_IN_LIST') out[want[k]] = (rule.getCriteriaValues()[0] || []).map(String);
+    } catch (e) {}
+  });
+  return out;
+}
+// cari baris: EVENT ID dulu, lalu baris lama (dicek judul+tanggal), lalu judul+tanggal yang unik
+function kkFind_(sh, c, ref) {
+  const last = sh.getLastRow();
+  if (!ref || last < 2) return -1;
+  if (ref.eventId && c.eventId) {
+    const ev = sh.getRange(2, c.eventId, last - 1, 1).getDisplayValues();
+    for (let i = 0; i < ev.length; i++) if (String(ev[i][0]).trim() === String(ref.eventId)) return i + 2;
+  }
+  const titles = sh.getRange(2, c.title, last - 1, 1).getDisplayValues();
+  const dates = sh.getRange(2, c.date, last - 1, 1).getValues();
+  const same = function (i) { return String(titles[i][0]).trim() === String(ref.title) && kkDate_(dates[i][0]) === ref.date; };
+  if (ref.row >= 2 && ref.row <= last && same(ref.row - 2)) return ref.row;
+  let found = -1;
+  for (let i = 0; i < titles.length; i++) if (same(i)) { if (found > 0) return -2; found = i + 2; }
+  return found;
+}
+function kkVal_(k, v) {
+  v = v == null ? '' : String(v);
+  if (k === 'type') return JENIS[v] || v;
+  if (KK_TEXT.indexOf(k) >= 0 && v) return "'" + v;
+  return v; // tanggal yyyy-MM-dd dibaca Sheets sebagai tanggal
+}
+function kkUpdate_(ref, changes) {
+  const sh = kkSheet_(), c = kkCols_(sh), row = kkFind_(sh, c, ref);
+  if (row === -2) throw new Error('dobel: ada lebih dari satu baris "' + ref.title + '" di tanggal ' + ref.date);
+  if (row < 0) throw new Error('notfound: baris "' + ref.title + '" (' + ref.date + ') tidak ketemu, mungkin sudah diubah/dihapus');
+  Object.keys(changes || {}).forEach(function (k) {
+    if (!c[k] || k === 'eventId') return;
+    sh.getRange(row, c[k]).setValue(kkVal_(k, changes[k]));
+  });
+  return row;
+}
+function kkAdd_(it) {
+  if (!it || !it.title || !it.date) throw new Error('judul & tanggal wajib');
+  const sh = kkSheet_(), c = kkCols_(sh);
+  const vals = new Array(c._width).fill('');
+  Object.keys(KK).forEach(function (k) { if (c[k] && k !== 'eventId') vals[c[k] - 1] = kkVal_(k, it[k]); });
+  sh.appendRow(vals);
+  return sh.getLastRow();
+}
+function kkDelete_(ref) {
+  const sh = kkSheet_(), c = kkCols_(sh), row = kkFind_(sh, c, ref);
+  if (row === -2) throw new Error('dobel: ada lebih dari satu baris "' + ref.title + '" di tanggal ' + ref.date);
+  if (row > 0) sh.deleteRow(row);
+}
+
+function doGet(e) {
+  const p = (e && e.parameter) || {};
+  const data = read_();
+  data.items.forEach(function (it) { it.src = 'pv'; });
+  try { data.kk = kkRead_(p.from || '', p.to || ''); data.lists = kkLists_(); }
+  catch (err) { data.kk = null; data.kkError = String(err); }
+  data.range = { from: p.from || '', to: p.to || '' };
+  return out_(data);
+}
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
@@ -187,6 +311,9 @@ function doPost(e) {
     else if (op.op === 'delete') remove_(op.id);
     else if (op.op === 'color') color_(op.brand, op.color);
     else if (op.op === 'option') addOpsi_(op.list, op.value);
+    else if (op.op === 'kkAdd') { const row = kkAdd_(op.item); SpreadsheetApp.flush(); return out_({ ok: true, row: row }); }
+    else if (op.op === 'kkUpdate') { const row = kkUpdate_(op.ref, op.changes); SpreadsheetApp.flush(); return out_({ ok: true, row: row }); }
+    else if (op.op === 'kkDelete') { kkDelete_(op.ref); SpreadsheetApp.flush(); return out_({ ok: true }); }
     else if (op.op === 'bulk') { // pindahan data lama dari browser, cuma kalau sheet masih kosong
       if (read_().items.length === 0) {
         (op.items || []).forEach(upsert_);
