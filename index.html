@@ -126,6 +126,38 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
 .cp{padding:7px 11px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;user-select:none;background:#fff}
 .cp.on{background:#111;color:#fff;border-color:#111}
 .cp.add{border-style:dashed;color:var(--muted)}
+.ttl{display:flex;flex-direction:column;gap:8px}
+.tabs{display:inline-flex;background:#e9e7e1;border-radius:10px;padding:3px;gap:2px;align-self:flex-start}
+.tabs button{border:0;background:transparent;padding:6px 12px;font-size:13px;border-radius:8px;color:#555}
+.tabs button.on{background:#fff;color:#111;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+body.v-day .main{display:none}
+.dayview{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.dv-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.dv-top h2{font-family:var(--head);font-size:18px;margin:0;text-transform:uppercase;flex:1;min-width:200px}
+.dv-top h2 small{display:block;font-family:var(--body);text-transform:none;font-size:12px;color:var(--muted);font-weight:500;margin-top:2px}
+.dv-top input[type=date]{width:auto;padding:7px 10px;font-size:14px}
+.dv-sum{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.dv-sum span{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:#f1f0ec}
+.dv-sec{font-family:var(--head);font-size:12px;letter-spacing:1px;text-transform:uppercase;margin:18px 0 8px;color:#111}
+.slot{display:grid;grid-template-columns:64px 44px 1fr auto auto;gap:10px;align-items:center;padding:10px 8px;border-top:1px solid var(--line);cursor:pointer}
+.slot:hover{background:#faf9f6}
+.slot .jm{font-family:ui-monospace,Menlo,monospace;font-weight:700;font-size:15px}
+.slot .jm.none{color:var(--muted);font-weight:500}
+.pf{font-size:11px;font-weight:800;padding:3px 0;border-radius:6px;text-align:center;color:#fff}
+.pf.YT{background:#e62117}.pf.IG{background:#c13584}.pf.TT{background:#111}.pf.FB{background:#1877f2}
+.slot .tt{min-width:0}
+.slot .tt b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .tt span{font-size:12px;color:var(--muted)}
+.slot .ak{font-size:12px;font-weight:700;color:#555}
+.akm{display:none;font-weight:700;color:#555}
+.st{font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap}
+.st.Uploaded{background:#d4edbc;color:#11734b}.st.Scheduled{background:#dbe6ff;color:#1d3f8f}.st.Acc{background:#fff1c2;color:#7a5a00}.st.Gagal{background:#ffcfc9;color:#b10202}.st.none{background:#eee;color:#777}
+.slot.past .jm{color:#999}
+.nowline{border-top:2px solid #ff4d2e;position:relative;margin:2px 0}
+.nowline span{position:absolute;right:0;top:-10px;background:#ff4d2e;color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:999px}
+.dv-empty{color:var(--muted);font-size:14px;padding:18px 4px}
+.pvb{font-size:9px;font-weight:800;background:#eee;border:1px dashed #999;border-radius:4px;padding:0 4px;margin-left:6px;vertical-align:1px;color:#555}
+@media(max-width:640px){.dayview{padding:12px}.slot{grid-template-columns:44px 34px 1fr auto;gap:8px;padding:10px 2px}.slot .ak{display:none}.akm{display:inline}.slot .jm{font-size:13px}.slot .tt b{font-size:13px}.st{font-size:10px;padding:3px 7px}}
 .item.pv{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.32) 0 3px,transparent 3px 7px)!important;outline:1px dashed rgba(0,0,0,.35);outline-offset:-1px}
 .tg.pvt{background:rgba(255,255,255,.85);color:#111;opacity:1;border-radius:3px;padding:0 3px}
 .pvdot{background:repeating-linear-gradient(135deg,#999 0 2px,#fff 2px 4px);border:1px solid #999}
@@ -153,7 +185,8 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
 <body>
 <div class="wrap">
   <header>
-    <h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
+    <div class="ttl"><h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
+      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="day">Upload Harian</button></nav></div>
     <div class="nav">
       <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
       <div class="month" id="monthLbl"></div>
@@ -168,6 +201,7 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
     <div class="grid" id="grid"></div>
     <aside class="side" id="brandBar"></aside>
   </div>
+  <section class="dayview" id="dayView" hidden></section>
 </div>
 
 <div class="back" id="back">
@@ -381,6 +415,8 @@ function setRange(){const a=new Date(viewY,viewM-1,1),b=new Date(viewY,viewM+2,0
 function navTo(){setRange();render();const mf=`${viewY}-${String(viewM+1).padStart(2,'0')}-01`;if(API&&(!loaded.from||mf<loaded.from||mf>loaded.to||viewRange.to>loaded.to||viewRange.from<loaded.from))pull(false,true)}
 setRange();
 const hidden=new Set();let hidePv=false;
+let view='cal';try{view=localStorage.getItem('sp-timeline-view')||'cal'}catch(e){}
+let dayK=null; // tanggal di menu Upload Harian (default: hari ini)
 
 const pad=n=>String(n).padStart(2,'0');
 const key=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
@@ -412,7 +448,62 @@ function renderFilters(){
   bb.querySelectorAll('.bi.brand').forEach(el=>el.onclick=()=>openBrandColor(el.dataset.b));
 }
 
+const PLAT2=[['YT','YouTube'],['IG','Instagram'],['TT','TikTok'],['FB','Facebook']];
+const jamNum=j=>{const m=String(j||'').trim().match(/^(\d{1,2})[.:,](\d{2})/);return m?(+m[1])*60+(+m[2]):null};
+function renderDay(){
+  if(!dayK)dayK=todayKey;
+  const [y,m,d]=dayK.split('-').map(Number);
+  document.getElementById('monthLbl').textContent=`${d} ${BULAN[m-1].slice(0,3)} ${y}`;
+  const f=document.getElementById('filters');
+  f.innerHTML=`<span class="status" id="status">${API?(remoteOk?syncLabel():'Narik data dari Sheet…'):(inClaude?'Mode lokal (cuma di browser ini)':'Belum nyambung ke Sheet — klik ⚙')}</span>`;
+  const items=byDate(dayK);
+  const slots=[],noSlot=[];
+  items.forEach(it=>{let any=false;
+    PLAT2.forEach(([c])=>{const jam=String(it['jam'+c]||'').trim(),st=String(it['st'+c]||'').trim(),pid=String(it['id'+c]||'').trim();
+      if(jam||st||pid){any=true;slots.push({it,c,jam,st,mins:jamNum(jam)})}});
+    if(!any)noSlot.push(it)});
+  slots.sort((a,b)=>(a.mins??9999)-(b.mins??9999)||a.c.localeCompare(b.c));
+  const cnt=k=>slots.filter(s=>s.st===k).length, belum=slots.filter(s=>!s.st).length;
+  const isToday=dayK===todayKey, nowM=new Date().getHours()*60+new Date().getMinutes();
+  let nowDone=!isToday;
+  const meta=it=>(it.akun?`<span class="akm">${esc(it.akun)} · </span>`:'')+[(T[it.type]||TYPES[0]).name,it.brand,it.producer&&('Prod: '+it.producer)].filter(Boolean).map(esc).join(' · ');
+  const title=it=>`<span class="dot" style="background:${colorOf(it)};display:inline-block;margin-right:6px;vertical-align:1px"></span>${esc(it.title)}${it.src==='kk'?'':'<span class="pvb">PREVIEW</span>'}`;
+  let rows='';
+  slots.forEach(s=>{
+    if(!nowDone&&s.mins!=null&&s.mins>nowM){rows+=`<div class="nowline"><span>SEKARANG ${hhmm(new Date())}</span></div>`;nowDone=true}
+    const past=isToday&&s.mins!=null&&s.mins<=nowM;
+    rows+=`<div class="slot${past?' past':''}" data-id="${s.it.id}">
+      <span class="jm${s.jam?'':' none'}">${s.jam?esc(s.jam):'--.--'}</span>
+      <span class="pf ${s.c}" title="${PLAT2.find(p=>p[0]===s.c)[1]}">${s.c}</span>
+      <span class="tt"><b>${title(s.it)}</b><span>${meta(s.it)}</span></span>
+      <span class="ak">${esc(s.it.akun||'')}</span>
+      <span class="st ${s.st||'none'}">${esc(s.st||'Belum')}</span></div>`});
+  if(!nowDone&&slots.length)rows+=`<div class="nowline"><span>SEKARANG ${hhmm(new Date())}</span></div>`;
+  const dv=document.getElementById('dayView');
+  dv.innerHTML=`<div class="dv-top"><h2>${fmtDate(dayK)}<small>${isToday?'Hari ini · ':''}konten yang di-upload di tanggal ini</small></h2>
+      <input type="date" id="dvDate" value="${dayK}" aria-label="Pilih tanggal">
+      <button id="dvAdd" class="primary">+ Tambah konten</button></div>
+    <div class="dv-sum"><span>${items.length} konten</span><span>${slots.length} jadwal upload</span>
+      ${cnt('Uploaded')?`<span class="st Uploaded">Uploaded ${cnt('Uploaded')}</span>`:''}${cnt('Scheduled')?`<span class="st Scheduled">Scheduled ${cnt('Scheduled')}</span>`:''}
+      ${cnt('Acc')?`<span class="st Acc">Acc ${cnt('Acc')}</span>`:''}${cnt('Gagal')?`<span class="st Gagal">Gagal ${cnt('Gagal')}</span>`:''}${belum?`<span class="st none">Belum ada status ${belum}</span>`:''}</div>
+    <div class="dv-sec">Jadwal upload</div>
+    ${slots.length?rows:'<div class="dv-empty">Belum ada jam upload / status di tanggal ini.</div>'}
+    ${noSlot.length?`<div class="dv-sec">Belum ada jadwal upload (${noSlot.length})</div>${noSlot.map(it=>`<div class="slot" data-id="${it.id}"><span class="jm none">--.--</span><span></span><span class="tt"><b>${title(it)}</b><span>${meta(it)}</span></span><span class="ak">${esc(it.akun||'')}</span><span class="st none">Belum</span></div>`).join('')}`:''}
+    ${!items.length?'<div class="dv-empty">Nggak ada konten di tanggal ini.</div>':''}`;
+  dv.querySelectorAll('.slot[data-id]').forEach(el=>el.onclick=()=>openForm(state.items.find(x=>x.id===el.dataset.id)));
+  dv.querySelector('#dvAdd').onclick=()=>openForm(null,dayK);
+  dv.querySelector('#dvDate').onchange=e=>{if(e.target.value)goDay(e.target.value)};
+}
+function goDay(k){dayK=k;const [y,m]=k.split('-').map(Number);
+  if(y!==viewY||m-1!==viewM){viewY=y;viewM=m-1;navTo()}else render()}
+function shiftDay(n){const [y,m,d]=(dayK||todayKey).split('-').map(Number);const t=new Date(y,m-1,d+n);goDay(key(t.getFullYear(),t.getMonth(),t.getDate()))}
+function setView(v){view=v;try{localStorage.setItem('sp-timeline-view',v)}catch(e){}
+  if(v==='day'){goDay(dayK||todayKey)}else render()}
 function render(){
+  document.body.classList.toggle('v-day',view==='day');
+  document.getElementById('dayView').hidden=view!=='day';
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
+  if(view==='day')return renderDay();
   document.getElementById('monthLbl').textContent=`${BULAN[viewM]} ${viewY}`;
   renderFilters();
   const g=document.getElementById('grid');
@@ -688,7 +779,8 @@ function cleanBody(){
   return `
 <div class="wrap">
   <header>
-    <h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
+    <div class="ttl"><h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
+      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="day">Upload Harian</button></nav></div>
     <div class="nav">
       <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
       <div class="month" id="monthLbl"></div>
@@ -703,6 +795,7 @@ function cleanBody(){
     <div class="grid" id="grid"></div>
     <aside class="side" id="brandBar"></aside>
   </div>
+  <section class="dayview" id="dayView" hidden></section>
 </div>
 
 <div class="back" id="back">
@@ -729,9 +822,12 @@ function save(){
   },700);
 }
 
-document.getElementById('prev').onclick=()=>{viewM--;if(viewM<0){viewM=11;viewY--}navTo()};
-document.getElementById('next').onclick=()=>{viewM++;if(viewM>11){viewM=0;viewY++}navTo()};
-document.getElementById('todayBtn').onclick=()=>{viewY=now.getFullYear();viewM=now.getMonth();navTo()};
+document.getElementById('prev').onclick=()=>{if(view==='day')return shiftDay(-1);viewM--;if(viewM<0){viewM=11;viewY--}navTo()};
+document.getElementById('next').onclick=()=>{if(view==='day')return shiftDay(1);viewM++;if(viewM>11){viewM=0;viewY++}navTo()};
+document.getElementById('todayBtn').onclick=()=>{if(view==='day')return goDay(todayKey);viewY=now.getFullYear();viewM=now.getMonth();navTo()};
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>setView(b.dataset.v));
+// refresh garis "sekarang" tiap menit di menu Upload Harian
+setInterval(()=>{if(view==='day'&&!back.classList.contains('show'))render()},60000);
 addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(render,150)});
 
 const setupLink=()=>location.origin+location.pathname+'#api='+encodeURIComponent(API);
