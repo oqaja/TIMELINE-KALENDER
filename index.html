@@ -94,6 +94,11 @@ input:focus,select:focus{outline:2px solid #111;outline-offset:-1px}
 .swc .hex{width:120px;font-family:ui-monospace,Menlo,monospace;font-size:14px;padding:7px 10px;text-transform:uppercase}
 .swc .hex.bad{border-color:#c62828;outline-color:#c62828}
 .swc span{font-size:12px;color:var(--muted)}
+.qrbox{display:flex;gap:14px;align-items:flex-start}
+#qr{width:150px;height:150px;flex:none;border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);text-align:center}
+#qr svg{width:100%;height:100%;display:block}
+#setupLink{font-size:12px;font-family:ui-monospace,Menlo,monospace}
+@media(max-width:480px){.qrbox{flex-direction:column;align-items:center}#qr{width:200px;height:200px}}
 .seg button{padding:10px 4px;font-size:13px}
 .seg button.on{color:#fff}
 .row{display:flex;gap:8px;margin-top:18px}
@@ -634,14 +639,33 @@ document.getElementById('next').onclick=()=>{viewM++;if(viewM>11){viewM=0;viewY+
 document.getElementById('todayBtn').onclick=()=>{viewY=now.getFullYear();viewM=now.getMonth();render()};
 addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(render,150)});
 
+const setupLink=()=>location.origin+location.pathname+'#api='+encodeURIComponent(API);
+function loadQR(){return window.makeQR?Promise.resolve():new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='qr.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc)})}
+async function showQR(box,text){
+  try{await loadQR();const q=window.makeQR(text,'M'),n=q.getModuleCount(),b=4;let d='';
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(q.isDark(y,x))d+=`M${x+b} ${y+b}h1v1h-1z`;
+    box.innerHTML=`<svg viewBox="0 0 ${n+b*2} ${n+b*2}" shape-rendering="crispEdges" role="img" aria-label="QR link setup"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#111"/></svg>`;
+  }catch(e){box.textContent='QR gagal dimuat — pakai Copy link aja'}
+}
 function openSheet(){
   modal.classList.remove('wide');
   modal.innerHTML=`<h2>Google Sheet</h2><div class="sub">Tempel URL Web App dari Apps Script (berakhiran <b>/exec</b>) biar data sinkron di semua device.</div>
    <label for="apiIn">URL Web App</label><input id="apiIn" value="${esc(API)}" placeholder="https://script.google.com/macros/s/…/exec">
    <div class="err" id="apiErr"></div>
    <div class="sub" style="margin-top:10px"><a href="${SHEET_URL}" target="_blank" rel="noopener">Buka Google Sheet-nya ↗</a></div>
-   <div class="row"><span class="sp"></span><button id="cl">Batal</button><button class="primary" id="ok">Sambungkan</button></div>`;
+   ${API?`<div class="sec"><h3>Sambungin HP / device lain</h3>
+     <div class="sub" style="margin:6px 0 10px">Scan QR ini pakai kamera HP, atau kirim link-nya. Sekali buka di tiap device, langsung nyambung. Jangan disebar ke luar tim.</div>
+     <div class="qrbox"><div id="qr">Bikin QR…</div><div style="flex:1;min-width:0"><input id="setupLink" readonly value="${esc(setupLink())}"><div class="row" style="margin-top:8px"><button id="cpLink">Copy link</button><span class="err" id="cpMsg" style="margin:0;color:var(--muted)"></span></div></div></div>
+   </div>`:''}
+   <div class="row"><span class="sp"></span><button id="cl">Tutup</button><button class="primary" id="ok">Sambungkan</button></div>`;
   modal.querySelector('#cl').onclick=close;
+  if(API){
+    showQR(modal.querySelector('#qr'),setupLink());
+    modal.querySelector('#setupLink').onclick=e=>e.target.select();
+    modal.querySelector('#cpLink').onclick=async()=>{const m=modal.querySelector('#cpMsg');
+      try{await navigator.clipboard.writeText(setupLink());m.textContent='Link ke-copy ✓'}
+      catch(e){const i=modal.querySelector('#setupLink');i.select();try{document.execCommand('copy');m.textContent='Link ke-copy ✓'}catch(_){m.textContent='Copy manual dari kolom di atas'}}};
+  }
   modal.querySelector('#ok').onclick=async()=>{
     const v=modal.querySelector('#apiIn').value.trim();const err=modal.querySelector('#apiErr');
     if(v&&!/^https:\/\/script\.google(usercontent)?\.com\/.+/.test(v)){err.textContent='URL-nya harus dari script.google.com';return}
@@ -665,6 +689,15 @@ setInterval(()=>{if(!document.hidden)pull(false)},20000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull(false)});
 addEventListener('focus',()=>pull(false));
 addEventListener('pageshow',e=>{if(e.persisted)pull(false)});
+// link khusus dibuka saat halaman sudah terbuka (hash berubah tanpa reload)
+addEventListener('hashchange',()=>{
+  if(location.hash.indexOf('#api=')!==0)return;
+  const v=decodeURIComponent(location.hash.slice(5));
+  try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+  if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(v)||inClaude)return;
+  try{localStorage.setItem('sp-timeline-api',v)}catch(e){}
+  API=v;synced=null;remoteOk=false;document.getElementById('syncBtn').style.display='';render();pull(true);
+});
 if(window.claude&&claude.use){
   claude.use('artifact').then(a=>{if(a){artifact=a;canPublish=true;renderFilters()}}).catch(()=>{});
 }
