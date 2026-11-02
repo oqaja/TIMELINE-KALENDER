@@ -46,6 +46,8 @@ button.danger{color:#c62828;border-color:#f1c4c4}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
 .count{color:var(--muted);font-weight:500}
 .status{margin-left:auto;font-size:12px;color:var(--muted)}
+#syncBtn.spin{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .grid{display:grid;grid-template-columns:repeat(7,1fr);background:var(--line);gap:1px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .dow{background:#111;color:#fff;font-family:var(--head);font-size:12px;font-weight:700;text-align:center;padding:8px 0;letter-spacing:1px}
 .day{background:var(--card);min-height:104px;padding:5px;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -142,6 +144,7 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
       <div class="month" id="monthLbl"></div>
       <button class="icon" id="next" aria-label="Bulan berikutnya">›</button>
       <button id="todayBtn">Hari ini</button>
+      <button class="icon" id="syncBtn" title="Tarik data terbaru dari Sheet">⟳</button>
       <button class="icon" id="sheetBtn" title="Sambungan Google Sheet">⚙</button>
     </div>
   </header>
@@ -268,14 +271,22 @@ async function flush(){
     try{await apiPost(queue[0]);queue.shift()}
     catch(e){setStatus('Gagal simpan ke Sheet — dicoba lagi');busy=false;setTimeout(flush,8000);return}
   }
-  busy=false;setStatus('Tersimpan di Sheet');
+  busy=false;lastSync=new Date();setStatus('Tersimpan di Sheet '+hhmm(lastSync));
 }
 function syncRemote(){if(!API||!synced)return;queue.push(...diffOps());if(queue.length)flush()}
-async function pull(force){
-  if(!API)return;
-  if(!force&&(busy||queue.length||back.classList.contains('show')||document.body.classList.contains('dragging')))return;
+let localRev=0,pulling=false,lastSync=null;
+const hhmm=d=>String(d.getHours()).padStart(2,'0')+'.'+String(d.getMinutes()).padStart(2,'0');
+const syncLabel=()=>lastSync?`Tersinkron ${hhmm(lastSync)}`:'Tersambung ke Sheet';
+async function pull(force,manual){
+  if(!API||pulling)return;
+  if(!force&&!manual&&(busy||queue.length||back.classList.contains('show')||document.body.classList.contains('dragging')))return;
+  pulling=true;const rev=localRev;
+  const sb=document.getElementById('syncBtn');if(sb)sb.classList.add('spin');
+  if(force||manual)setStatus('Narik data dari Sheet…');
   try{
     const d=await apiGet();
+    // ada perubahan lokal selama narik data → jangan timpa, coba lagi nanti
+    if(rev!==localRev||busy||queue.length){pulling=false;if(sb)sb.classList.remove('spin');return}
     if(!d.brandColors)d.brandColors={};
     if(force&&!d.items.length&&state.items.length){ // first connect: move browser data into the empty sheet
       setStatus('Mindahin data browser ke Sheet…');
@@ -284,8 +295,9 @@ async function pull(force){
     }
     if(!d.options)d.options={};
     if(JSON.stringify({i:d.items,b:d.brandColors,o:d.options})!==JSON.stringify({i:state.items,b:state.brandColors,o:state.options})){state={items:d.items,brandColors:d.brandColors||{},options:d.options};lsSave();render()}
-    synced=snap(state);remoteOk=true;setStatus('Tersambung ke Sheet');
+    synced=snap(state);remoteOk=true;lastSync=new Date();setStatus(syncLabel());
   }catch(e){setStatus(synced?'Offline — pakai data terakhir':'Gagal nyambung ke Sheet (cek ⚙)')}
+  pulling=false;if(sb)sb.classList.remove('spin');
 }
 function lsLoad(){try{const v=localStorage.getItem(LS);if(v){const d=JSON.parse(v);if(d&&Array.isArray(d.items)&&(!inClaude||state.items.length===0)){state=d;if(!state.brandColors)state.brandColors={};if(!state.options)state.options={}}}}catch(e){}}
 function lsSave(){try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}}
@@ -307,7 +319,7 @@ function renderFilters(){
   const inMonth=state.items.filter(i=>i.date.startsWith(prefix));
   const f=document.getElementById('filters');
   f.innerHTML=`<span class="mode"><span data-m="brand" class="${mode==='brand'?'on':''}">Warna: Brand</span><span data-m="type" class="${mode==='type'?'on':''}">Warna: Jenis</span></span>`+TYPES.map(t=>`<span class="chip-f ${hidden.has(t.id)?'off':''}" data-t="${t.id}"><span class="dot" style="background:${t.color}"></span>${t.name} <span class="count">${inMonth.filter(i=>i.type===t.id).length}</span></span>`).join('')
-   +`<span class="status" id="status">${canPublish?'Tersimpan':API?(remoteOk?'Tersambung ke Sheet':'Nyambung ke Sheet…'):(inClaude?'Mode lokal (cuma di browser ini)':'Belum nyambung ke Sheet — klik ⚙')}</span>`;
+   +`<span class="status" id="status">${canPublish?'Tersimpan':API?(remoteOk?syncLabel():'Narik data dari Sheet…'):(inClaude?'Mode lokal (cuma di browser ini)':'Belum nyambung ke Sheet — klik ⚙')}</span>`;
   f.querySelectorAll('.chip-f').forEach(el=>el.onclick=()=>{const t=el.dataset.t;hidden.has(t)?hidden.delete(t):hidden.add(t);render()});
   f.querySelectorAll('.mode span').forEach(el=>el.onclick=()=>{mode=el.dataset.m;try{localStorage.setItem('sp-timeline-mode',mode)}catch(e){};render()});
   const bb=document.getElementById('brandBar');
@@ -582,6 +594,7 @@ function cleanBody(){
       <div class="month" id="monthLbl"></div>
       <button class="icon" id="next" aria-label="Bulan berikutnya">›</button>
       <button id="todayBtn">Hari ini</button>
+      <button class="icon" id="syncBtn" title="Tarik data terbaru dari Sheet">⟳</button>
       <button class="icon" id="sheetBtn" title="Sambungan Google Sheet">⚙</button>
     </div>
   </header>
@@ -599,6 +612,7 @@ function cleanBody(){
 `;
 }
 function save(){
+  localRev++;
   lsSave();
   if(API){syncRemote();return}
   if(!canPublish){setStatus('Mode lokal (cuma di browser ini)');return}
@@ -633,6 +647,7 @@ function openSheet(){
     if(v&&!/^https:\/\/script\.google(usercontent)?\.com\/.+/.test(v)){err.textContent='URL-nya harus dari script.google.com';return}
     try{localStorage.setItem('sp-timeline-api',v)}catch(e){}
     API=v;synced=null;remoteOk=false;close();render();
+    document.getElementById('syncBtn').style.display=API?'':'none';
     if(API)await pull(true);
   };
   back.classList.add('show');
@@ -643,8 +658,13 @@ if(inClaude)document.getElementById('sheetBtn').style.display='none';
 lsLoad();
 render();
 if(API)pull(true);
-setInterval(()=>pull(false),30000);
+document.getElementById('syncBtn').onclick=()=>pull(false,true);
+if(!API||inClaude)document.getElementById('syncBtn').style.display='none';
+// cek data baru: tiap 20 detik selama tab kebuka, dan tiap balik ke tab/jendela ini
+setInterval(()=>{if(!document.hidden)pull(false)},20000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull(false)});
+addEventListener('focus',()=>pull(false));
+addEventListener('pageshow',e=>{if(e.persisted)pull(false)});
 if(window.claude&&claude.use){
   claude.use('artifact').then(a=>{if(a){artifact=a;canPublish=true;renderFilters()}}).catch(()=>{});
 }
