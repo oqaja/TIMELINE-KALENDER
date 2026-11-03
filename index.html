@@ -126,9 +126,9 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
 .cp{padding:7px 11px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;user-select:none;background:#fff}
 .cp.on{background:#111;color:#fff;border-color:#111}
 .cp.add{border-style:dashed;color:var(--muted)}
-.plats{display:inline-flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px}
+.plats{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px}
 .pl-l{font-size:11px;font-weight:700;color:var(--muted);padding:0 6px 0 8px;text-transform:uppercase;letter-spacing:.5px}
-.pl{font-size:12px;font-weight:800;padding:4px 9px;border-radius:999px;cursor:pointer;user-select:none;color:#666;border:1px solid transparent}
+.pl{white-space:nowrap;font-size:12px;font-weight:800;padding:4px 9px;border-radius:999px;cursor:pointer;user-select:none;color:#666;border:1px solid transparent}
 .pl b{font-weight:600;opacity:.7;margin-left:2px}
 .pl:hover{background:#f1f0ec}
 .pl.on{color:#fff}.pl.all.on{background:#111}
@@ -137,7 +137,31 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
 .tabs{display:inline-flex;background:#e9e7e1;border-radius:10px;padding:3px;gap:2px;align-self:flex-start}
 .tabs button{border:0;background:transparent;padding:6px 12px;font-size:13px;border-radius:8px;color:#555}
 .tabs button.on{background:#fff;color:#111;box-shadow:0 1px 2px rgba(0,0,0,.12)}
-body.v-day .main{display:none}
+body.v-day .main,body.v-week .main{display:none}
+.weekview{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.wkday{background:var(--card);border:1px solid var(--line);border-radius:12px;min-height:420px;display:flex;flex-direction:column;min-width:0}
+.wkday.today{border-color:#111;box-shadow:0 0 0 1px #111}
+.wkday.drop{outline:2px dashed #111;outline-offset:-3px;background:#fff8d6}
+.wkh{padding:9px 10px 8px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:6px;cursor:pointer}
+.wkh .dn{font-family:var(--head);font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.wkh .dd{font-size:18px;font-weight:800}
+.wkday.today .wkh .dd{background:var(--today);border-radius:6px;padding:0 6px}
+.wkh .n{margin-left:auto;font-size:11px;font-weight:700;color:var(--muted)}
+.wkb{padding:6px;display:flex;flex-direction:column;gap:6px;flex:1;cursor:pointer}
+.wkc{border-radius:8px;padding:7px 8px 7px 10px;background:#fafaf8;border:1px solid var(--line);border-left:5px solid var(--bc);cursor:grab;touch-action:none}
+.wkc:hover{background:#fff;border-color:#ccc}
+.wkc.pv{border-style:dashed;border-left-style:solid;background:repeating-linear-gradient(135deg,#f6f6f3 0 4px,#fff 4px 8px)}
+.wkc .t{font-size:12.5px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.wkc .m{font-size:10.5px;color:var(--muted);margin-top:3px;display:flex;flex-wrap:wrap;gap:3px 6px;align-items:center}
+.wkc .m .tg2{font-size:9px;font-weight:800;color:#fff;border-radius:4px;padding:1px 4px}
+.wkc .m .ak2{font-weight:800;color:#444}
+.wkc .pcs{justify-content:flex-start;margin-top:5px}
+.wkc .pc{font-size:10px}
+.wkc .pc i{font-size:8px;min-width:18px;padding:1px 4px}
+.wkc.src{opacity:.35}
+.wkadd{font-size:12px;color:var(--muted);text-align:center;padding:6px;border:1px dashed transparent;border-radius:8px;margin-top:auto}
+.wkb:hover .wkadd{border-color:#ccc;color:#111}
+@media(max-width:900px){.weekview{grid-template-columns:1fr}.wkday{min-height:0}.wkb{min-height:44px}.wkadd{display:none}}
 .dayview{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
 .dv-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
 .dv-top h2{font-family:var(--head);font-size:18px;margin:0;text-transform:uppercase;flex:1;min-width:200px}
@@ -208,7 +232,7 @@ body.v-day .main{display:none}
 <div class="wrap">
   <header>
     <div class="ttl"><h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
-      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="day">Upload Harian</button></nav></div>
+      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button></nav></div>
     <div class="nav">
       <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
       <div class="month" id="monthLbl"></div>
@@ -223,6 +247,7 @@ body.v-day .main{display:none}
     <div class="grid" id="grid"></div>
     <aside class="side" id="brandBar"></aside>
   </div>
+  <section class="weekview" id="weekView" hidden></section>
   <section class="dayview" id="dayView" hidden></section>
 </div>
 
@@ -464,9 +489,9 @@ function bindAkun(f){f.querySelectorAll('.pl[data-a]').forEach(el=>el.onclick=()
   try{localStorage.setItem('sp-timeline-akun',JSON.stringify([...selAkun]))}catch(e){}render()})}
 const brands=()=>[...new Set([...state.items.flatMap(i=>String(i.brand||'').split(/\s*,\s*/)).filter(Boolean),...BRAND_LIST,...((state.lists&&state.lists.brand)||[]),...((state.options&&state.options.brand)||[])])].sort((a,b)=>a.localeCompare(b,'id',{sensitivity:'base'}));
 
-function renderFilters(){
+function renderFilters(listAll){
   const prefix=`${viewY}-${pad(viewM+1)}`;
-  const inMonthAll=state.items.filter(i=>i.date.startsWith(prefix));
+  const inMonthAll=listAll||state.items.filter(i=>i.date.startsWith(prefix));
   const inMonth=inMonthAll.filter(akunOK);
   const f=document.getElementById('filters');
   f.innerHTML=`<span class="mode"><span data-m="brand" class="${mode==='brand'?'on':''}">Warna: Brand</span><span data-m="type" class="${mode==='type'?'on':''}">Warna: Jenis</span></span>`+akunBar(inMonthAll)+TYPES.map(t=>`<span class="chip-f ${hidden.has(t.id)?'off':''}" data-t="${t.id}"><span class="dot" style="background:${t.color}"></span>${t.name} <span class="count">${inMonth.filter(i=>i.type===t.id).length}</span></span>`).join('')
@@ -538,12 +563,41 @@ function goDay(k){dayK=k;const [y,m]=k.split('-').map(Number);
   if(y!==viewY||m-1!==viewM){viewY=y;viewM=m-1;navTo()}else render()}
 function shiftDay(n){const [y,m,d]=(dayK||todayKey).split('-').map(Number);const t=new Date(y,m-1,d+n);goDay(key(t.getFullYear(),t.getMonth(),t.getDate()))}
 function setView(v){view=v;try{localStorage.setItem('sp-timeline-view',v)}catch(e){}
-  if(v==='day'){goDay(dayK||todayKey)}else render()}
+  if(v==='day'||v==='week'){goDay(dayK||todayKey)}else render()}
+const mondayOf=k=>{const [y,m,d]=k.split('-').map(Number);const t=new Date(y,m-1,d);t.setDate(t.getDate()-((t.getDay()+6)%7));return t};
+function renderWeek(){
+  if(!dayK)dayK=todayKey;
+  const mon=mondayOf(dayK),days=[...Array(7)].map((_,i)=>{const t=new Date(mon);t.setDate(mon.getDate()+i);return t});
+  const keys=days.map(t=>key(t.getFullYear(),t.getMonth(),t.getDate())),a=days[0],z=days[6];
+  document.getElementById('monthLbl').textContent=a.getMonth()===z.getMonth()?`${a.getDate()}–${z.getDate()} ${BULAN[z.getMonth()].slice(0,3)} ${z.getFullYear()}`:`${a.getDate()} ${BULAN[a.getMonth()].slice(0,3)} – ${z.getDate()} ${BULAN[z.getMonth()].slice(0,3)} ${z.getFullYear()}`;
+  renderFilters(state.items.filter(i=>keys.includes(i.date)));
+  const vis=it=>!hidden.has(it.type)&&!(hidePv&&it.src!=='kk')&&akunOK(it);
+  const first=it=>{const m=PLAT2.map(([c])=>jamNum(it['jam'+c])).filter(x=>x!=null);return m.length?Math.min(...m):9999};
+  const card=it=>{const pl=PLAT2.map(([c])=>({c,jam:String(it['jam'+c]||'').trim(),st:String(it['st'+c]||'').trim(),pid:String(it['id'+c]||'').trim()})).filter(x=>x.jam||x.st||x.pid);
+    const ty=T[it.type]||TYPES[0];
+    return `<div class="wkc${it.src==='kk'?'':' pv'}" data-id="${it.id}" style="--bc:${colorOf(it)}" title="${esc(it.title)}">
+      <div class="t">${it.production==='✅'?'✓ ':''}${esc(it.title)}</div>
+      <div class="m"><span class="tg2" style="background:${ty.color}">${TAG[it.type]||''}</span>${it.akun?`<span class="ak2">${esc(it.akun)}</span>`:''}${it.brand?`<span>${esc(it.brand)}</span>`:''}${it.src==='kk'?'':'<span class="pvb" style="margin:0">PREVIEW</span>'}</div>
+      ${pl.length?`<div class="pcs">${pl.map(x=>`<span class="pc ${x.st||'none'}"><i class="pf ${x.c}">${x.c}</i>${x.jam?esc(x.jam):'--.--'}</span>`).join('')}</div>`:''}</div>`};
+  const wv=document.getElementById('weekView');
+  wv.innerHTML=keys.map((k,i)=>{const its=byDate(k).filter(vis).sort((a,b)=>first(a)-first(b));
+    return `<div class="wkday${k===todayKey?' today':''}" data-k="${k}">
+      <div class="wkh" data-k="${k}"><span class="dn">${['Sen','Sel','Rab','Kam','Jum','Sab','Min'][i]}</span><span class="dd">${days[i].getDate()}</span><span class="n">${its.length?its.length+' konten':''}</span></div>
+      <div class="wkb" data-k="${k}">${its.map(card).join('')}<div class="wkadd">+ Tambah</div></div></div>`}).join('');
+  wv.querySelectorAll('.wkc').forEach(attachDrag);
+  wv.querySelectorAll('.wkc').forEach(el=>el.onclick=e=>{e.stopPropagation();if(justDragged)return;openForm(state.items.find(x=>x.id===el.dataset.id))});
+  wv.querySelectorAll('.wkb').forEach(el=>el.onclick=()=>{if(justDragged)return;openForm(null,el.dataset.k)});
+  wv.querySelectorAll('.wkh').forEach(el=>el.onclick=()=>{dayK=el.dataset.k;setView('day')});
+}
+function shiftWeek(n){shiftDay(7*n)}
 function render(){
   document.body.classList.toggle('v-day',view==='day');
+  document.body.classList.toggle('v-week',view==='week');
   document.getElementById('dayView').hidden=view!=='day';
+  document.getElementById('weekView').hidden=view!=='week';
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
   if(view==='day')return renderDay();
+  if(view==='week')return renderWeek();
   document.getElementById('monthLbl').textContent=`${BULAN[viewM]} ${viewY}`;
   renderFilters();
   const g=document.getElementById('grid');
@@ -592,7 +646,7 @@ function attachDrag(el){
     let lastX=sx,lastY=sy;
     const move=(x,y)=>{
       ghost.style.left=(x-20)+'px';ghost.style.top=(y-14)+'px';
-      const t=document.elementFromPoint(x,y);const d=t&&t.closest('.day');
+      const t=document.elementFromPoint(x,y);const d=t&&t.closest('.day,.wkday');
       if(d!==over){if(over)over.classList.remove('drop');over=d;if(over)over.classList.add('drop')}
     };
     if(touch)holdT=setTimeout(()=>{if(!cancelled)begin()},300);
@@ -820,7 +874,7 @@ function cleanBody(){
 <div class="wrap">
   <header>
     <div class="ttl"><h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
-      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="day">Upload Harian</button></nav></div>
+      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button></nav></div>
     <div class="nav">
       <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
       <div class="month" id="monthLbl"></div>
@@ -835,6 +889,7 @@ function cleanBody(){
     <div class="grid" id="grid"></div>
     <aside class="side" id="brandBar"></aside>
   </div>
+  <section class="weekview" id="weekView" hidden></section>
   <section class="dayview" id="dayView" hidden></section>
 </div>
 
@@ -862,9 +917,9 @@ function save(){
   },700);
 }
 
-document.getElementById('prev').onclick=()=>{if(view==='day')return shiftDay(-1);viewM--;if(viewM<0){viewM=11;viewY--}navTo()};
-document.getElementById('next').onclick=()=>{if(view==='day')return shiftDay(1);viewM++;if(viewM>11){viewM=0;viewY++}navTo()};
-document.getElementById('todayBtn').onclick=()=>{if(view==='day')return goDay(todayKey);viewY=now.getFullYear();viewM=now.getMonth();navTo()};
+document.getElementById('prev').onclick=()=>{if(view==='day')return shiftDay(-1);if(view==='week')return shiftWeek(-1);viewM--;if(viewM<0){viewM=11;viewY--}navTo()};
+document.getElementById('next').onclick=()=>{if(view==='day')return shiftDay(1);if(view==='week')return shiftWeek(1);viewM++;if(viewM>11){viewM=0;viewY++}navTo()};
+document.getElementById('todayBtn').onclick=()=>{if(view==='day'||view==='week')return goDay(todayKey);viewY=now.getFullYear();viewM=now.getMonth();navTo()};
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>setView(b.dataset.v));
 // refresh garis "sekarang" tiap menit di menu Upload Harian
 setInterval(()=>{if(view==='day'&&!back.classList.contains('show'))render()},60000);
