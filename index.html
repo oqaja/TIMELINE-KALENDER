@@ -126,6 +126,14 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
 .cp{padding:7px 11px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;user-select:none;background:#fff}
 .cp.on{background:#111;color:#fff;border-color:#111}
 .cp.add{border-style:dashed;color:var(--muted)}
+.plats{display:inline-flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px}
+.pl-l{font-size:11px;font-weight:700;color:var(--muted);padding:0 6px 0 8px;text-transform:uppercase;letter-spacing:.5px}
+.pl{font-size:12px;font-weight:800;padding:4px 9px;border-radius:999px;cursor:pointer;user-select:none;color:#666;border:1px solid transparent}
+.pl b{font-weight:600;opacity:.7;margin-left:2px}
+.pl:hover{background:#f1f0ec}
+.pl.on{color:#fff}.pl.all.on{background:#111}
+.pl.YT.on{background:#e62117}.pl.IG.on{background:#c13584}.pl.TT.on{background:#111}.pl.FB.on{background:#1877f2}
+.tj{font-family:ui-monospace,Menlo,monospace;font-size:10px;font-weight:800;margin-right:4px;opacity:.9}
 .ttl{display:flex;flex-direction:column;gap:8px}
 .tabs{display:inline-flex;background:#e9e7e1;border-radius:10px;padding:3px;gap:2px;align-self:flex-start}
 .tabs button{border:0;background:transparent;padding:6px 12px;font-size:13px;border-radius:8px;color:#555}
@@ -439,15 +447,29 @@ const todayKey=key(now.getFullYear(),now.getMonth(),now.getDate());
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function fmtDate(k){const [y,m,d]=k.split('-').map(Number);const dt=new Date(y,m-1,d);const h=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][dt.getDay()];return `${h}, ${d} ${BULAN[m-1]} ${y}`}
 const byDate=k=>state.items.filter(i=>i.date===k);
+// ---- filter platform (YT/IG/TT/FB). Kosong = semua konten.
+let selPlat=new Set();try{selPlat=new Set(JSON.parse(localStorage.getItem('sp-timeline-plat')||'[]'))}catch(e){}
+const onPlat=(it,c)=>!!(String(it['jam'+c]||'').trim()||String(it['st'+c]||'').trim()||String(it['id'+c]||'').trim());
+const platOK=it=>!selPlat.size||[...selPlat].some(c=>onPlat(it,c));
+function platBar(list){
+  return `<span class="plats" title="Pilih platform (bisa lebih dari satu)"><span class="pl-l">Platform</span>`
+    +`<span class="pl ${selPlat.size?'':'on'} all" data-p="">Semua</span>`
+    +PLAT2.map(([c,n])=>`<span class="pl ${c} ${selPlat.has(c)?'on':''}" data-p="${c}" title="${n}">${c} <b>${list.filter(i=>onPlat(i,c)).length}</b></span>`).join('')+`</span>`;
+}
+function bindPlat(f){f.querySelectorAll('.pl').forEach(el=>el.onclick=()=>{const c=el.dataset.p;
+  if(!c)selPlat.clear();else selPlat.has(c)?selPlat.delete(c):selPlat.add(c);
+  try{localStorage.setItem('sp-timeline-plat',JSON.stringify([...selPlat]))}catch(e){}render()})}
 const brands=()=>[...new Set([...state.items.flatMap(i=>String(i.brand||'').split(/\s*,\s*/)).filter(Boolean),...BRAND_LIST,...((state.lists&&state.lists.brand)||[]),...((state.options&&state.options.brand)||[])])].sort((a,b)=>a.localeCompare(b,'id',{sensitivity:'base'}));
 
 function renderFilters(){
   const prefix=`${viewY}-${pad(viewM+1)}`;
-  const inMonth=state.items.filter(i=>i.date.startsWith(prefix));
+  const inMonthAll=state.items.filter(i=>i.date.startsWith(prefix));
+  const inMonth=inMonthAll.filter(platOK);
   const f=document.getElementById('filters');
-  f.innerHTML=`<span class="mode"><span data-m="brand" class="${mode==='brand'?'on':''}">Warna: Brand</span><span data-m="type" class="${mode==='type'?'on':''}">Warna: Jenis</span></span>`+TYPES.map(t=>`<span class="chip-f ${hidden.has(t.id)?'off':''}" data-t="${t.id}"><span class="dot" style="background:${t.color}"></span>${t.name} <span class="count">${inMonth.filter(i=>i.type===t.id).length}</span></span>`).join('')
+  f.innerHTML=`<span class="mode"><span data-m="brand" class="${mode==='brand'?'on':''}">Warna: Brand</span><span data-m="type" class="${mode==='type'?'on':''}">Warna: Jenis</span></span>`+platBar(inMonthAll)+TYPES.map(t=>`<span class="chip-f ${hidden.has(t.id)?'off':''}" data-t="${t.id}"><span class="dot" style="background:${t.color}"></span>${t.name} <span class="count">${inMonth.filter(i=>i.type===t.id).length}</span></span>`).join('')
    +`<span class="chip-f pvchip ${hidePv?'off':''}" id="pvChip"><span class="dot pvdot"></span>Preview <span class="count">${inMonth.filter(i=>i.src!=='kk').length}</span></span>`
    +`<span class="status" id="status">${canPublish?'Tersimpan':API?(remoteOk?syncLabel():'Narik data dari Sheet…'):(inClaude?'Mode lokal (cuma di browser ini)':'Belum nyambung ke Sheet — klik ⚙')}</span>`;
+  bindPlat(f);
   f.querySelectorAll('.chip-f[data-t]').forEach(el=>el.onclick=()=>{const t=el.dataset.t;hidden.has(t)?hidden.delete(t):hidden.add(t);render()});
   const pvc=f.querySelector('#pvChip');if(pvc)pvc.onclick=()=>{hidePv=!hidePv;render()};
   f.querySelectorAll('.mode span').forEach(el=>el.onclick=()=>{mode=el.dataset.m;try{localStorage.setItem('sp-timeline-mode',mode)}catch(e){};render()});
@@ -470,11 +492,12 @@ function renderDay(){
   const [y,m,d]=dayK.split('-').map(Number);
   document.getElementById('monthLbl').textContent=`${d} ${BULAN[m-1].slice(0,3)} ${y}`;
   const f=document.getElementById('filters');
-  f.innerHTML=`<span class="status" id="status">${API?(remoteOk?syncLabel():'Narik data dari Sheet…'):(inClaude?'Mode lokal (cuma di browser ini)':'Belum nyambung ke Sheet — klik ⚙')}</span>`;
+  f.innerHTML=platBar(byDate(dayK))+`<span class="status" id="status">${API?(remoteOk?syncLabel():'Narik data dari Sheet…'):(inClaude?'Mode lokal (cuma di browser ini)':'Belum nyambung ke Sheet — klik ⚙')}</span>`;
+  bindPlat(f);
   // 1 baris per konten; jadwal tiap platform jadi label kecil
-  const rows=byDate(dayK).map(it=>{
+  const rows=byDate(dayK).filter(platOK).map(it=>{
     const pl=PLAT2.map(([c])=>({c,jam:String(it['jam'+c]||'').trim(),st:String(it['st'+c]||'').trim(),pid:String(it['id'+c]||'').trim()}))
-      .filter(x=>x.jam||x.st||x.pid).map(x=>({...x,mins:jamNum(x.jam)}));
+      .filter(x=>(x.jam||x.st||x.pid)&&(!selPlat.size||selPlat.has(x.c))).map(x=>({...x,mins:jamNum(x.jam)}));
     pl.sort((a,b)=>(a.mins??9999)-(b.mins??9999));
     const mins=pl.length?Math.min(...pl.map(x=>x.mins??9999)):null;
     return {it,pl,mins:mins===9999?null:mins,first:pl.find(x=>x.jam)}});
@@ -531,10 +554,10 @@ function render(){
   for(let i=0;i<weeks*7;i++){
     const d=new Date(start);d.setDate(start.getDate()+i);
     const k=key(d.getFullYear(),d.getMonth(),d.getDate());
-    const items=byDate(k).filter(it=>!hidden.has(it.type)&&!(hidePv&&it.src!=='kk'));
+    const items=byDate(k).filter(it=>!hidden.has(it.type)&&!(hidePv&&it.src!=='kk')&&platOK(it));
     const cls=['day'];if(d.getMonth()!==viewM)cls.push('out');if(k===todayKey)cls.push('today');
     html+=`<div class="${cls.join(' ')}" data-k="${k}"><div class="num"><span>${d.getDate()}</span><span class="add">+</span></div>`
-      +items.slice(0,max).map(it=>`<div class="item${it.src==='kk'?'':' pv'}" data-id="${it.id}" style="background:${colorOf(it)};color:${textOn(colorOf(it))}" title="${it.src==='kk'?'':'PREVIEW · '}${(T[it.type]||TYPES[0]).name} · ${esc(it.title)}${it.brand?' — '+esc(it.brand):''}">${it.src==='kk'?'':'<span class="tg pvt">PV</span>'}${mode==='brand'?`<span class="tg">${TAG[it.type]||''}</span>`:''}${it.production==='✅'?'✓ ':''}${esc(it.title)}${it.brand&&mode!=='brand'?` <span class="b">· ${esc(it.brand)}</span>`:''}</div>`).join('')
+      +items.slice(0,max).map(it=>`<div class="item${it.src==='kk'?'':' pv'}" data-id="${it.id}" style="background:${colorOf(it)};color:${textOn(colorOf(it))}" title="${it.src==='kk'?'':'PREVIEW · '}${(T[it.type]||TYPES[0]).name} · ${esc(it.title)}${it.brand?' — '+esc(it.brand):''}">${it.src==='kk'?'':'<span class="tg pvt">PV</span>'}${mode==='brand'?`<span class="tg">${TAG[it.type]||''}</span>`:''}${selPlat.size===1&&String(it['jam'+[...selPlat][0]]||'').trim()?`<span class="tj">${esc(String(it['jam'+[...selPlat][0]]).trim())}</span>`:''}${it.production==='✅'?'✓ ':''}${esc(it.title)}${it.brand&&mode!=='brand'?` <span class="b">· ${esc(it.brand)}</span>`:''}</div>`).join('')
       +(items.length>max?`<div class="more">+${items.length-max} lagi</div>`:'')
       +`</div>`;
   }
