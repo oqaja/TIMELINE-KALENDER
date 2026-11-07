@@ -126,6 +126,9 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
 .cp{padding:7px 11px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;user-select:none;background:#fff}
 .cp.on{background:#111;color:#fff;border-color:#111}
 .cp.add{border-style:dashed;color:var(--muted)}
+.clash{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px}
+.clash>div{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;display:flex;flex-direction:column;gap:2px}
+.clash span{color:var(--muted);font-size:12px}.clash em{font-style:normal;color:#111;font-weight:700}
 .plats{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px}
 .pl-l{font-size:11px;font-weight:700;color:var(--muted);padding:0 6px 0 8px;text-transform:uppercase;letter-spacing:.5px}
 .pl{white-space:nowrap;font-size:12px;font-weight:800;padding:4px 9px;border-radius:999px;cursor:pointer;user-select:none;color:#666;border:1px solid transparent}
@@ -293,6 +296,20 @@ function addOption(list,value){
   if(API){queue.push({op:'option',list,value});flush()}
   return true;
 }
+const KNAME={date:'Tanggal',title:'Judul',type:'Jenis',brand:'Brand Tap In',akun:'Akun',segmen:'Segmen',producer:'Producer',writing:'Writing',shooting:'Shooting',designer:'Designer',editor:'Editor',talent1:'Talent 1',talent2:'Talent 2',production:'Production',cover:'Cover/Thumb',catatan:'Catatan',eventId:'Event ID'};
+const kname=k=>KNAME[k]||(/^jam(..)$/.test(k)?'Jam up '+k.slice(3):/^st(..)$/.test(k)?'Status '+k.slice(2):/^id(..)$/.test(k)?'Post ID '+k.slice(2):k);
+function askConflict(op,clash){
+  const it=state.items.find(x=>x.id===(op.cid||op.id))||{};
+  const mine=k=>{const v=op.changes&&k in op.changes?op.changes[k]:(op.cols&&op.cols[k]);return k==='type'?(T[v]||{}).name||v:v};
+  const w=document.createElement('div');w.className='back show';w.style.zIndex=80;
+  w.innerHTML=`<div class="modal" style="max-width:440px"><h2>Udah diubah orang lain</h2>
+    <div class="sub">"${esc(it.title||'Konten ini')}" barusan diubah di Sheet setelah lo buka. Bagian yang bentrok:</div>
+    <div class="clash">${clash.map(c=>`<div><b>${esc(c.k==='col'?c.col:kname(c.k))}</b><span>di Sheet sekarang: <em>${esc(c.cur||'(kosong)')}</em></span><span>punya lo: <em>${esc(nv(mine(c.k==='col'?c.col:c.k))||'(kosong)')}</em></span></div>`).join('')}</div>
+    <div class="row"><button id="cfKeep">Pakai yang di Sheet</button><span class="sp"></span><button class="primary" id="cfOver">Timpa pakai punya gue</button></div></div>`;
+  document.body.appendChild(w);
+  w.querySelector('#cfOver').onclick=()=>{w.remove();queue[0]={...queue[0],force:true};flush()};
+  w.querySelector('#cfKeep').onclick=()=>{w.remove();queue.shift();if(queue.length)flush();else{setStatus('Pakai data di Sheet');pull(false,true)}};
+}
 function pinDialog(onDone){
   const w=document.createElement('div');w.className='back show';w.style.zIndex=70;
   w.innerHTML=`<div class="modal" style="max-width:340px"><h2>Masukin PIN</h2><div class="sub">Buat nambah, ngedit, atau ngehapus konten. Cukup sekali di browser ini.</div>
@@ -374,14 +391,14 @@ let synced=null, queue=[], busy=false, remoteOk=false;
 const nv=v=>v==null?'':String(v);
 const snap=st=>({items:Object.fromEntries(st.items.map(i=>{const o={src:i.src||'pv',row:i.row};ALLK.forEach(k=>o[k]=nv(i[k]));return [i.id,o]})),colors:{...st.brandColors}});
 const refOf=o=>({row:o.row,eventId:o.eventId,title:o.title,date:o.date});
-let viewRange={from:'',to:''},kkErr='';
+let viewRange={from:'',to:''},kkErr='',kkWarn=[],scriptVer=0;
 async function apiGet(){
   const u=API+(API.includes('?')?'&':'?')+'from='+viewRange.from+'&to='+viewRange.to;
   const r=await fetch(u,{cache:'no-store'});const d=await r.json();if(!d||!Array.isArray(d.items))throw new Error('bad');
   d.items=d.items.map(fromRemote).map(i=>({...i,src:'pv'}));return d}
 function toRemote(it){const o={...it,cols:{}};for(const k in XCOL){o.cols[XCOL[k]]=it[k]||'';delete o[k]}return o}
 function fromRemote(it){const o={...it};for(const k in XCOL)o[k]=(it.cols&&it.cols[XCOL[k]])||'';delete o.cols;return o}
-async function apiPost(op){if(op.op==='upsert')op={...op,item:toRemote(op.item)};if(op.op==='bulk')op={...op,items:op.items.map(toRemote)};op={...op,pin:PIN};const r=await fetch(API,{method:'POST',body:JSON.stringify(op)});const d=await r.json();if(!d.ok)throw new Error(d.error||'gagal');return d}
+async function apiPost(op){if(op.op==='upsert')op={...op,item:toRemote(op.item)};if(op.op==='bulk')op={...op,items:op.items.map(toRemote)};op={...op,pin:PIN};const r=await fetch(API,{method:'POST',body:JSON.stringify(op)});const d=await r.json();if(!d.ok){const er=new Error(d.error||'gagal');if(d.conflict)er.conflict=d.conflict;throw er}return d}
 function diffOps(){
   const now=snap(state), ops=[];
   for(const it of state.items){
@@ -389,7 +406,12 @@ function diffOps(){
     if(!o){ops.push(kk?{op:'kkAdd',item:{...it},cid:it.id}:{op:'upsert',item:it});continue}
     const ch={};ALLK.forEach(k=>{if(k!=='id'&&o[k]!==n[k])ch[k]=n[k]});
     if(!Object.keys(ch).length)continue;
-    ops.push(kk?{op:'kkUpdate',ref:refOf(o),changes:ch,cid:it.id}:{op:'upsert',item:it});
+    const prev={};Object.keys(ch).forEach(k=>prev[k]=o[k]);
+    if(kk){ops.push(scriptVer>=2?{op:'kkUpdate',ref:refOf(o),changes:ch,prev,cid:it.id}:{op:'kkUpdate',ref:refOf(o),changes:ch,cid:it.id});continue}
+    if(scriptVer>=2){ // preview: kirim kolom yang berubah aja
+      const c2={},cols={},pc={};Object.keys(ch).forEach(k=>{if(XCOL[k]){cols[XCOL[k]]=ch[k];pc[XCOL[k]]=o[k]}else c2[k]=ch[k]});
+      ops.push({op:'pvUpdate',id:it.id,changes:c2,cols,prev:{...prev,cols:pc},cid:it.id});
+    }else ops.push({op:'upsert',item:it});
   }
   for(const id in synced.items){if(!(id in now.items)){const o=synced.items[id];ops.push(o.src==='kk'?{op:'kkDelete',ref:refOf(o)}:{op:'delete',id})}}
   for(const b in now.colors){if(synced.colors[b]!==now.colors[b])ops.push({op:'color',brand:b,color:now.colors[b]})}
@@ -414,6 +436,7 @@ async function flush(){
       const res=await apiPost(op);queue.shift();
       if(op.cid&&res&&res.row){const it=state.items.find(x=>x.id===op.cid);if(it)it.row=res.row;if(synced&&synced.items[op.cid])synced.items[op.cid].row=res.row}
     }catch(e){
+      if(e.conflict){busy=false;askConflict(op,e.conflict);return}
       const m=String(e.message||e),pm=m.match(/(pin_wrong|pin_locked|pin_not_set): (.*)/);
       if(pm){busy=false;
         if(pm[1]==='pin_wrong'){savePin('');askPin(v=>{savePin(v);flush()});toast('PIN salah, coba lagi.');return}
@@ -441,13 +464,13 @@ async function pull(force,manual){
     if(rev!==localRev||busy||queue.length){pulling=false;if(sb)sb.classList.remove('spin');return}
     if(!d.brandColors)d.brandColors={};
     if(!d.options)d.options={};
-    kkErr=d.kk?'':(d.kkError||'KALENDER KONTEN tidak bisa dibaca');
+    kkErr=d.kk?'':(d.kkError||'KALENDER KONTEN tidak bisa dibaca');scriptVer=+d.ver||0;kkWarn=d.kkWarn||[];
     const kkItems=d.kk?d.kk.map(i=>({...i,src:'kk'})):state.items.filter(i=>i.src==='kk');
     const all=[...d.items,...kkItems].sort((a,b)=>a.date.localeCompare(b.date));
     const next={items:all,brandColors:d.brandColors||{},options:d.options,lists:d.lists||state.lists||{}};
     loaded={...viewRange};
     if(JSON.stringify(next)!==JSON.stringify({items:state.items,brandColors:state.brandColors,options:state.options,lists:state.lists})){state=next;lsSave();render()}
-    synced=snap(state);remoteOk=true;lastSync=new Date();setStatus(kkErr?'⚠ '+kkErr.slice(0,80):syncLabel());
+    synced=snap(state);remoteOk=true;lastSync=new Date();setStatus(kkErr?'⚠ '+kkErr.slice(0,80):kkWarn.length?'⚠ Judul kolom kosong di KALENDER KONTEN: '+kkWarn.join(', ')+' — tetap jalan, tolong isi lagi':syncLabel());
   }catch(e){setStatus(synced?'Offline — pakai data terakhir':'Gagal nyambung ke Sheet (cek ⚙)')}
   pulling=false;if(sb)sb.classList.remove('spin');
 }
