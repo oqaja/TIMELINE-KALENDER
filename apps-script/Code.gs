@@ -8,6 +8,7 @@
  * Tab KONTEN : ID | TANGGAL | JUDUL KONTEN | JENIS KONTEN | BRAND TAP IN | AKUN | SEGMEN | ... | DIUBAH
  * Tab KONTEN : sekarang khusus PREVIEW (tidak pernah masuk ke KALENDER KONTEN)
  * Tab BRAND  : BRAND | WARNA
+ * Tab TODO   : ID | TANGGAL | ORANG | TUGAS | SELESAI | CATATAN | DIUBAH   (to-do manual per orang — dibuat otomatis)
  *
  * Konten beneran dibaca & ditulis langsung ke DASHBOARD KULTURAMA V1 > KALENDER KONTEN.
  * Di sana struktur kolom TIDAK diubah: baris dicari lewat EVENT ID, atau judul + tanggal,
@@ -19,7 +20,7 @@
  * Tab OPSI   : DAFTAR | NILAI   (pilihan tambahan: akun, segmen, tim, status — dibuat otomatis)
  */
 const TZ = 'Asia/Jakarta';
-const SCRIPT_VER = 2; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
+const SCRIPT_VER = 3; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
 const JENIS = { carousel: 'Desain', short: 'Video Pendek', long: 'Video Panjang', story: 'Story' };
 
 // key di kalender  ->  nama header di sheet
@@ -112,6 +113,45 @@ function addOpsi_(list, value) {
   if (cur.some(function (x) { return x.toLowerCase() === v.toLowerCase(); })) return;
   opsiSheet_().appendRow([l, v]);
 }
+// ===================== TO-DO MANUAL (tab TODO) =====================
+const TODO_HEAD = ['ID', 'TANGGAL', 'ORANG', 'TUGAS', 'SELESAI', 'CATATAN', 'DIUBAH'];
+function todoSheet_() {
+  let s = sh_('TODO');
+  if (!s) {
+    s = SpreadsheetApp.getActive().insertSheet('TODO');
+    s.getRange(1, 1, 1, TODO_HEAD.length).setValues([TODO_HEAD]).setFontWeight('bold');
+    s.setFrozenRows(1);
+  }
+  return s;
+}
+function readTodo_() {
+  const s = todoSheet_(), last = s.getLastRow(), out = [];
+  if (last < 2) return out;
+  const raw = s.getRange(2, 1, last - 1, 6).getValues(), disp = s.getRange(2, 1, last - 1, 6).getDisplayValues();
+  for (let i = 0; i < raw.length; i++) {
+    const text = String(disp[i][3] || '').trim(), date = date_(raw[i][1]) || date_(disp[i][1]);
+    if (!text || !date) continue;
+    let id = String(disp[i][0] || '').trim();
+    if (!id) { id = newId_(); s.getRange(i + 2, 1).setValue(id); }
+    out.push({ id: id, date: date, who: String(disp[i][2] || '').trim(), text: text, done: String(disp[i][4] || '').trim() === '✅', note: String(disp[i][5] || '').trim() });
+  }
+  return out;
+}
+function todoRow_(id) {
+  const s = todoSheet_(), last = s.getLastRow();
+  if (last < 2) return -1;
+  const ids = s.getRange(2, 1, last - 1, 1).getDisplayValues();
+  for (let i = 0; i < ids.length; i++) if (String(ids[i][0]) === String(id)) return i + 2;
+  return -1;
+}
+function todoUpsert_(t) {
+  if (!t || !t.id || !t.text || !t.date) throw new Error('to-do butuh tugas & tanggal');
+  const s = todoSheet_(), r = todoRow_(t.id), row = r > 0 ? r : s.getLastRow() + 1;
+  const rng = s.getRange(row, 1, 1, TODO_HEAD.length);
+  rng.setNumberFormat('@');
+  rng.setValues([[t.id, t.date, t.who || '', t.text, t.done ? '✅' : '', t.note || '', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')]]);
+}
+function todoDelete_(id) { const r = todoRow_(id); if (r > 0) todoSheet_().deleteRow(r); }
 function newId_() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
 function read_() {
@@ -359,6 +399,7 @@ function doGet(e) {
   const data = read_();
   data.items.forEach(function (it) { it.src = 'pv'; });
   data.ver = SCRIPT_VER;
+  try { data.todos = readTodo_(); } catch (err) { data.todos = null; }
   try { data.kk = kkRead_(p.from || '', p.to || ''); data.lists = kkLists_(); if (kkWarn_.length) data.kkWarn = kkWarn_; }
   catch (err) { data.kk = null; data.kkError = String(err); }
   data.range = { from: p.from || '', to: p.to || '' };
@@ -391,6 +432,8 @@ function doPost(e) {
     else if (op.op === 'delete') remove_(op.id);
     else if (op.op === 'color') color_(op.brand, op.color);
     else if (op.op === 'option') addOpsi_(op.list, op.value);
+    else if (op.op === 'todoUpsert') todoUpsert_(op.todo);
+    else if (op.op === 'todoDelete') todoDelete_(op.id);
     else if (op.op === 'kkAdd') { const row = kkAdd_(op.item); SpreadsheetApp.flush(); return out_({ ok: true, row: row }); }
     else if (op.op === 'kkUpdate') {
       const res = kkUpdate_(op.ref, op.changes, op.prev, op.force); SpreadsheetApp.flush();
