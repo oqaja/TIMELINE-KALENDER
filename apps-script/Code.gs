@@ -17,7 +17,8 @@
  * PIN EDIT: semua perubahan (tambah/edit/hapus) wajib bawa PIN. PIN TIDAK ditulis di kode ini —
  * isi lewat Apps Script > Setelan project (⚙) > Properti skrip:  EDIT_PIN = <pin kamu>
  * Tanpa EDIT_PIN, semua perubahan ditolak (kalender cuma bisa dilihat).
- * Tab OPSI   : DAFTAR | NILAI   (pilihan tambahan: akun, segmen, tim, status — dibuat otomatis)
+ * Tab OPSI   : DAFTAR | NILAI   (pilihan tambahan: akun, segmen, tim, status — dibuat otomatis;
+ *              daftar '<nama>_hapus' = pilihan yang disembunyiin, mis. tim_hapus = orang yang dihapus dari daftar)
  */
 const TZ = 'Asia/Jakarta';
 const SCRIPT_VER = 3; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
@@ -152,6 +153,14 @@ function todoUpsert_(t) {
   rng.setValues([[t.id, t.date, t.who || '', t.text, t.done ? '✅' : '', t.note || '', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm')]]);
 }
 function todoDelete_(id) { const r = todoRow_(id); if (r > 0) todoSheet_().deleteRow(r); }
+function delOpsi_(list, value) {
+  const l = String(list || '').trim().toLowerCase(), v = String(value || '').trim().toLowerCase();
+  const s = opsiSheet_();
+  for (let r = s.getLastRow(); r >= 2; r--) {
+    const row = s.getRange(r, 1, 1, 2).getDisplayValues()[0];
+    if (String(row[0]).trim().toLowerCase() === l && String(row[1]).trim().toLowerCase() === v) s.deleteRow(r);
+  }
+}
 function newId_() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
 function read_() {
@@ -432,6 +441,7 @@ function doPost(e) {
     else if (op.op === 'delete') remove_(op.id);
     else if (op.op === 'color') color_(op.brand, op.color);
     else if (op.op === 'option') addOpsi_(op.list, op.value);
+    else if (op.op === 'optionDel') delOpsi_(op.list, op.value);
     else if (op.op === 'todoUpsert') todoUpsert_(op.todo);
     else if (op.op === 'todoDelete') todoDelete_(op.id);
     else if (op.op === 'kkAdd') { const row = kkAdd_(op.item); SpreadsheetApp.flush(); return out_({ ok: true, row: row }); }

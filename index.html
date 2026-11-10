@@ -126,6 +126,11 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
 .cp{padding:7px 11px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;user-select:none;background:#fff}
 .cp.on{background:#111;color:#fff;border-color:#111}
 .cp.add{border-style:dashed;color:var(--muted)}
+.ml{max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.mli{display:flex;align-items:center;gap:8px;padding:8px 10px;border-top:1px solid var(--line)}
+.mli:first-child{border-top:0}
+.mli span{font-weight:700;font-size:14px;flex:1}
+.mli small{font-size:11px;color:var(--muted)}
 .clash{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px}
 .clash>div{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;display:flex;flex-direction:column;gap:2px}
 .clash span{color:var(--muted);font-size:12px}.clash em{font-style:normal;color:#111;font-weight:700}
@@ -314,9 +319,17 @@ const ALLK=['id','date','title','type','brand',...EXTRA];
 // daftar yang bisa ditambah + field yang memakainya
 const LISTOF={akun:'akun',producer:'tim',designer:'tim',editor:'tim',talent1:'tim',talent2:'tim',stYT:'status',stIG:'status',stTT:'status',stFB:'status'};
 const LISTNAME={akun:'Akun',segmen:'Segmen',tim:'Orang / Tim',status:'Status',brand:'Brand Tap In'};
-const opts=l=>{const base=l==='tim'?OPT.tim:OPT[l]||[];const fromSheet=(state.lists&&state.lists[l])||[];const add=(state.options&&state.options[l])||[];return [...new Set([...base,...fromSheet,...add])]};
+const hiddenOf=l=>new Set(((state.options&&state.options[l+'_hapus'])||[]).map(v=>String(v).toLowerCase()));
+const opts=l=>{const base=l==='tim'?OPT.tim:OPT[l]||[];const fromSheet=(state.lists&&state.lists[l])||[];const add=(state.options&&state.options[l])||[];const hid=hiddenOf(l);
+  return [...new Set([...base,...fromSheet,...add])].filter(v=>!hid.has(String(v).toLowerCase()))};
 function addOption(list,value){
   value=String(value||'').trim();if(!value)return false;
+  const hl=state.options[list+'_hapus']||[];
+  if(hl.some(v=>v.toLowerCase()===value.toLowerCase())){ // pernah dihapus → munculin lagi
+    state.options[list+'_hapus']=hl.filter(v=>v.toLowerCase()!==value.toLowerCase());lsSave();
+    if(API){queue.push({op:'optionDel',list:list+'_hapus',value});flush()}
+    if((list==='brand'?brands():opts(list)).some(v=>v.toLowerCase()===value.toLowerCase()))return true;
+  }
   if(opts(list).some(v=>v.toLowerCase()===value.toLowerCase()))return true;
   state.options[list]=[...(state.options[list]||[]),value];lsSave();
   if(API){queue.push({op:'option',list,value});flush()}
@@ -354,6 +367,43 @@ function pinDialog(onDone){
   ok.onclick=go;w.querySelector('#pinNo').onclick=()=>finish(null);
   inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();go()}if(e.key==='Escape'){e.stopPropagation();finish(null)}});
   setTimeout(()=>inp.focus(),30);
+}
+// hapus pilihan dari daftar (disembunyiin buat semua orang; data konten lama nggak diubah)
+function removeOption(list,value){
+  value=String(value||'').trim();if(!value)return;
+  if(API&&scriptVer<3){toast('Deploy script terbaru dulu buat hapus dari daftar.');return}
+  const cust=state.options[list]||[];
+  if(cust.some(v=>v.toLowerCase()===value.toLowerCase())){
+    state.options[list]=cust.filter(v=>v.toLowerCase()!==value.toLowerCase());
+    if(API)queue.push({op:'optionDel',list,value});
+  }
+  state.options[list+'_hapus']=[...(state.options[list+'_hapus']||[]),value];
+  if(API)queue.push({op:'option',list:list+'_hapus',value});
+  lsSave();if(API)flush();
+}
+const LISTS_EDIT=[['tim','Orang / Tim'],['akun','Akun'],['segmen','Segmen'],['status','Status upload'],['brand','Brand Tap In']];
+function manageLists(start){
+  let cur=start||'tim';
+  const w=document.createElement('div');w.className='back show';w.style.zIndex=60;
+  document.body.appendChild(w);
+  const draw=()=>{
+    const list=cur==='brand'?brands():opts(cur), used=v=>state.items.filter(i=>cur==='tim'?['producer','designer','editor','talent1','talent2'].some(k=>i[k]===v):cur==='status'?['stYT','stIG','stTT','stFB'].some(k=>i[k]===v):cur==='segmen'?String(i.segmen||'').split(/\s*,\s*/).includes(v):String(i[cur]||'')===v).length;
+    w.innerHTML=`<div class="modal" style="max-width:440px"><h2>Kelola daftar</h2>
+      <div class="sub">Hapus/tambah pilihan. Ikut kesimpen ke Sheet, jadi berlaku buat semua orang. Konten lama yang udah pakai nama itu nggak berubah.</div>
+      <div class="chips" style="margin-bottom:10px">${LISTS_EDIT.map(([k,n])=>`<span class="cp${k===cur?' on':''}" data-l="${k}">${n}</span>`).join('')}</div>
+      <div class="ml">${list.map(v=>{const n=used(v);return `<div class="mli"><span>${esc(v)}</span><small>${n?n+' konten di periode yang kebuka':''}</small><button class="td-del" data-v="${esc(v)}" title="Hapus dari daftar">✕</button></div>`}).join('')||'<div class="dv-empty">Daftar kosong.</div>'}</div>
+      <div class="row" style="margin-top:10px"><input id="mlIn" placeholder="Tambah ${esc((LISTS_EDIT.find(x=>x[0]===cur)||[])[1]||'')} baru" autocomplete="off"><button id="mlAdd">Tambah</button></div>
+      <div class="row"><span class="sp"></span><button class="primary" id="mlClose">Selesai</button></div></div>`;
+    w.querySelectorAll('.cp[data-l]').forEach(c=>c.onclick=()=>{cur=c.dataset.l;draw()});
+    w.querySelectorAll('.mli .td-del').forEach(b=>{let armed=false;b.onclick=()=>{
+      if(!armed){armed=true;b.textContent='Hapus?';b.style.color='#b10202';return}
+      removeOption(cur,b.dataset.v);draw()}});
+    const add=()=>{const v=w.querySelector('#mlIn').value.trim();if(!v)return;addOption(cur,v);draw()};
+    w.querySelector('#mlAdd').onclick=add;w.querySelector('#mlIn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();add()}};
+    w.querySelector('#mlClose').onclick=()=>{w.remove();render()};
+  };
+  w.onclick=e=>{if(e.target===w){w.remove();render()}};
+  draw();
 }
 function mini(title,onOk){
   const w=document.createElement('div');w.className='back show';w.style.zIndex=60;
@@ -538,7 +588,7 @@ function akunBar(list){
 function bindAkun(f){f.querySelectorAll('.pl[data-a]').forEach(el=>el.onclick=()=>{const a=el.dataset.a;
   if(!a)selAkun.clear();else selAkun.has(a)?selAkun.delete(a):selAkun.add(a);
   try{localStorage.setItem('sp-timeline-akun',JSON.stringify([...selAkun]))}catch(e){}render()})}
-const brands=()=>[...new Set([...state.items.flatMap(i=>String(i.brand||'').split(/\s*,\s*/)).filter(Boolean),...BRAND_LIST,...((state.lists&&state.lists.brand)||[]),...((state.options&&state.options.brand)||[])])].sort((a,b)=>a.localeCompare(b,'id',{sensitivity:'base'}));
+const brands=()=>{const hid=hiddenOf('brand');return [...new Set([...state.items.flatMap(i=>String(i.brand||'').split(/\s*,\s*/)).filter(Boolean),...BRAND_LIST,...((state.lists&&state.lists.brand)||[]),...((state.options&&state.options.brand)||[])])].filter(v=>!hid.has(String(v).toLowerCase())).sort((a,b)=>a.localeCompare(b,'id',{sensitivity:'base'}))};
 
 function renderFilters(listAll){
   const prefix=`${viewY}-${pad(viewM+1)}`;
@@ -722,7 +772,7 @@ function renderTodo(){
   const groups={};sortT(L).forEach(x=>{(groups[x.date]=groups[x.date]||[]).push(x)});
   const tv=document.getElementById('todoView');
   tv.innerHTML=`<div class="dv-top"><h2>To-do ${tdWho?esc(tdWho):'semua orang'}<small>${tdPer==='day'?fmtDate(a):tdPer==='week'?'Minggu ini (Sen–Min)':'Bulan '+BULAN[am-1]} · centang tugas konten = ngisi kolom progres di KALENDER KONTEN</small></h2>
-      <button id="tdAdd" class="primary">+ To-do</button></div>
+      <button id="tdPeople">👥 Kelola orang</button><button id="tdAdd" class="primary">+ To-do</button></div>
     <div class="td-ctl"><select id="tdWhoSel"><option value="">Semua orang</option>${[...new Set([...opts('tim'),tdWho].filter(Boolean))].map(p=>`<option${p===tdWho?' selected':''}>${esc(p)}</option>`).join('')}</select>
       <span class="td-per">${[['day','Harian'],['week','Mingguan'],['month','Bulanan']].map(([v,n])=>`<button data-p="${v}" class="${tdPer===v?'on':''}">${n}</button>`).join('')}</span>
       ${tdPer!=='month'?`<input type="date" id="tdDateSel" value="${dayK}" style="width:auto;padding:7px 10px;font-size:14px">`:''}</div>
@@ -737,6 +787,7 @@ function renderTodo(){
     el.querySelector('.tt').onclick=()=>x.kind==='auto'?openForm(state.items.find(i=>i.id===x.it.id)):openTodo(x.t);
     const dl=el.querySelector('.td-del');if(dl)dl.onclick=e=>{e.stopPropagation();openTodo(x.t)}});
   tv.querySelector('#tdAdd').onclick=()=>openTodo(null);
+  tv.querySelector('#tdPeople').onclick=()=>manageLists('tim');
   tv.querySelector('#tdWhoSel').onchange=e=>{tdWho=e.target.value;tdSave();render()};
   tv.querySelectorAll('.td-per button').forEach(b=>b.onclick=()=>{tdPer=b.dataset.p;tdSave();render()});
   tv.querySelectorAll('.td-prog span[data-w]').forEach(sp=>sp.onclick=()=>{tdWho=tdWho===sp.dataset.w?'':sp.dataset.w;tdSave();render()});
@@ -1113,6 +1164,7 @@ function openSheet(){
    <label for="apiIn">URL Web App</label><input id="apiIn" value="${esc(API)}" placeholder="https://script.google.com/macros/s/…/exec">
    <div class="err" id="apiErr"></div>
    <div class="sub" style="margin-top:10px"><a href="${SHEET_URL}" target="_blank" rel="noopener">Buka Google Sheet-nya ↗</a></div>
+   <div class="sec"><h3>Daftar pilihan</h3><div class="row" style="margin-top:8px;align-items:center"><span class="sub" style="margin:0;flex:1">Orang, akun, segmen, status, brand</span><button type="button" id="mlBtn">Kelola daftar</button></div></div>
    <div class="sec"><h3>PIN edit</h3><div class="row" style="margin-top:8px;align-items:center"><span class="sub" style="margin:0;flex:1">${PIN?'PIN udah kesimpen di browser ini ✓':'Belum ada PIN — kalender cuma bisa dilihat.'}</span>
      <button type="button" id="pinBtn">${PIN?'Lupain PIN':'Masukin PIN'}</button></div></div>
    ${API&&API!==SHEET_API?`<div class="sec"><h3>Sambungin HP / device lain</h3>
@@ -1121,6 +1173,7 @@ function openSheet(){
    </div>`:''}
    <div class="row"><span class="sp"></span><button id="cl">Tutup</button><button class="primary" id="ok">Sambungkan</button></div>`;
   modal.querySelector('#cl').onclick=close;
+  modal.querySelector('#mlBtn').onclick=()=>{close();manageLists('tim')};
   modal.querySelector('#pinBtn').onclick=()=>{if(PIN){savePin('');openSheet()}else pinDialog(v=>{if(v)savePin(v);openSheet()})};
   if(API&&API!==SHEET_API){
     showQR(modal.querySelector('#qr'),setupLink());
