@@ -144,6 +144,8 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
 .ttl{display:flex;flex-direction:column;gap:8px;min-width:0;max-width:100%}
 .tabs{display:inline-flex;background:#e9e7e1;border-radius:10px;padding:3px;gap:2px;align-self:flex-start}
 .tabs button{border:0;background:transparent;padding:6px 12px;font-size:13px;border-radius:8px;color:#555}
+.tabs a.tablink{padding:6px 12px;font-size:13px;font-weight:600;border-radius:8px;color:#555;text-decoration:none;white-space:nowrap;flex:none;display:inline-flex;align-items:center}
+.tabs a.tablink:hover{color:var(--ink)}
 .tabs{max-width:100%;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tabs button{white-space:nowrap;flex:none}
 .tabs button.on{background:#fff;color:#111;box-shadow:0 1px 2px rgba(0,0,0,.12)}
 body.v-day .main,body.v-week .main,body.v-todo .main,body.v-stat .main{display:none}
@@ -326,7 +328,7 @@ body.v-day .main,body.v-week .main,body.v-todo .main,body.v-stat .main{display:n
 <div class="wrap">
   <header>
     <div class="ttl"><h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
-      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button></nav></div>
+      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button><a class="tablink" href="invoice.html">Invoice ↗</a></nav></div>
     <div class="nav">
       <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
       <div class="month" id="monthLbl"></div>
@@ -1274,7 +1276,7 @@ function cleanBody(){
 <div class="wrap">
   <header>
     <div class="ttl"><h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
-      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button></nav></div>
+      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button><a class="tablink" href="invoice.html">Invoice ↗</a></nav></div>
     <div class="nav">
       <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
       <div class="month" id="monthLbl"></div>

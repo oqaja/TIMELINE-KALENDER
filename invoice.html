@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Invoice Maker — Shoe Police</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700;800&family=Arimo:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{color-scheme:light only;--y:#FDBE33;--d:#1C2B23;--bg:#f3f1ea;--line:#d9d5c8;--mut:#6b6a63}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Open Sans",system-ui,sans-serif;background:var(--bg);color:#1a1a1a}
+  header.app{background:var(--d);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5}
+  header.app b{font-size:15px}
+  header.app .sp{flex:1}
+  .btn{border:0;border-radius:8px;padding:9px 14px;font:700 13px "Open Sans",sans-serif;cursor:pointer;background:var(--y);color:var(--d)}
+  .btn.ghost{background:transparent;color:inherit;border:1px solid currentColor}
+  .btn.sm{padding:6px 10px;font-size:12px}
+  .btn.del{background:#fde3df;color:#a3261a}
+  main{display:grid;grid-template-columns:minmax(320px,420px) 1fr;gap:20px;padding:20px;max-width:1400px;margin:0 auto}
+  @media(max-width:900px){main{grid-template-columns:1fr;padding:12px}}
+  .form{background:#fff;border-radius:12px;padding:16px;align-self:start;border:1px solid var(--line)}
+  .form h3{margin:18px 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+  .form h3:first-child{margin-top:0}
+  label{display:block;font-size:12px;font-weight:700;margin:8px 0 4px}
+  input,textarea,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:16px "Open Sans",sans-serif;background:#fff;color:#1a1a1a;-webkit-text-fill-color:#1a1a1a;caret-color:#1a1a1a;opacity:1}
+  input::placeholder,textarea::placeholder{color:#9a978d;-webkit-text-fill-color:#9a978d}
+  .form,.item{color:#1a1a1a}
+  textarea{resize:vertical;min-height:60px}
+  .row{display:flex;gap:8px}.row>*{flex:1}
+  .item{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;background:#fcfbf7}
+  .item .hd{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;color:var(--mut)}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0}
+  .chk input{width:auto}
+  .hint{font-size:12px;color:var(--mut);margin:6px 0 0}
+  .total-box{margin-top:12px;padding:10px 12px;background:var(--d);color:#fff;border-radius:10px;display:flex;justify-content:space-between;font-weight:700}
+  .stage{overflow:hidden}
+  .scaler{transform-origin:top left}
+  .tabs{display:none}
+  @media(max-width:900px){
+    header.app .sub{display:none}
+    .tabs{display:flex;gap:6px;padding:10px 12px 0;position:sticky;top:56px;z-index:4;background:var(--bg)}
+    .tabs button{flex:1;padding:9px;border:1px solid var(--line);border-radius:8px;background:#fff;font:700 13px "Open Sans",sans-serif;color:var(--d)}
+    .tabs button.on{background:var(--d);color:#fff;border-color:var(--d)}
+    body[data-tab="isi"] .stage{position:absolute;left:-9999px;top:0}
+    body[data-tab="preview"] .form{display:none}
+  }
+  #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--d);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:9}
+  #toast.on{opacity:1}
+
+  /* ===== A4 invoice (mm based, matches template) ===== */
+  .page{width:210mm;height:297mm;background:#fff;position:relative;box-shadow:0 4px 24px rgba(0,0,0,.12);overflow:hidden;color:#000}
+  .pg-head{position:absolute;left:13.7mm;top:15.3mm;width:182.6mm}
+  .pg-head img{width:100%;display:block}
+  .pg-title{position:absolute;left:29.5mm;top:53.5mm;font:800 15.2mm/1 "Open Sans",sans-serif;letter-spacing:.2mm;margin:0}
+  .meta{position:absolute;left:29.9mm;top:79.5mm;width:152mm;font:10.5pt "Arimo",Arial,sans-serif}
+  .meta .l{display:grid;grid-template-columns:13mm 3.5mm 1fr;line-height:1.55}
+  .meta .v{font-family:"Open Sans",sans-serif}
+  .meta .v b{font-weight:700}
+  .meta .date{position:absolute;left:104.8mm;top:0;display:grid;grid-template-columns:auto 4mm auto;align-items:baseline}
+  .meta .date b{font:700 11pt "Open Sans",sans-serif}
+  .addr{white-space:pre-line;font:10.5pt/1.55 "Open Sans",sans-serif}
+  .tbl{position:absolute;left:28.8mm;top:110.3mm;width:152.9mm;border-top:.45mm solid #000;border-bottom:.45mm solid #000}
+  .tbl .th{display:grid;grid-template-columns:14mm 1fr 34mm;border-bottom:.3mm solid #000;font:700 11.5pt "Arimo",Arial,sans-serif;color:#1f2d3d;height:7.6mm;align-items:center}
+  .tbl .th div{text-align:center}
+  .tbl .rows{padding:2.2mm 0 3mm}
+  .tbl .r{display:grid;grid-template-columns:14mm 1fr 34mm;align-items:start;margin-bottom:1.2mm}
+  .tbl .no{text-align:center;font:10.5pt "Open Sans",sans-serif;padding-left:2mm;padding-top:.6mm}
+  .tbl .it{text-align:center;font:9.5pt/1.4 "Arimo",Arial,sans-serif}
+  .tbl .it small{display:block;font-size:6.4pt;line-height:1.55;white-space:pre-line}
+  .tbl .pr{text-align:right;font:11pt "Open Sans",sans-serif;padding-right:.8mm}
+  .tot{position:absolute;left:28.8mm;width:152.9mm;font:700 11pt "Open Sans",sans-serif}
+  .tot .tr{display:grid;grid-template-columns:1fr 6mm 33mm;align-items:baseline;line-height:1.75}
+  .tot .tr span:first-child{text-align:right}
+  .tot .tr span:nth-child(2){text-align:center}
+  .tot .tr span:last-child{text-align:right;padding-right:.8mm}
+  .tot .tr.sub{font-weight:400;font-size:10pt}
+  .sig{position:absolute;left:29.9mm;width:80mm}
+  .sig{height:36mm}
+  .sig .lbl{font:700 10.5pt "Open Sans",sans-serif}
+  .sig .stamp{position:absolute;left:11.4mm;top:6mm;width:55.5mm}
+  .sig .sign{position:absolute;left:3.4mm;top:3.4mm;width:19mm;mix-blend-mode:multiply}
+  .sig .nm{position:absolute;left:0;top:29.6mm;font:700 10.5pt "Open Sans",sans-serif;text-transform:uppercase}
+  .bank{position:absolute;left:29.9mm;top:199mm;width:90mm}
+  .bank .k{font:700 11pt "Arimo",Arial,sans-serif;color:#1f2d3d;margin-top:1.2mm}
+  .bank .v{font:11pt "Arimo",Arial,sans-serif;color:#222;margin-top:.6mm}
+  .bank .k.np{font:700 9.5pt "Open Sans",sans-serif;color:#000}
+  .bank .v.np{font:10.5pt "Open Sans",sans-serif;color:#000}
+  .thanks{position:absolute;left:127.3mm;top:216.5mm;width:52mm}
+  .foot-line{position:absolute;left:28.8mm;top:234.3mm;width:152.9mm;border-top:.45mm solid #000}
+  .contact{position:absolute;left:29.9mm;top:238.4mm;font:9.5pt "Arimo",Arial,sans-serif;color:#222}
+  .stripe{position:absolute;left:13.7mm;top:246.2mm;width:182.6mm;height:5.7mm;display:block}
+  #pages .page{margin-bottom:6mm}
+  .cont{position:absolute;left:29.5mm;top:52mm;font:800 9mm/1 "Open Sans",sans-serif}
+  .cont span{font:400 10.5pt "Open Sans",sans-serif;color:#555;margin-left:2mm}
+  .cont .cref{font:10.5pt "Arimo",Arial,sans-serif;margin-top:2.5mm}
+  .pgno{position:absolute;right:28.3mm;top:60mm;font:9pt "Arimo",Arial,sans-serif;color:#555}
+  .page.first .pgno{top:66mm}
+  .tbl.empty{display:none}
+  @media print{
+    @page{size:A4;margin:0}
+    #pages .page{margin:0;page-break-after:always;break-after:page}
+    #pages .page:last-child{page-break-after:auto;break-after:auto}
+    body{background:#fff}
+    header.app,.form,.tabs,#toast{display:none!important}
+    body .stage{position:static!important;left:auto!important}
+    main{display:block;padding:0}
+    .stage{overflow:visible;height:auto!important}
+    .scaler{transform:none!important}
+    .page{box-shadow:none}
+  }
+</style>
+</head>
+<body data-tab="isi">
+<header class="app">
+  <a href="./" style="color:#fff;text-decoration:none;font-size:18px;margin-right:2px" title="Kembali ke kalender">‹</a>
+  <b>Invoice Maker</b><span class="sub" style="opacity:.6;font-size:12px">Shoe Police</span>
+  <span class="sp"></span>
+  <button class="btn ghost sm" id="newBtn">+ Baru</button>
+  <button class="btn" id="pdfBtn">Download PDF</button>
+</header>
+<div class="tabs"><button data-t="isi" class="on">Isi data</button><button data-t="preview">Preview</button></div>
+<main>
+  <section class="form">
+    <h3>Invoice</h3>
+    <div class="row">
+      <div><label>No. Ref</label><input id="ref"></div>
+      <div><label>Tanggal</label><input id="date" type="date"></div>
+    </div>
+    <p class="hint">No. Ref otomatis: tahun + bulan + urutan (mis. 202611001). Bisa diedit.</p>
+
+    <h3>Klien</h3>
+    <label>Pilih klien tersimpan</label>
+    <div class="row"><select id="clientPick"><option value="">— klien baru —</option></select><button class="btn ghost sm" id="saveClient" style="flex:0 0 auto;color:var(--d)">Simpan</button></div>
+    <label>Nama PIC</label><input id="pic" placeholder="Hendrik">
+    <label>Perusahaan (Brand)</label><input id="company" placeholder="PT. Forta Larese (Cheetah)">
+    <label>Alamat</label><textarea id="address" rows="2" placeholder="Jl. ...&#10;Kota Kode Pos"></textarea>
+
+    <h3>Item</h3>
+    <div id="items"></div>
+    <button class="btn ghost sm" id="addItem" style="color:var(--d)">+ Tambah item</button>
+    <p class="hint">Harga boleh dikosongin kalau item itu satu paket sama item di atasnya.</p>
+
+    <h3>Pajak & potongan</h3>
+    <div class="row">
+      <div><label>Diskon (Rp)</label><input id="disc" inputmode="numeric" placeholder="0"></div>
+      <div><label>PPN</label><select id="ppn"><option value="0">Tanpa PPN</option><option value="11">PPN 11%</option><option value="12">PPN 12%</option></select></div>
+    </div>
+    <div class="total-box"><span>GRAND TOTAL</span><span id="gtForm">Rp 0</span></div>
+
+    <h3>Tanda tangan</h3>
+    <label>Nama Marketing</label><input id="signer">
+    <label class="chk"><input type="checkbox" id="showStamp" checked> Tampilkan stempel + tanda tangan</label>
+
+    <h3>Bank & kontak</h3>
+    <label>Bank Name</label><input id="bankName">
+    <label>Bank Account</label><input id="bankAcc">
+    <label>NPWP</label><input id="npwp">
+    <label>Kontak</label><input id="contact">
+  </section>
+
+  <section class="stage" id="stage">
+    <div class="scaler" id="scaler"><div id="pages"></div></div>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script>
+window.addEventListener('error',e=>{const d=document.createElement('div');d.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;background:#a3261a;color:#fff;padding:10px;border-radius:8px;font:12px monospace;z-index:99';d.textContent='Error: '+(e.message||e);document.body.appendChild(d)});
+(function(){
+const $=id=>document.getElementById(id);
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const BULAN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const DEF={signer:'Prana Rifsana',bankName:'PT Kulturama Virtua Solusindo',bankAcc:'8101097943 (BCA)',npwp:'50.939.825.1-039.000',contact:'+6281320747975'};
+
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const num=s=>{const n=parseInt(String(s||'').replace(/[^\d]/g,''),10);return isNaN(n)?0:n};
+const rp=n=>'Rp '+Math.round(n).toLocaleString('en-US');
+const fmtDate=s=>{if(!s)return'';const[y,m,d]=s.split('-');return parseInt(d,10)+' '+BULAN[parseInt(m,10)-1]+' '+y};
+const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// counter per YYYYMM
+function nextRef(dateStr){
+  const ym=(dateStr||today()).slice(0,7).replace('-','');
+  const c=LS.get('inv_counter',{});
+  return ym+String((c[ym]||0)+1).padStart(3,'0');
+}
+function commitRef(ref){
+  const m=/^(\d{6})(\d+)$/.exec(ref||'');if(!m)return;
+  const c=LS.get('inv_counter',{});if(+m[2]>(c[m[1]]||0)){c[m[1]]=+m[2];LS.set('inv_counter',c)}
+}
+
+let st=LS.get('inv_draft',null);
+function blank(){return{ref:'',refAuto:true,date:today(),pic:'',company:'',address:'',items:[{t:'',d:'',p:''}],disc:'',ppn:'0',showStamp:true,...LS.get('inv_settings',DEF)}}
+if(!st)st=blank();
+if(st.refAuto||!st.ref)st.ref=nextRef(st.date);
+
+const fields=['ref','date','pic','company','address','disc','ppn','signer','bankName','bankAcc','npwp','contact'];
+function loadForm(){
+  fields.forEach(f=>$(f).value=st[f]??'');
+  $('showStamp').checked=st.showStamp!==false;
+  renderItems();renderClients();render();
+}
+function renderItems(){
+  const box=$('items');box.innerHTML='';
+  st.items.forEach((it,i)=>{
+    const el=document.createElement('div');el.className='item';
+    el.innerHTML=`<div class="hd"><span>Item ${i+1}</span><span>${i>0?'<button class="btn sm ghost up" style="color:var(--d)">↑</button> ':''}<button class="btn sm del">Hapus</button></span></div>
+    <label>Nama item</label><input class="t" value="${esc(it.t)}" placeholder="Konten Video Panjang">
+    <label>Deskripsi (kecil, boleh lebih dari 1 baris)</label><textarea class="d" rows="2" placeholder="1 Video Bedah Sepatu (Youtube)">${esc(it.d)}</textarea>
+    <label>Harga (Rp)</label><input class="p" inputmode="numeric" value="${it.p?num(it.p).toLocaleString('en-US'):''}" placeholder="kosongin kalau satu paket">`;
+    el.querySelector('.t').oninput=e=>{it.t=e.target.value;render()};
+    el.querySelector('.d').oninput=e=>{it.d=e.target.value;render()};
+    const p=el.querySelector('.p');
+    p.oninput=e=>{it.p=e.target.value;render()};
+    p.onblur=()=>{p.value=it.p?num(it.p).toLocaleString('en-US'):''};
+    el.querySelector('.del').onclick=()=>{st.items.splice(i,1);if(!st.items.length)st.items.push({t:'',d:'',p:''});renderItems();render()};
+    const up=el.querySelector('.up');if(up)up.onclick=()=>{[st.items[i-1],st.items[i]]=[st.items[i],st.items[i-1]];renderItems();render()};
+    box.appendChild(el);
+  });
+}
+function renderClients(){
+  const cl=LS.get('inv_clients',[]);const s=$('clientPick');
+  s.innerHTML='<option value="">— klien baru —</option>'+cl.map((c,i)=>`<option value="${i}">${esc(c.company||c.pic)}${c.pic&&c.company?' — '+esc(c.pic):''}</option>`).join('');
+}
+$('clientPick').onchange=e=>{const c=LS.get('inv_clients',[])[e.target.value];if(!c)return;st.pic=c.pic;st.company=c.company;st.address=c.address;['pic','company','address'].forEach(f=>$(f).value=st[f]);render()};
+$('saveClient').onclick=()=>{
+  if(!st.company&&!st.pic){toast('Isi nama PIC / perusahaan dulu');return}
+  const cl=LS.get('inv_clients',[]);const i=cl.findIndex(c=>c.company===st.company&&c.pic===st.pic);
+  const c={pic:st.pic,company:st.company,address:st.address};if(i>=0)cl[i]=c;else cl.push(c);
+  LS.set('inv_clients',cl);renderClients();toast('Klien disimpan');
+};
+
+fields.forEach(f=>$(f).addEventListener('input',e=>{
+  st[f]=e.target.value;
+  if(f==='ref')st.refAuto=false;
+  if(f==='date'&&st.refAuto){st.ref=nextRef(st.date);$('ref').value=st.ref}
+  if(['signer','bankName','bankAcc','npwp','contact'].includes(f)){const s={};['signer','bankName','bankAcc','npwp','contact'].forEach(k=>s[k]=st[k]);LS.set('inv_settings',s)}
+  render();
+}));
+$('ppn').addEventListener('change',e=>{st.ppn=e.target.value;render()});
+$('showStamp').onchange=e=>{st.showStamp=e.target.checked;render()};
+$('addItem').onclick=()=>{st.items.push({t:'',d:'',p:''});renderItems();render()};
+$('newBtn').onclick=()=>{const keep=st;st=blank();st.ref=nextRef(st.date);loadForm();toast('Invoice baru');};
+
+function calc(){
+  const sub=st.items.reduce((a,it)=>a+num(it.p),0);
+  const disc=num(st.disc);const base=Math.max(0,sub-disc);
+  const tax=Math.round(base*(+st.ppn||0)/100);
+  return{sub,disc,base,tax,gt:base+tax};
+}
+const IMG={header:'invoice-assets/header.jpg',stripe:'invoice-assets/stripe.png',thanks:'invoice-assets/thanks.png',stamp:'invoice-assets/stamp.png',sign:'invoice-assets/sign.png'};
+const MM=96/25.4, TOP1=110.3, TOPN=70, TBL_MAX=274, FOOT_MAX=272;
+function newPage(first){
+  const p=document.createElement('div');p.className='page'+(first?' first':'');
+  let h=`<div class="pg-head"><img src="${IMG.header}" alt=""></div>`;
+  if(first){
+    h+=`<h1 class="pg-title">INVOICE</h1><div class="meta">
+      <div class="l"><span>Ref</span><span>:</span><span class="v">${esc(st.ref)}</span></div>
+      <div class="l"><span>Client</span><span>:</span><span class="v"><b>${esc(st.pic)}</b><div class="addr">${esc([st.company,st.address].filter(Boolean).join('\n'))}</div></span></div>
+      <div class="date"><span>Date</span><span style="text-align:center">:</span><b>${esc(fmtDate(st.date))}</b></div></div>`;
+  }else{
+    h+=`<div class="cont">INVOICE<span>(lanjutan)</span><div class="cref">Ref : ${esc(st.ref)} &nbsp;·&nbsp; ${esc(st.company||st.pic)}</div></div>`;
+  }
+  h+=`<div class="tbl" style="top:${first?TOP1:TOPN}mm"><div class="th"><div>No.</div><div>Item &amp; Description</div><div>Price</div></div><div class="rows"></div></div><div class="pgno"></div>`;
+  p.innerHTML=h;$('pages').appendChild(p);return p;
+}
+const tblBottom=p=>{const t=p.querySelector('.tbl');return t.classList.contains('empty')?TOPN-8:parseFloat(t.style.top)+t.offsetHeight/MM};
+function tailHTML(c){
+  let h='';
+  if(c.disc||c.tax){
+    h+=`<div class="tr sub"><span>Subtotal</span><span>:</span><span>${rp(c.sub)}</span></div>`;
+    if(c.disc)h+=`<div class="tr sub"><span>Diskon</span><span>:</span><span>- ${rp(c.disc)}</span></div>`;
+    if(c.tax)h+=`<div class="tr sub"><span>PPN ${esc(st.ppn)}%</span><span>:</span><span>${rp(c.tax)}</span></div>`;
+  }
+  return h+`<div class="tr"><span>GRAND TOTAL</span><span>:</span><span>${rp(c.gt)}</span></div>`;
+}
+function addTail(p,c){
+  const add=(cls,html,top,tag='div')=>{const e=document.createElement(tag);e.className=cls+' tail';if(tag==='img')e.src=html;else e.innerHTML=html;e.style.top=top+'mm';p.appendChild(e);return e};
+  const totTop=Math.max(147,tblBottom(p)+2);
+  const tot=add('tot',tailHTML(c),totTop);
+  const sigTop=Math.max(156.5,totTop+tot.offsetHeight/MM+4);
+  add('sig',`<div class="lbl">Marketing</div>${st.showStamp?`<img class="stamp" src="${IMG.stamp}" alt=""><img class="sign" src="${IMG.sign}" alt="">`:''}<div class="nm">${esc(st.signer)}</div>`,sigTop);
+  const bank=sigTop+42.5;
+  add('bank',`<div class="k">Bank Name:</div><div class="v">${esc(st.bankName)}</div><div class="k">Bank Account:</div><div class="v">${esc(st.bankAcc)}</div><div class="k np">NPWP:</div><div class="v np">${esc(st.npwp)}</div>`,bank);
+  add('thanks',IMG.thanks,bank+17.5,'img');
+  const foot=bank+35.3;
+  add('foot-line','',foot);
+  add('contact','If you have any question please contact : '+esc(st.contact||''),foot+4.1);
+  add('stripe',IMG.stripe,foot+11.9,'img');
+  return foot;
+}
+const clearTail=p=>p.querySelectorAll('.tail').forEach(e=>e.remove());
+function render(){
+  const c=calc();
+  $('gtForm').textContent=rp(c.gt);
+  const box=$('pages');box.innerHTML='';
+  const rows=st.items.filter(it=>it.t||it.d||it.p).map((it,i)=>{
+    const r=document.createElement('div');r.className='r';
+    r.innerHTML=`<div class="no">${i+1}</div><div class="it">${esc(it.t)}${it.d?`<small>${esc(it.d)}</small>`:''}</div><div class="pr">${it.p?rp(num(it.p)):''}</div>`;return r});
+  let cur=newPage(true);
+  for(const r of rows){
+    const rb=cur.querySelector('.rows');rb.appendChild(r);
+    if(tblBottom(cur)>TBL_MAX&&rb.children.length>1){r.remove();cur=newPage(false);cur.querySelector('.rows').appendChild(r)}
+  }
+  // tail must fit on last page; otherwise push rows to a new page
+  let guard=0;
+  while(addTail(cur,c)>FOOT_MAX&&guard++<200){
+    clearTail(cur);
+    const rb=cur.querySelector('.rows');
+    if(rb.children.length>1){const last=rb.lastElementChild;const nxt=newPage(false);nxt.querySelector('.rows').appendChild(last);
+      // keep pulling rows while the new page still fits the tail
+      cur=nxt;
+    }else{const nxt=newPage(false);nxt.querySelector('.tbl').classList.add('empty');cur=nxt}
+  }
+  const pages=[...box.children];
+  pages.forEach((p,i)=>{
+    if(p!==cur){const s=document.createElement('img');s.className='stripe';s.src=IMG.stripe;s.style.top='284.3mm';p.appendChild(s)}
+    if(pages.length>1)p.querySelector('.pgno').textContent=`Hal. ${i+1}/${pages.length}`;
+  });
+  fit();
+  LS.set('inv_draft',st);
+}
+function layout(){render()}
+function fit(){
+  const stage=$('stage'),sc=$('scaler'),pg=$('pages');const first=pg.firstElementChild;if(!first)return;
+  const s=Math.min(1,stage.clientWidth/first.offsetWidth);
+  sc.style.transform=`scale(${s})`;stage.style.height=(pg.offsetHeight*s)+'px';
+}
+addEventListener('resize',fit);
+
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2200)}
+
+function loadScript(src){return new Promise((ok,no)=>{const x=document.createElement('script');x.src=src;x.onload=ok;x.onerror=()=>no(new Error('load '+src));document.head.appendChild(x)})}
+async function loadLibs(){
+  if(!window.html2canvas)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+  if(!window.jspdf)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+}
+$('pdfBtn').onclick=async()=>{
+  const name=`Invoice_${(st.company||st.pic||'klien').replace(/[^\w]+/g,'_').replace(/^_|_$/g,'')}_${st.ref}.pdf`;
+  toast('Lagi bikin PDF…');
+  try{await loadLibs()}catch(e){}
+  if(!window.html2canvas||!window.jspdf){toast('Library PDF gagal dimuat, pakai Print → Save as PDF');try{window.print()}catch(e){}return}
+  const sc=$('scaler');const prev=sc.style.transform;sc.style.transform='none';
+  try{
+    try{await document.fonts.ready}catch(e){}
+    const pdf=new jspdf.jsPDF({unit:'mm',format:'a4'});
+    const pages=[...$('pages').children];
+    for(let i=0;i<pages.length;i++){
+      const cv=await html2canvas(pages[i],{scale:3,useCORS:true,backgroundColor:'#fff'});
+      if(i)pdf.addPage();
+      pdf.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,297);
+    }
+    pdf.save(name);
+    commitRef(st.ref);
+    toast('PDF tersimpan: '+name);
+  }catch(e){toast('Gagal bikin PDF: '+e.message)}
+  finally{sc.style.transform=prev;fit()}
+};
+
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.body.dataset.tab=b.dataset.t;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));fit();scrollTo(0,0)});
+loadForm();
+try{document.fonts&&document.fonts.ready.then(layout)}catch(e){}
+})();
+</script>
+</body>
+</html>

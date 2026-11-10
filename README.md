@@ -33,3 +33,14 @@ Konten juga bisa ditambah langsung di Sheet: isi TANGGAL (yyyy-mm-dd), JUDUL KON
 - Semua perubahan (tambah/edit/hapus/warna/opsi) wajib PIN. PIN **tidak** ada di kode — atur di Apps Script → ⚙ Setelan project → Properti skrip → `EDIT_PIN`.
 - Tanpa `EDIT_PIN`, script menolak semua perubahan (kalender cuma bisa dilihat). Salah PIN 10x → dikunci 15 menit.
 - PIN diminta sekali per browser, lalu diingat. Hapus lewat ⚙ → "Lupain PIN".
+
+## Invoice Maker (`invoice.html`)
+
+Bikin invoice PT Kulturama Virtua Solusindo / Shoe Police sesuai template, langsung jadi PDF A4. Buka dari tab **Invoice ↗** di kalender.
+
+- No. Ref otomatis `YYYYMM` + urutan 3 digit (naik tiap download PDF), bisa diedit manual.
+- Klien bisa disimpan & dipilih ulang. Item bisa ditambah / dihapus / diurutkan; harga boleh kosong untuk item satu paket.
+- Diskon & PPN 11%/12% opsional (muncul baris Subtotal/Diskon/PPN).
+- Item banyak → otomatis lanjut ke halaman berikutnya; Grand Total, tanda tangan & bank di halaman terakhir.
+- Nama marketing, rekening, NPWP, kontak diingat di browser. Semua data invoice disimpan di browser (localStorage), tidak ke Sheet.
+- Gambar template (kop, stempel, tanda tangan, dll) ada di folder `invoice-assets/`.
