@@ -2,6 +2,10 @@
  * TIMELINE KALENDER — penghubung Google Sheet <-> kalender (GitHub Pages)
  * Pasang di: Google Sheet > Ekstensi > Apps Script, lalu Deploy sebagai Web App.
  *
+ * CATATAN: sekarang Apps Script cuma berisi apps-script/Loader.gs. File INI diambil otomatis dari GitHub
+ * oleh loader (±5–10 menit setelah push), jadi update cukup di-push ke repo — tanpa copas/deploy ulang.
+ * Wajib tetap ada teks "TIMELINE KALENDER" dan "function doPost" di file ini (dicek loader).
+ *
  * Kolom dibaca berdasarkan NAMA HEADER di baris 1 (urutan kolom bebas).
  * Kolom tambahan di luar daftar FIELDS tetap ikut terbaca/tersimpan lewat item.cols {HEADER: nilai},
  * jadi kolom baru cukup ditambah dari sisi kalender — script tidak perlu di-deploy ulang.

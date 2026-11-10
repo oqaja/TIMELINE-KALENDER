@@ -56,3 +56,16 @@ Setup sekali setelah update script:
 1. Buka Apps Script, ganti isi `Code.gs` dengan isi [`apps-script/Code.gs`](apps-script/Code.gs), simpan.
 2. Pilih fungsi **izinDrive** di toolbar, klik **Run**, lalu izinkan akses Google Drive.
 3. **Deploy → Kelola deployment → ✏ Edit → Versi: Versi baru → Deploy** (URL `/exec` tetap sama).
+
+## Loader Apps Script (update otomatis dari GitHub)
+
+Isi Apps Script cukup [`apps-script/Loader.gs`](apps-script/Loader.gs) (ditempel sekali). Loader ngambil `apps-script/Code.gs` terbaru dari repo ini dan ngejalaninnya, jadi tiap perubahan di `Code.gs` yang di-push ke `main` kepakai sendiri dalam ±5–10 menit — **tanpa copas & tanpa Deploy ulang**.
+
+Setup sekali:
+1. Apps Script → hapus semua isi `Code.gs`, tempel isi `Loader.gs`, simpan.
+2. Pilih fungsi **izinSemua** → **Run** → izinkan semua akses.
+3. **Deploy → Kelola deployment → ✏ Edit → Versi baru → Deploy** (URL `/exec` tetap).
+
+- Butuh update saat itu juga? Run **updateSekarang**.
+- GitHub down → dipakai salinan terakhir (disimpan di Properti skrip `LOADER_SRC_*`; jangan dihapus).
+- Fitur baru yang butuh izin Google jenis baru (Gmail, Calendar, dll) tetap perlu Run **izinSemua** sekali lagi.
