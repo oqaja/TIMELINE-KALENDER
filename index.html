@@ -144,8 +144,57 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
 .ttl{display:flex;flex-direction:column;gap:8px}
 .tabs{display:inline-flex;background:#e9e7e1;border-radius:10px;padding:3px;gap:2px;align-self:flex-start}
 .tabs button{border:0;background:transparent;padding:6px 12px;font-size:13px;border-radius:8px;color:#555}
+.tabs{max-width:100%;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tabs button{white-space:nowrap;flex:none}
 .tabs button.on{background:#fff;color:#111;box-shadow:0 1px 2px rgba(0,0,0,.12)}
-body.v-day .main,body.v-week .main,body.v-todo .main{display:none}
+body.v-day .main,body.v-week .main,body.v-todo .main,body.v-stat .main{display:none}
+.statview{display:flex;flex-direction:column;gap:12px}
+.st-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.st-top h2{font-family:var(--head);font-size:18px;margin:0;text-transform:uppercase;flex:1;min-width:220px}
+.st-top h2 small{display:block;font-family:var(--body);text-transform:none;font-size:12px;color:var(--muted);font-weight:500;margin-top:2px}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.tile .k{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.tile .v{font-family:var(--head);font-size:34px;font-weight:800;line-height:1.1;margin-top:6px}
+.tile .v small{font-size:15px;color:var(--muted);font-weight:700}
+.tile .s{font-size:12px;color:var(--muted);margin-top:4px}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.card.wide{grid-column:1/-1}
+.card h3{font-family:var(--head);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin:0 0 2px}
+.card .sub2{font-size:12px;color:var(--muted);margin-bottom:12px}
+.lg{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;font-weight:600;color:#444;margin-bottom:8px}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.cols{display:flex;align-items:flex-end;gap:2px;height:170px;border-bottom:1px solid #ddd;padding-top:16px;position:relative}
+.col{flex:1;display:flex;flex-direction:column-reverse;gap:2px;min-width:0;position:relative;height:100%;justify-content:flex-start;cursor:default}
+.col .sg{border-radius:0}
+.col .sg:last-child{border-radius:4px 4px 0 0}
+.col .n{position:absolute;left:0;right:0;text-align:center;font-size:10px;font-weight:700;color:#444}
+.col:hover .sg{filter:brightness(1.12)}
+.xax{display:flex;gap:2px;margin-top:4px}
+.xax span{flex:1;text-align:center;font-size:10px;color:var(--muted);min-width:0}
+.xax span.we{color:#b10202}
+.xax span.td{color:#111;font-weight:800}
+.segbar{display:flex;gap:2px;height:28px;border-radius:6px;overflow:hidden;margin:6px 0 10px}
+.segbar div{height:100%;cursor:default}
+.segbar div:hover{filter:brightness(1.12)}
+.rows{display:flex;flex-direction:column;gap:9px}
+.hr{display:grid;grid-template-columns:132px minmax(0,1fr) 56px;gap:10px;align-items:center;font-size:13px}
+.hr .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hr .tr{height:12px;background:#efeee9;border-radius:99px;overflow:hidden;position:relative;cursor:default}
+.hr .tr i{display:block;height:100%;border-radius:99px}
+.hr .vl{font-size:12px;font-weight:700;text-align:right;color:#333;white-space:nowrap}
+.badge{display:inline-block;font-size:10px;font-weight:800;background:#fff1c2;color:#7a5a00;border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:1px}
+.pfr{display:grid;grid-template-columns:40px minmax(0,1fr) 56px;gap:4px 10px;align-items:center}
+.pfr .chipz{grid-column:2/4;justify-content:flex-start!important}
+.pfr .chipz{display:flex;gap:4px;flex-wrap:wrap}
+.pfr .chipz span{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:#f1f0ec;color:#555;white-space:nowrap}
+.pfr .chipz span.gg{background:#fde8e8;color:#b10202}
+.fun{display:flex;flex-wrap:wrap;gap:8px}
+.fun span{font-size:13px;background:#faf9f6;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.fun b{font-weight:800}
+#tip{position:fixed;z-index:90;pointer-events:none;background:#111;color:#fff;border-radius:8px;padding:6px 9px;font-size:12px;line-height:1.35;display:none;max-width:240px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+#tip b{font-size:14px}
+@media(max-width:800px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.cards{grid-template-columns:1fr}.tile .v{font-size:28px}.hr{grid-template-columns:104px minmax(0,1fr) 50px}}
 .td-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
 .td-ctl select{width:auto;padding:7px 10px;font-size:14px;font-weight:700}
 .td-per{display:inline-flex;background:#e9e7e1;border-radius:10px;padding:3px;gap:2px}
@@ -266,7 +315,7 @@ body.v-day .main,body.v-week .main,body.v-todo .main{display:none}
 <div class="wrap">
   <header>
     <div class="ttl"><h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
-      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button><button data-v="todo">To-do</button></nav></div>
+      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button></nav></div>
     <div class="nav">
       <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
       <div class="month" id="monthLbl"></div>
@@ -284,6 +333,7 @@ body.v-day .main,body.v-week .main,body.v-todo .main{display:none}
   <section class="weekview" id="weekView" hidden></section>
   <section class="dayview" id="dayView" hidden></section>
   <section class="dayview todoview" id="todoView" hidden></section>
+  <section class="statview" id="statView" hidden></section>
 </div>
 
 <div class="back" id="back">
@@ -664,7 +714,7 @@ function goDay(k){dayK=k;const [y,m]=k.split('-').map(Number);
   if(y!==viewY||m-1!==viewM){viewY=y;viewM=m-1;navTo()}else render()}
 function shiftDay(n){const [y,m,d]=(dayK||todayKey).split('-').map(Number);const t=new Date(y,m-1,d+n);goDay(key(t.getFullYear(),t.getMonth(),t.getDate()))}
 function setView(v){view=v;try{localStorage.setItem('sp-timeline-view',v)}catch(e){}
-  if(v==='day'||v==='week'||v==='todo'){goDay(dayK||todayKey)}else render()}
+  if(v==='day'||v==='week'||v==='todo'||v==='stat'){goDay(dayK||todayKey)}else render()}
 const mondayOf=k=>{const [y,m,d]=k.split('-').map(Number);const t=new Date(y,m-1,d);t.setDate(t.getDate()-((t.getDay()+6)%7));return t};
 function renderWeek(){
   if(!dayK)dayK=todayKey;
@@ -751,6 +801,92 @@ function openTodo(t){
     done();saveTodo(t);render()};
   setTimeout(()=>w.querySelector('#tdText').focus(),30);
 }
+// ===================== RINGKASAN (infografik) =====================
+let stPer='month';try{stPer=localStorage.getItem('sp-timeline-stper')||'month'}catch(e){}
+function stRange(){const k=dayK||todayKey,[y,m]=k.split('-').map(Number);
+  if(stPer==='week'){const a=mondayOf(k),z=new Date(a);z.setDate(a.getDate()+6);return [key(a.getFullYear(),a.getMonth(),a.getDate()),key(z.getFullYear(),z.getMonth(),z.getDate())]}
+  return [key(y,m-1,1),key(y,m-1,new Date(y,m,0).getDate())]}
+function shiftStat(n){if(stPer==='week')return shiftDay(7*n);const [y,m]=(dayK||todayKey).split('-').map(Number);const t=new Date(y,m-1+n,1);goDay(key(t.getFullYear(),t.getMonth(),1))}
+function tipOn(root){let tip=document.getElementById('tip');if(!tip){tip=document.createElement('div');tip.id='tip';document.body.appendChild(tip)}
+  root.querySelectorAll('[data-tv]').forEach(el=>{
+    el.addEventListener('pointermove',e=>{tip.replaceChildren();const b=document.createElement('b');b.textContent=el.dataset.tv;tip.appendChild(b);
+      if(el.dataset.tl){tip.appendChild(document.createElement('br'));tip.appendChild(document.createTextNode(el.dataset.tl))}
+      tip.style.display='block';const w=tip.offsetWidth;tip.style.left=Math.min(innerWidth-w-8,e.clientX+12)+'px';tip.style.top=(e.clientY+14)+'px'});
+    el.addEventListener('pointerleave',()=>{tip.style.display='none'});
+  })}
+function renderStat(){
+  if(!dayK)dayK=todayKey;
+  const [a,z]=stRange(),[ay,am,ad]=a.split('-').map(Number),[zy,zm,zd]=z.split('-').map(Number);
+  document.getElementById('monthLbl').textContent=stPer==='week'?(am===zm?`${ad}–${zd} ${BULAN[zm-1].slice(0,3)} ${zy}`:`${ad} ${BULAN[am-1].slice(0,3)} – ${zd} ${BULAN[zm-1].slice(0,3)} ${zy}`):`${BULAN[am-1]} ${ay}`;
+  const inR=state.items.filter(i=>i.date>=a&&i.date<=z);
+  const f=document.getElementById('filters');
+  f.innerHTML=akunBar(inR)+`<span class="chip-f pvchip ${hidePv?'off':''}" id="pvChip"><span class="dot pvdot"></span>Preview <span class="count">${inR.filter(i=>i.src!=='kk').length}</span></span><span class="status" id="status">${API?(remoteOk?syncLabel():'Narik data dari Sheet…'):'Belum nyambung ke Sheet — klik ⚙'}</span>`;
+  bindAkun(f);f.querySelector('#pvChip').onclick=()=>{hidePv=!hidePv;render()};
+  const L=inR.filter(i=>akunOK(i)&&!(hidePv&&i.src!=='kk'));
+  const N=L.length,pct=(x,y)=>y?Math.round(x/y*100):0;
+  const anyUp=i=>PLAT2.some(([c])=>String(i['st'+c]||'').trim()==='Uploaded');
+  const up=L.filter(anyUp).length,prod=L.filter(i=>String(i.production||'').trim()==='✅').length;
+  const tasks=L.flatMap(autoTasks),tDone=tasks.filter(x=>x.done).length;
+  // per hari, ditumpuk per jenis
+  const days=[];{const s0=new Date(ay,am-1,ad),s1=new Date(zy,zm-1,zd);for(let t=new Date(s0);t<=s1;t.setDate(t.getDate()+1))days.push(key(t.getFullYear(),t.getMonth(),t.getDate()))}
+  const perDay=days.map(k=>{const l=L.filter(i=>i.date===k);return {k,n:l.length,by:TYPES.map(t=>({t,n:l.filter(i=>i.type===t.id).length}))}});
+  const maxD=Math.max(1,...perDay.map(d=>d.n)),busiest=perDay.reduce((b,d)=>d.n>b.n?d:b,{n:0});
+  const dayName=k=>{const [y,m,d]=k.split('-').map(Number);return ['Min','Sen','Sel','Rab','Kam','Jum','Sab'][new Date(y,m-1,d).getDay()]};
+  const isWE=k=>{const [y,m,d]=k.split('-').map(Number);const g=new Date(y,m-1,d).getDay();return g===0||g===6};
+  const colsHtml=perDay.map(d=>`<div class="col" data-tv="${d.n} konten" data-tl="${fmtDate(d.k)}${d.n?' · '+d.by.filter(x=>x.n).map(x=>x.t.name+' '+x.n).join(', '):''}" tabindex="0">
+      ${d.by.filter(x=>x.n).map(x=>`<div class="sg" style="height:${x.n/maxD*100}%;background:${x.t.color}"></div>`).join('')}
+      ${d.n?`<span class="n" style="bottom:calc(${d.n/maxD*100}% + 2px)">${d.n}</span>`:''}</div>`).join('');
+  const xax=perDay.map(d=>{const dd=+d.k.slice(8);return `<span class="${isWE(d.k)?'we':''}${d.k===todayKey?' td':''}">${stPer==='week'?dayName(d.k)+' '+dd:(dd===1||dd%5===0||d.k===todayKey?dd:'')}</span>`}).join('');
+  // komposisi jenis
+  const byType=TYPES.map(t=>({t,n:L.filter(i=>i.type===t.id).length})).filter(x=>x.n);
+  // akun
+  const akuns=[...new Set(L.map(akunOf))].map(k=>({k,n:L.filter(i=>akunOf(i)===k).length})).sort((x,y)=>y.n-x.n);const maxA=Math.max(1,...akuns.map(x=>x.n));
+  // platform
+  const plat=PLAT2.map(([c,n])=>{const sl=L.filter(i=>String(i['jam'+c]||'').trim()||String(i['st'+c]||'').trim());const cnt=s=>sl.filter(i=>String(i['st'+c]||'').trim()===s).length;
+    return {c,n,tot:sl.length,up:cnt('Uploaded'),sch:cnt('Scheduled'),acc:cnt('Acc'),gg:cnt('Gagal'),bl:sl.filter(i=>!String(i['st'+c]||'').trim()).length}}).filter(p=>p.tot);
+  // tim
+  const ppl=[...new Set(tasks.map(x=>x.who))].map(w=>{const l=tasks.filter(x=>x.who===w);return {w,tot:l.length,d:l.filter(x=>x.done).length}}).sort((x,y)=>y.d-x.d||y.tot-x.tot);
+  const star=ppl.filter(p=>p.d>0).sort((x,y)=>y.d-x.d||y.d/y.tot-x.d/x.tot)[0];
+  // brand
+  const brs={};L.forEach(i=>String(i.brand||'').split(/\s*,\s*/).filter(Boolean).forEach(b=>{brs[b]=(brs[b]||0)+1}));
+  const topB=Object.entries(brs).sort((x,y)=>y[1]-x[1]).slice(0,6),maxB=Math.max(1,...topB.map(x=>x[1]));
+  const sv=document.getElementById('statView');
+  sv.innerHTML=`<div class="st-top"><h2>Ringkasan ${stPer==='week'?'minggu ini':BULAN[am-1]+' '+ay}<small>${fmtDate(a).replace(/^\w+, /,'')} – ${fmtDate(z).replace(/^\w+, /,'')}${hidePv?' · tanpa Preview':''}</small></h2>
+      <span class="td-per">${[['week','Mingguan'],['month','Bulanan']].map(([v,n])=>`<button data-p="${v}" class="${stPer===v?'on':''}">${n}</button>`).join('')}</span></div>
+    <div class="tiles">
+      <div class="tile"><div class="k">Total konten</div><div class="v">${N}</div><div class="s">${L.filter(i=>i.src!=='kk').length} di antaranya Preview</div></div>
+      <div class="tile"><div class="k">Udah tayang</div><div class="v">${pct(up,N)}<small>%</small></div><div class="s">${up} dari ${N} konten (min. 1 platform Uploaded)</div></div>
+      <div class="tile"><div class="k">Produksi beres</div><div class="v">${pct(prod,N)}<small>%</small></div><div class="s">${prod} konten PRODUCTION ✅</div></div>
+      <div class="tile"><div class="k">Tugas tim beres</div><div class="v">${pct(tDone,tasks.length)}<small>%</small></div><div class="s">${tDone} dari ${tasks.length} tugas</div></div></div>
+    <div class="cards">
+      <div class="card wide"><h3>Konten per hari</h3><div class="sub2">Ditumpuk per jenis konten · hari Sabtu–Minggu warna merah</div>
+        <div class="lg">${TYPES.map(t=>`<span><i style="background:${t.color}"></i>${t.name}</span>`).join('')}</div>
+        <div class="cols">${colsHtml}</div><div class="xax">${xax}</div></div>
+      <div class="card"><h3>Komposisi jenis</h3><div class="sub2">Porsi tiap jenis dari ${N} konten</div>
+        ${N?`<div class="segbar">${byType.map(x=>`<div style="flex:${x.n};background:${x.t.color}" data-tv="${x.n} konten · ${pct(x.n,N)}%" data-tl="${x.t.name}"></div>`).join('')}</div>
+        <div class="rows">${byType.map(x=>`<div class="hr" style="grid-template-columns:minmax(0,1fr) auto"><span class="nm"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${x.t.color};margin-right:6px"></i>${x.t.name}</span><span class="vl">${x.n} · ${pct(x.n,N)}%</span></div>`).join('')}</div>`:'<div class="dv-empty">Belum ada konten.</div>'}</div>
+      <div class="card"><h3>Per akun</h3><div class="sub2">Jumlah konten tiap akun</div>
+        <div class="rows">${akuns.map(x=>`<div class="hr"><span class="nm">${x.k==='-'?'Tanpa akun':esc(x.k)}</span><span class="tr" data-tv="${x.n} konten" data-tl="${x.k==='-'?'Tanpa akun':esc(x.k)}"><i style="width:${x.n/maxA*100}%;background:#2b2b2b"></i></span><span class="vl">${x.n}</span></div>`).join('')||'<div class="dv-empty">Belum ada konten.</div>'}</div></div>
+      <div class="card"><h3>Upload per platform</h3><div class="sub2">Bar hijau = udah Uploaded dari semua jadwal di platform itu</div>
+        <div class="rows">${plat.map(p=>`<div class="pfr"><span class="pf ${p.c}" style="padding:4px 0">${p.c}</span>
+          <span class="hr" style="grid-template-columns:1fr"><span class="tr" data-tv="${p.up} dari ${p.tot} Uploaded" data-tl="${p.n}"><i style="width:${pct(p.up,p.tot)}%;background:#0ca30c"></i></span></span><span class="vl" style="font-size:12px;font-weight:700;text-align:right">${p.up}/${p.tot}</span>
+          <span class="chipz">${p.sch?`<span>Scheduled ${p.sch}</span>`:''}${p.acc?`<span>Acc ${p.acc}</span>`:''}${p.bl?`<span>Belum ${p.bl}</span>`:''}${p.gg?`<span class="gg">⚠ Gagal ${p.gg}</span>`:''}</span></div>`).join('')||'<div class="dv-empty">Belum ada jadwal upload.</div>'}</div></div>
+      <div class="card"><h3>Papan tim</h3><div class="sub2">Tugas beres / total tugas dari peran di konten · 🔥 MVP = paling banyak beresin tugas</div>
+        <div class="rows">${ppl.map(p=>`<div class="hr"><span class="nm">${esc(p.w)}${star&&star.w===p.w?'<span class="badge">🔥 MVP</span>':''}</span><span class="tr" data-tv="${p.d} dari ${p.tot} beres" data-tl="${esc(p.w)} · ${pct(p.d,p.tot)}%"><i style="width:${pct(p.d,p.tot)}%;background:#12a150"></i></span><span class="vl">${p.d}/${p.tot}</span></div>`).join('')||'<div class="dv-empty">Belum ada tugas.</div>'}</div></div>
+      <div class="card"><h3>Brand tap-in teratas</h3><div class="sub2">Konten per brand (maks. 6)</div>
+        <div class="rows">${topB.map(([b,n])=>`<div class="hr"><span class="nm"><span class="dot" style="display:inline-block;background:${brandColor(b)};margin-right:6px"></span>${esc(b)}</span><span class="tr" data-tv="${n} konten" data-tl="${esc(b)}"><i style="width:${n/maxB*100}%;background:${brandColor(b)}"></i></span><span class="vl">${n}</span></div>`).join('')||'<div class="dv-empty">Belum ada brand tap-in.</div>'}</div></div>
+      <div class="card"><h3>Fakta seru</h3><div class="sub2">Biar kebayang ritmenya</div><div class="fun">
+        ${busiest.n?`<span>📅 Hari tersibuk: <b>${fmtDate(busiest.k).replace(/ \d{4}$/,'')}</b> (${busiest.n} konten)</span>`:''}
+        ${topB[0]?`<span>🏆 Brand paling sering: <b>${esc(topB[0][0])}</b> (${topB[0][1]}x)</span>`:''}
+        ${star?`<span>🔥 MVP: <b>${esc(star.w)}</b> beresin ${star.d} tugas (${pct(star.d,star.tot)}%)</span>`:''}
+        ${byType[0]?`<span>🎬 Jenis favorit: <b>${[...byType].sort((x,y)=>y.n-x.n)[0].t.name}</b></span>`:''}
+        <span>🗓️ Hari kosong: <b>${perDay.filter(d=>!d.n).length}</b> dari ${perDay.length} hari</span>
+        ${plat.some(p=>p.gg)?`<span>⚠ Upload gagal: <b>${plat.reduce((s,p)=>s+p.gg,0)}</b> jadwal, cek lagi ya</span>`:''}</div></div>
+    </div>`;
+  sv.querySelectorAll('.td-per button').forEach(b=>b.onclick=()=>{stPer=b.dataset.p;try{localStorage.setItem('sp-timeline-stper',stPer)}catch(e){};render()});
+  sv.querySelectorAll('.col').forEach(el=>{el.style.cursor='pointer'});
+  tipOn(sv);
+}
 function renderTodo(){
   if(!dayK)dayK=todayKey;
   const [a,z]=tdRange(),[ay,am,ad]=a.split('-').map(Number),[zy,zm,zd]=z.split('-').map(Number);
@@ -800,6 +936,8 @@ function render(){
   document.body.classList.toggle('v-day',view==='day');
   document.body.classList.toggle('v-week',view==='week');
   document.body.classList.toggle('v-todo',view==='todo');
+  document.body.classList.toggle('v-stat',view==='stat');
+  document.getElementById('statView').hidden=view!=='stat';
   document.getElementById('todoView').hidden=view!=='todo';
   document.getElementById('dayView').hidden=view!=='day';
   document.getElementById('weekView').hidden=view!=='week';
@@ -807,6 +945,7 @@ function render(){
   if(view==='day')return renderDay();
   if(view==='week')return renderWeek();
   if(view==='todo')return renderTodo();
+  if(view==='stat')return renderStat();
   document.getElementById('monthLbl').textContent=`${BULAN[viewM]} ${viewY}`;
   renderFilters();
   const g=document.getElementById('grid');
@@ -1101,7 +1240,7 @@ function cleanBody(){
 <div class="wrap">
   <header>
     <div class="ttl"><h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
-      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button><button data-v="todo">To-do</button></nav></div>
+      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button></nav></div>
     <div class="nav">
       <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
       <div class="month" id="monthLbl"></div>
@@ -1119,6 +1258,7 @@ function cleanBody(){
   <section class="weekview" id="weekView" hidden></section>
   <section class="dayview" id="dayView" hidden></section>
   <section class="dayview todoview" id="todoView" hidden></section>
+  <section class="statview" id="statView" hidden></section>
 </div>
 
 <div class="back" id="back">
@@ -1145,9 +1285,9 @@ function save(){
   },700);
 }
 
-document.getElementById('prev').onclick=()=>{if(view==='day')return shiftDay(-1);if(view==='week')return shiftWeek(-1);if(view==='todo')return shiftTodo(-1);viewM--;if(viewM<0){viewM=11;viewY--}navTo()};
-document.getElementById('next').onclick=()=>{if(view==='day')return shiftDay(1);if(view==='week')return shiftWeek(1);if(view==='todo')return shiftTodo(1);viewM++;if(viewM>11){viewM=0;viewY++}navTo()};
-document.getElementById('todayBtn').onclick=()=>{if(view==='day'||view==='week'||view==='todo')return goDay(todayKey);viewY=now.getFullYear();viewM=now.getMonth();navTo()};
+document.getElementById('prev').onclick=()=>{if(view==='day')return shiftDay(-1);if(view==='week')return shiftWeek(-1);if(view==='todo')return shiftTodo(-1);if(view==='stat')return shiftStat(-1);viewM--;if(viewM<0){viewM=11;viewY--}navTo()};
+document.getElementById('next').onclick=()=>{if(view==='day')return shiftDay(1);if(view==='week')return shiftWeek(1);if(view==='todo')return shiftTodo(1);if(view==='stat')return shiftStat(1);viewM++;if(viewM>11){viewM=0;viewY++}navTo()};
+document.getElementById('todayBtn').onclick=()=>{if(view==='day'||view==='week'||view==='todo'||view==='stat')return goDay(todayKey);viewY=now.getFullYear();viewM=now.getMonth();navTo()};
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>setView(b.dataset.v));
 // refresh garis "sekarang" tiap menit di menu Upload Harian
 setInterval(()=>{if(view==='day'&&!back.classList.contains('show'))render()},60000);
