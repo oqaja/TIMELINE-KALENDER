@@ -694,6 +694,8 @@ function shiftWeek(n){shiftDay(7*n)}
 // ===================== TO-DO =====================
 let tdWho='',tdPer='day';try{tdWho=localStorage.getItem('sp-timeline-tdwho')||'';tdPer=localStorage.getItem('sp-timeline-tdper')||'day'}catch(e){}
 const tdSave=()=>{try{localStorage.setItem('sp-timeline-tdwho',tdWho);localStorage.setItem('sp-timeline-tdper',tdPer)}catch(e){}};
+// orang yang pegang shooting (kamera) di semua konten video — beres kalau SHOOTING ✅
+const SHOOTER='Bimar';
 // tugas otomatis dari peran di konten
 function autoTasks(it){
   const out=[],seen=new Set(),desain=it.type==='carousel'||it.type==='story';
@@ -701,6 +703,7 @@ function autoTasks(it){
     out.push({kind:'auto',who,role,label,col,it,date:it.date,done:String(it[col]||'').trim()==='✅',key:it.id+'|'+k})};
   add(it.producer,'Writing','Writing','writing');
   add(it.talent1,'Shooting','Shooting','shooting');add(it.talent2,'Shooting','Shooting','shooting');
+  if(!desain)add(SHOOTER,'Shooting','Shooting','shooting'); // yang ngerekam: ada di semua konten video
   if(desain)add(it.designer,'Desain','Desain','production');
   else{add(it.editor,'Edit','Edit video','production');add(it.designer,'Cover','Cover/Thumb','cover')}
   return out;
