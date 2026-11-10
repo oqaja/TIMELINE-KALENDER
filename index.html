@@ -703,13 +703,14 @@ function attachDrag(el){
   el.addEventListener('contextmenu',e=>e.preventDefault());
 }
 let toastEl=null,toastT=null;
-function toast(msg,undo){
+function toast(msg,undo,act){
   if(toastEl)toastEl.remove();clearTimeout(toastT);
   toastEl=document.createElement('div');toastEl.className='toast';
-  toastEl.innerHTML=`<span>${esc(msg)}</span>${undo?'<button>Batalin</button>':''}`;
+  toastEl.innerHTML=`<span>${esc(msg)}</span>${undo?'<button data-b="u">Batalin</button>':''}${act?`<button data-b="a">${esc(act.label)}</button>`:''}`;
   document.body.appendChild(toastEl);
-  if(undo)toastEl.querySelector('button').onclick=()=>{undo();toastEl.remove();toastEl=null};
-  toastT=setTimeout(()=>{if(toastEl){toastEl.remove();toastEl=null}},4000);
+  if(undo)toastEl.querySelector('[data-b=u]').onclick=()=>{undo();toastEl.remove();toastEl=null};
+  if(act)toastEl.querySelector('[data-b=a]').onclick=()=>{toastEl.remove();toastEl=null;act.fn()};
+  toastT=setTimeout(()=>{if(toastEl){toastEl.remove();toastEl=null}},act?7000:4000);
 }
 
 const back=document.getElementById('back'), modal=document.getElementById('modal');
@@ -805,6 +806,7 @@ function openForm(item,k){
     <div class="err" id="fErr"></div>
     <div class="row">
       ${isNew?'':'<button type="button" class="danger" id="del">Hapus</button>'}
+      ${!isNew&&API?`<button type="button" id="dup" title="Bikin salinan dengan isi form ini; yang asli nggak berubah">⧉ Duplikat jadi ${cur.src==='kk'?'Preview':'Konten'}</button>`:''}
       <span class="sp"></span>
       <button type="button" id="cancel">Batal</button>
       <button type="submit" class="primary">${isNew?'Tambah':'Simpan'}</button>
@@ -857,12 +859,12 @@ function openForm(item,k){
     if(!armed){armed=true;del.textContent=cur.src==='kk'?'Yakin? Kehapus juga dari KALENDER KONTEN':'Yakin hapus?';return}
     state.items=state.items.filter(x=>x.id!==item.id);save();close();render();
   }}
-  modal.querySelector('#f').onsubmit=e=>{
-    e.preventDefault();
+  // baca isi form jadi satu record (dipakai Simpan & Duplikat)
+  const buildRec=()=>{
     const title=modal.querySelector('#fTitle').value.trim();
     const date=modal.querySelector('#fDate').value;
-    if(!title){modal.querySelector('#fErr').textContent='Judul konten wajib diisi.';return}
-    if(!date){modal.querySelector('#fErr').textContent='Tanggal wajib diisi.';return}
+    if(!title){modal.querySelector('#fErr').textContent='Judul konten wajib diisi.';return null}
+    if(!date){modal.querySelector('#fErr').textContent='Tanggal wajib diisi.';return null}
     if(modal.querySelector('#fBrand').value==='__add')modal.querySelector('#fBrand').value='';
     const bv=modal.querySelector('#fBrand').value.trim();
     if(bv&&pickColor)state.brandColors[bkey(bv)]=pickColor;
@@ -873,6 +875,22 @@ function openForm(item,k){
     rec.segmen=[...modal.querySelectorAll('#segChips .cp.on')].map(el=>el.dataset.v).join(', ');
     rec.src=cur.src||'pv';if(item&&item.row)rec.row=item.row;if(item&&item.jenis)rec.jenis=item.jenis;
     if(rec.src==='kk'&&item)rec.eventId=item.eventId||'';
+    return rec;
+  };
+  const dupBtn=modal.querySelector('#dup');
+  if(dupBtn)dupBtn.onclick=()=>{
+    const base=buildRec();if(!base)return;
+    const to=cur.src==='kk'?'pv':'kk';
+    const copy={...base,id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),src:to};
+    delete copy.row;delete copy.jenis;copy.eventId=''; // salinan = baris baru, bukan baris lama
+    if(to==='kk')['stYT','stIG','stTT','stFB','idYT','idIG','idTT','idFB'].forEach(k=>copy[k]=''); // jangan sampai kebaca otomasi upload
+    state.items.push(copy);state.items.sort((a,b)=>a.date.localeCompare(b.date));
+    save();close();render();
+    toast(`Salinan jadi ${to==='kk'?'Konten (masuk KALENDER KONTEN)':'Preview'} dibuat · ${fmtDate(copy.date)}`,null,{label:'Buka',fn:()=>{const it=state.items.find(x=>x.id===copy.id);if(it)openForm(it)}});
+  };
+  modal.querySelector('#f').onsubmit=e=>{
+    e.preventDefault();
+    const rec=buildRec();if(!rec)return;
     if(isNew)state.items.push(rec);else state.items=state.items.map(x=>x.id===rec.id?rec:x);
     state.items.sort((a,b)=>a.date.localeCompare(b.date));
     save();close();render();
