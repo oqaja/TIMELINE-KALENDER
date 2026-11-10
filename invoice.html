@@ -46,6 +46,14 @@
     body[data-tab="isi"] .stage{position:absolute;left:-9999px;top:0}
     body[data-tab="preview"] .form{display:none}
   }
+  .mback{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .mbox{background:#fff;color:#1a1a1a;border-radius:14px;padding:18px;max-width:360px;width:100%}
+  .mbox h2{margin:0 0 6px;font-size:17px}.mbox p{margin:6px 0;font-size:14px;line-height:1.45}.msub{color:var(--mut)}
+  .merr{color:#a3261a;font-size:13px;min-height:18px;margin-top:6px}
+  .mrow{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}.mrow .btn.ghost{color:var(--d)}
+  .spin{width:34px;height:34px;border:4px solid #eee;border-top-color:var(--d);border-radius:50%;margin:6px auto 10px;animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .btn:disabled{opacity:.5;cursor:wait}
   #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--d);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:.2s;pointer-events:none;z-index:9}
   #toast.on{opacity:1}
 
@@ -118,7 +126,7 @@
   <b>Invoice Maker</b><span class="sub" style="opacity:.6;font-size:12px">Shoe Police</span>
   <span class="sp"></span>
   <button class="btn ghost sm" id="newBtn">+ Baru</button>
-  <button class="btn" id="pdfBtn">Download PDF</button>
+  <button class="btn" id="pdfBtn">Simpan &amp; Download PDF</button>
 </header>
 <div class="tabs"><button data-t="isi" class="on">Isi data</button><button data-t="preview">Preview</button></div>
 <main>
@@ -337,28 +345,108 @@ async function loadLibs(){
   if(!window.html2canvas)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
   if(!window.jspdf)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
 }
-$('pdfBtn').onclick=async()=>{
-  const name=`Invoice_${(st.company||st.pic||'klien').replace(/[^\w]+/g,'_').replace(/^_|_$/g,'')}_${st.ref}.pdf`;
-  toast('Lagi bikin PDF…');
-  try{await loadLibs()}catch(e){}
-  if(!window.html2canvas||!window.jspdf){toast('Library PDF gagal dimuat, pakai Print → Save as PDF');try{window.print()}catch(e){}return}
+// ===== Drive dulu, baru download (dikunci total) =====
+const SHEET_API='https://script.google.com/macros/s/AKfycbzUB9lNskcj27yuAs2rG4GbmMlV4OseKd0RpNj_9XXDw6_5TRwpackXX_DxKLV-ypyEPw/exec';
+let API=SHEET_API;try{API=localStorage.getItem('sp-timeline-api')||SHEET_API}catch(e){}
+let PIN='';try{PIN=localStorage.getItem('sp-timeline-pin')||''}catch(e){}
+const savePin=v=>{PIN=v||'';try{v?localStorage.setItem('sp-timeline-pin',v):localStorage.removeItem('sp-timeline-pin')}catch(e){}};
+async function post(body){
+  const r=await fetch(API,{method:'POST',body:JSON.stringify(body)});
+  return r.json();
+}
+function modal(html){
+  const w=document.createElement('div');w.className='mback';w.innerHTML=`<div class="mbox">${html}</div>`;
+  document.body.appendChild(w);return w;
+}
+function askPin(msg){
+  return new Promise(res=>{
+    const w=modal(`<h2>Masukin PIN</h2><p>${msg||'PIN yang sama kayak buat edit kalender. Cukup sekali di browser ini.'}</p>
+      <input id="pinIn" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN"><div class="merr" id="pinErr"></div>
+      <div class="mrow"><button class="btn ghost" id="pinNo">Batal</button><button class="btn" id="pinOk">Lanjut</button></div>`);
+    const inp=w.querySelector('#pinIn'),err=w.querySelector('#pinErr'),ok=w.querySelector('#pinOk');
+    const done=v=>{w.remove();res(v)};
+    const go=async()=>{const v=inp.value.trim();if(!v){err.textContent='Isi PIN-nya dulu.';return}
+      ok.disabled=true;ok.textContent='Ngecek…';
+      try{const d=await post({op:'checkPin',pin:v});
+        if(d.ok){savePin(v);return done(v)}
+        const m=String(d.error||'');err.textContent=/pin_wrong/.test(m)?'PIN salah.':/pin_locked/.test(m)?'Kebanyakan salah, tunggu 15 menit.':/pin_not_set/.test(m)?'PIN belum diatur di Apps Script.':'Gagal ngecek PIN.';
+      }catch(e){err.textContent='Gagal nyambung, cek internet.'}
+      ok.disabled=false;ok.textContent='Lanjut'};
+    ok.onclick=go;w.querySelector('#pinNo').onclick=()=>done(null);
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter')go()});
+    setTimeout(()=>inp.focus(),30);
+  });
+}
+function busy(on,text){
+  let w=$('busy');
+  if(on){if(!w){w=document.createElement('div');w.id='busy';w.className='mback';w.innerHTML='<div class="mbox" style="text-align:center"><div class="spin"></div><p id="busyT"></p></div>';document.body.appendChild(w)}$('busyT').textContent=text}
+  else if(w)w.remove();
+  $('pdfBtn').disabled=on;
+}
+function failBox(msg){
+  return new Promise(res=>{
+    const w=modal(`<h2>Belum tersimpan di Drive</h2><p>${esc(msg)}</p><p class="msub">PDF <b>tidak</b> di-download sebelum salinannya masuk Drive.</p>
+      <div class="mrow"><button class="btn ghost" id="fNo">Tutup</button><button class="btn" id="fRe">Coba lagi</button></div>`);
+    w.querySelector('#fNo').onclick=()=>{w.remove();res(false)};
+    w.querySelector('#fRe').onclick=()=>{w.remove();res(true)};
+  });
+}
+async function makePdf(){
+  await loadLibs();
+  if(!window.html2canvas||!window.jspdf)throw new Error('lib');
   const sc=$('scaler');const prev=sc.style.transform;sc.style.transform='none';
   try{
     try{await document.fonts.ready}catch(e){}
-    const pdf=new jspdf.jsPDF({unit:'mm',format:'a4'});
+    const pdf=new jspdf.jsPDF({unit:'mm',format:'a4',compress:true});
     const pages=[...$('pages').children];
     for(let i=0;i<pages.length;i++){
-      const cv=await html2canvas(pages[i],{scale:3,useCORS:true,backgroundColor:'#fff'});
+      const cv=await html2canvas(pages[i],{scale:2.5,useCORS:true,backgroundColor:'#fff'});
       if(i)pdf.addPage();
-      pdf.addImage(cv.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,297);
+      pdf.addImage(cv.toDataURL('image/jpeg',0.9),'JPEG',0,0,210,297);
     }
-    pdf.save(name);
-    commitRef(st.ref);
-    toast('PDF tersimpan: '+name);
-  }catch(e){toast('Gagal bikin PDF: '+e.message)}
-  finally{sc.style.transform=prev;fit()}
+    return pdf;
+  }finally{sc.style.transform=prev;fit()}
+}
+async function saveToDrive(pdf,name){
+  const data=pdf.output('datauristring').split(',')[1];
+  for(let tries=0;tries<3;tries++){
+    if(!PIN){const v=await askPin();if(!v)throw new Error('Dibatalin: PIN belum diisi.')}
+    let d;
+    try{d=await post({op:'invoiceSave',pin:PIN,name,data,ref:st.ref})}
+    catch(e){throw new Error('Gagal nyambung ke Google. Cek internet lalu coba lagi.')}
+    if(d&&d.ok&&d.fileId)return d;
+    const m=String((d&&d.error)||'');
+    if(/pin_wrong/.test(m)){savePin('');await askPin('PIN salah / udah diganti. Masukin PIN yang baru.');continue}
+    if(/pin_locked/.test(m))throw new Error('Kebanyakan salah PIN, tunggu 15 menit.');
+    if(/pin_not_set/.test(m))throw new Error('PIN belum diatur di Apps Script (EDIT_PIN).');
+    if(d&&d.ok&&!d.fileId)throw new Error('Apps Script belum versi baru. Deploy ulang script-nya dulu (lihat README bagian Invoice).');
+    if(/DriveApp|permission|izin|authoriz/i.test(m))throw new Error('Apps Script belum dapet izin Drive. Jalankan fungsi izinDrive sekali di editor Apps Script, lalu deploy ulang.');
+    throw new Error('Drive nolak: '+(m||'error nggak dikenal'));
+  }
+  throw new Error('PIN gagal diverifikasi.');
+}
+$('pdfBtn').onclick=async()=>{
+  if($('pdfBtn').disabled)return;
+  const name=`Invoice_${(st.company||st.pic||'klien').replace(/[^\w]+/g,'_').replace(/^_|_$/g,'')}_${st.ref}.pdf`;
+  for(;;){
+    let pdf;
+    try{busy(true,'Bikin PDF…');pdf=await makePdf()}
+    catch(e){busy(false);if(!(await failBox('Gagal bikin PDF (library nggak kemuat). Cek internet lalu coba lagi.')))return;continue}
+    try{
+      busy(true,'Nyimpen salinan ke Google Drive…');
+      const d=await saveToDrive(pdf,name);
+      busy(false);
+      pdf.save(name);
+      commitRef(st.ref);
+      toast('Tersimpan di Drive ✓ & di-download');
+      return;
+    }catch(e){
+      busy(false);
+      if(/^Dibatalin/.test(e.message)){toast(e.message);return}
+      if(!(await failBox(e.message)))return;
+    }
+  }
 };
-
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.body.dataset.tab=b.dataset.t;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));fit();scrollTo(0,0)});
 loadForm();
 try{document.fonts&&document.fonts.ready.then(layout)}catch(e){}

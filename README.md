@@ -44,3 +44,15 @@ Bikin invoice PT Kulturama Virtua Solusindo / Shoe Police sesuai template, langs
 - Item banyak → otomatis lanjut ke halaman berikutnya; Grand Total, tanda tangan & bank di halaman terakhir.
 - Nama marketing, rekening, NPWP, kontak diingat di browser. Semua data invoice disimpan di browser (localStorage), tidak ke Sheet.
 - Gambar template (kop, stempel, tanda tangan, dll) ada di folder `invoice-assets/`.
+
+### Wajib tersimpan di Drive dulu
+
+Tombol **Simpan & Download PDF** ngirim salinan PDF ke folder Drive invoice lewat Apps Script. File baru di-download **setelah** Drive bilang berhasil. Kalau gagal, nggak ada download (ada tombol Coba lagi). PIN sama dengan PIN edit kalender.
+
+- Folder: `INVOICE_FOLDER_ID` di `apps-script/Code.gs` (bisa ditimpa lewat Properti skrip `INVOICE_FOLDER_ID`).
+- Nama file sama (download ulang setelah diedit) → versi lama dipindah ke Sampah Drive, yang baru disimpan.
+
+Setup sekali setelah update script:
+1. Buka Apps Script, ganti isi `Code.gs` dengan isi [`apps-script/Code.gs`](apps-script/Code.gs), simpan.
+2. Pilih fungsi **izinDrive** di toolbar, klik **Run**, lalu izinkan akses Google Drive.
+3. **Deploy → Kelola deployment → ✏ Edit → Versi: Versi baru → Deploy** (URL `/exec` tetap sama).

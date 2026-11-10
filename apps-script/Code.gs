@@ -433,6 +433,7 @@ function doPost(e) {
   try { op0 = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (err) {}
   try { pinCheck_(op0.pin); } catch (err) { return out_({ ok: false, error: String(err) }); }
   if (op0.op === 'checkPin') return out_({ ok: true });
+  if (op0.op === 'invoiceSave') { try { return out_(invoiceSave_(op0)); } catch (err) { return out_({ ok: false, error: String(err) }); } }
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -468,3 +469,27 @@ function doPost(e) {
     lock.releaseLock();
   }
 }
+
+// ---- INVOICE: salinan PDF dari invoice.html disimpan ke folder Drive SEBELUM boleh di-download
+// Folder bisa diganti lewat Properti skrip: INVOICE_FOLDER_ID = <id folder>
+const INVOICE_FOLDER_ID = '1pUNqU1aVozohDB_cRLr7EmmBSt0BjSrF';
+function invoiceFolder_() {
+  const id = PropertiesService.getScriptProperties().getProperty('INVOICE_FOLDER_ID') || INVOICE_FOLDER_ID;
+  return DriveApp.getFolderById(id);
+}
+function invoiceSave_(op) {
+  const name = String(op.name || '').replace(/[\\/:*?"<>|]+/g, '_').trim();
+  if (!/\.pdf$/i.test(name)) throw new Error('nama file harus .pdf');
+  const b64 = String(op.data || '').replace(/^data:[^,]*,/, '');
+  if (!b64) throw new Error('file kosong');
+  const bytes = Utilities.base64Decode(b64);
+  if (bytes.length < 1000) throw new Error('file PDF rusak/kekecilan');
+  const folder = invoiceFolder_();
+  // invoice dengan nama yang sama (mis. di-download ulang setelah diedit) -> versi lama dibuang ke Sampah
+  const old = folder.getFilesByName(name);
+  while (old.hasNext()) old.next().setTrashed(true);
+  const f = folder.createFile(Utilities.newBlob(bytes, 'application/pdf', name));
+  return { ok: true, fileId: f.getId(), url: f.getUrl(), name: f.getName() };
+}
+// Jalankan SEKALI dari editor (pilih fungsi ini > Run) buat ngasih izin akses Drive
+function izinDrive() { Logger.log('Folder invoice: ' + invoiceFolder_().getName()); }
