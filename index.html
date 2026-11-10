@@ -192,6 +192,17 @@ body.v-day .main,body.v-week .main,body.v-todo .main,body.v-stat .main{display:n
 .fun{display:flex;flex-wrap:wrap;gap:8px}
 .fun span{font-size:13px;background:#faf9f6;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .fun b{font-weight:800}
+.fun .clk{cursor:pointer;border-color:#f3c2c2;background:#fdf1f1}
+.pfr .chipz span[data-pf]{cursor:pointer}.pfr .chipz span[data-pf]:hover{outline:1px solid #999}
+.hr .tr[data-pf]{cursor:pointer}
+.upl{display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow:auto;margin:8px 0}
+.upi{border:1px solid var(--line);border-radius:10px;padding:9px 11px;cursor:pointer}
+.upi:hover{border-color:#bbb;background:#faf9f6}
+.uph{display:flex;align-items:center;gap:8px}
+.uph .pf{font-size:10px;padding:2px 6px;border-radius:5px;min-width:26px}
+.uph b{flex:1;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.upm{font-size:12px;color:var(--muted);margin-top:3px}
+.upn{font-size:11.5px;color:#8a1c1c;background:#fdf1f1;border-radius:6px;padding:5px 8px;margin-top:6px;white-space:pre-wrap;word-break:break-word}
 #tip{position:fixed;z-index:90;pointer-events:none;background:#111;color:#fff;border-radius:8px;padding:6px 9px;font-size:12px;line-height:1.35;display:none;max-width:240px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
 #tip b{font-size:14px}
 @media(max-width:800px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.cards{grid-template-columns:1fr}.tile .v{font-size:28px}.hr{grid-template-columns:104px minmax(0,1fr) 50px}}
@@ -814,6 +825,28 @@ function tipOn(root){let tip=document.getElementById('tip');if(!tip){tip=documen
       tip.style.display='block';const w=tip.offsetWidth;tip.style.left=Math.min(innerWidth-w-8,e.clientX+12)+'px';tip.style.top=(e.clientY+14)+'px'});
     el.addEventListener('pointerleave',()=>{tip.style.display='none'});
   })}
+// daftar konten per platform + status (dari kartu Upload per platform)
+function showUploads(L,pf,st,a,z){
+  const pfs=pf==='*'?PLAT2.map(p=>p[0]):[pf];
+  const rows=[];
+  L.forEach(it=>pfs.forEach(c=>{const jam=String(it['jam'+c]||'').trim(),s0=String(it['st'+c]||'').trim();
+    if(!(jam||s0))return;if(st?s0!==st:s0)return;rows.push({it,c,jam,st:s0})}));
+  rows.sort((x,y)=>x.it.date.localeCompare(y.it.date)||(jamNum(x.jam)??9999)-(jamNum(y.jam)??9999));
+  const pn=pf==='*'?'semua platform':(PLAT2.find(p=>p[0]===pf)||[])[1];
+  const stn=st||'Belum ada status';
+  const w=document.createElement('div');w.className='back show';w.style.zIndex=60;
+  w.innerHTML=`<div class="modal wide" style="max-width:640px"><h2>${st==='Gagal'?'⚠ ':''}${esc(stn)} · ${esc(pn)}</h2>
+    <div class="sub">${rows.length} jadwal upload · ${fmtDate(a).replace(/^\w+, /,'')} – ${fmtDate(z).replace(/^\w+, /,'')} · klik buat buka kontennya</div>
+    <div class="upl">${rows.map((x,i)=>{const note=String(x.it.catatan||'').trim();
+      return `<div class="upi" data-i="${i}"><div class="uph"><span class="pf ${x.c}">${x.c}</span><b>${esc(x.it.title)}</b><span class="st ${x.st||'none'}">${esc(x.st||'Belum')}</span></div>
+        <div class="upm">${[fmtDate(x.it.date).replace(/ \d{4}$/,''),x.jam&&('jam '+x.jam),x.it.akun,(T[x.it.type]||TYPES[0]).name,x.it.brand,x.it.src==='kk'?'':'PREVIEW'].filter(Boolean).map(esc).join(' · ')}</div>
+        ${note&&(st==='Gagal'||st==='')?`<div class="upn">${esc(note.split('\n').slice(-3).join('\n'))}</div>`:''}</div>`}).join('')||'<div class="dv-empty">Nggak ada.</div>'}</div>
+    <div class="row"><span class="sp"></span><button class="primary" id="upClose">Tutup</button></div></div>`;
+  document.body.appendChild(w);
+  const done=()=>w.remove();
+  w.querySelector('#upClose').onclick=done;w.onclick=e=>{if(e.target===w)done()};
+  w.querySelectorAll('.upi').forEach(el=>el.onclick=()=>{const x=rows[+el.dataset.i];done();openForm(state.items.find(i=>i.id===x.it.id))});
+}
 function renderStat(){
   if(!dayK)dayK=todayKey;
   const [a,z]=stRange(),[ay,am,ad]=a.split('-').map(Number),[zy,zm,zd]=z.split('-').map(Number);
@@ -869,8 +902,8 @@ function renderStat(){
         <div class="rows">${akuns.map(x=>`<div class="hr"><span class="nm">${x.k==='-'?'Tanpa akun':esc(x.k)}</span><span class="tr" data-tv="${x.n} konten" data-tl="${x.k==='-'?'Tanpa akun':esc(x.k)}"><i style="width:${x.n/maxA*100}%;background:#2b2b2b"></i></span><span class="vl">${x.n}</span></div>`).join('')||'<div class="dv-empty">Belum ada konten.</div>'}</div></div>
       <div class="card"><h3>Upload per platform</h3><div class="sub2">Bar hijau = udah Uploaded dari semua jadwal di platform itu</div>
         <div class="rows">${plat.map(p=>`<div class="pfr"><span class="pf ${p.c}" style="padding:4px 0">${p.c}</span>
-          <span class="hr" style="grid-template-columns:1fr"><span class="tr" data-tv="${p.up} dari ${p.tot} Uploaded" data-tl="${p.n}"><i style="width:${pct(p.up,p.tot)}%;background:#0ca30c"></i></span></span><span class="vl" style="font-size:12px;font-weight:700;text-align:right">${p.up}/${p.tot}</span>
-          <span class="chipz">${p.sch?`<span>Scheduled ${p.sch}</span>`:''}${p.acc?`<span>Acc ${p.acc}</span>`:''}${p.bl?`<span>Belum ${p.bl}</span>`:''}${p.gg?`<span class="gg">⚠ Gagal ${p.gg}</span>`:''}</span></div>`).join('')||'<div class="dv-empty">Belum ada jadwal upload.</div>'}</div></div>
+          <span class="hr" style="grid-template-columns:1fr"><span class="tr" data-pf="${p.c}" data-st="Uploaded" data-tv="${p.up} dari ${p.tot} Uploaded" data-tl="${p.n} · klik buat lihat daftarnya"><i style="width:${pct(p.up,p.tot)}%;background:#0ca30c"></i></span></span><span class="vl" style="font-size:12px;font-weight:700;text-align:right">${p.up}/${p.tot}</span>
+          <span class="chipz">${p.sch?`<span data-pf="${p.c}" data-st="Scheduled">Scheduled ${p.sch}</span>`:''}${p.acc?`<span data-pf="${p.c}" data-st="Acc">Acc ${p.acc}</span>`:''}${p.bl?`<span data-pf="${p.c}" data-st="">Belum ${p.bl}</span>`:''}${p.gg?`<span class="gg" data-pf="${p.c}" data-st="Gagal">⚠ Gagal ${p.gg}</span>`:''}</span></div>`).join('')||'<div class="dv-empty">Belum ada jadwal upload.</div>'}</div></div>
       <div class="card"><h3>Papan tim</h3><div class="sub2">Tugas beres / total tugas dari peran di konten · 🔥 MVP = paling banyak beresin tugas</div>
         <div class="rows">${ppl.map(p=>`<div class="hr"><span class="nm">${esc(p.w)}${star&&star.w===p.w?'<span class="badge">🔥 MVP</span>':''}</span><span class="tr" data-tv="${p.d} dari ${p.tot} beres" data-tl="${esc(p.w)} · ${pct(p.d,p.tot)}%"><i style="width:${pct(p.d,p.tot)}%;background:#12a150"></i></span><span class="vl">${p.d}/${p.tot}</span></div>`).join('')||'<div class="dv-empty">Belum ada tugas.</div>'}</div></div>
       <div class="card"><h3>Brand tap-in teratas</h3><div class="sub2">Konten per brand (maks. 6)</div>
@@ -881,10 +914,11 @@ function renderStat(){
         ${star?`<span>🔥 MVP: <b>${esc(star.w)}</b> beresin ${star.d} tugas (${pct(star.d,star.tot)}%)</span>`:''}
         ${byType[0]?`<span>🎬 Jenis favorit: <b>${[...byType].sort((x,y)=>y.n-x.n)[0].t.name}</b></span>`:''}
         <span>🗓️ Hari kosong: <b>${perDay.filter(d=>!d.n).length}</b> dari ${perDay.length} hari</span>
-        ${plat.some(p=>p.gg)?`<span>⚠ Upload gagal: <b>${plat.reduce((s,p)=>s+p.gg,0)}</b> jadwal, cek lagi ya</span>`:''}</div></div>
+        ${plat.some(p=>p.gg)?`<span class="clk" data-pf="*" data-st="Gagal">⚠ Upload gagal: <b>${plat.reduce((s,p)=>s+p.gg,0)}</b> jadwal, cek lagi ya →</span>`:''}</div></div>
     </div>`;
   sv.querySelectorAll('.td-per button').forEach(b=>b.onclick=()=>{stPer=b.dataset.p;try{localStorage.setItem('sp-timeline-stper',stPer)}catch(e){};render()});
   sv.querySelectorAll('.col').forEach(el=>{el.style.cursor='pointer'});
+  sv.querySelectorAll('[data-pf]').forEach(el=>el.onclick=()=>showUploads(L,el.dataset.pf,el.dataset.st,a,z));
   tipOn(sv);
 }
 function renderTodo(){
