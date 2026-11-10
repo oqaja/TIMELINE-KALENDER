@@ -851,11 +851,11 @@ function renderStat(){
   if(!dayK)dayK=todayKey;
   const [a,z]=stRange(),[ay,am,ad]=a.split('-').map(Number),[zy,zm,zd]=z.split('-').map(Number);
   document.getElementById('monthLbl').textContent=stPer==='week'?(am===zm?`${ad}–${zd} ${BULAN[zm-1].slice(0,3)} ${zy}`:`${ad} ${BULAN[am-1].slice(0,3)} – ${zd} ${BULAN[zm-1].slice(0,3)} ${zy}`):`${BULAN[am-1]} ${ay}`;
-  const inR=state.items.filter(i=>i.date>=a&&i.date<=z);
+  const inR=state.items.filter(i=>i.date>=a&&i.date<=z&&i.src==='kk'); // Ringkasan: Preview nggak dihitung
   const f=document.getElementById('filters');
-  f.innerHTML=akunBar(inR)+`<span class="chip-f pvchip ${hidePv?'off':''}" id="pvChip"><span class="dot pvdot"></span>Preview <span class="count">${inR.filter(i=>i.src!=='kk').length}</span></span><span class="status" id="status">${API?(remoteOk?syncLabel():'Narik data dari Sheet…'):'Belum nyambung ke Sheet — klik ⚙'}</span>`;
-  bindAkun(f);f.querySelector('#pvChip').onclick=()=>{hidePv=!hidePv;render()};
-  const L=inR.filter(i=>akunOK(i)&&!(hidePv&&i.src!=='kk'));
+  f.innerHTML=akunBar(inR)+`<span class="status" id="status">${API?(remoteOk?syncLabel():'Narik data dari Sheet…'):'Belum nyambung ke Sheet — klik ⚙'}</span>`;
+  bindAkun(f);
+  const L=inR.filter(akunOK);
   const N=L.length,pct=(x,y)=>y?Math.round(x/y*100):0;
   const anyUp=i=>PLAT2.some(([c])=>String(i['st'+c]||'').trim()==='Uploaded');
   const up=L.filter(anyUp).length,prod=L.filter(i=>String(i.production||'').trim()==='✅').length;
@@ -884,10 +884,10 @@ function renderStat(){
   const brs={};L.forEach(i=>String(i.brand||'').split(/\s*,\s*/).filter(Boolean).forEach(b=>{brs[b]=(brs[b]||0)+1}));
   const topB=Object.entries(brs).sort((x,y)=>y[1]-x[1]).slice(0,6),maxB=Math.max(1,...topB.map(x=>x[1]));
   const sv=document.getElementById('statView');
-  sv.innerHTML=`<div class="st-top"><h2>Ringkasan ${stPer==='week'?'minggu ini':BULAN[am-1]+' '+ay}<small>${fmtDate(a).replace(/^\w+, /,'')} – ${fmtDate(z).replace(/^\w+, /,'')}${hidePv?' · tanpa Preview':''}</small></h2>
+  sv.innerHTML=`<div class="st-top"><h2>Ringkasan ${stPer==='week'?'minggu ini':BULAN[am-1]+' '+ay}<small>${fmtDate(a).replace(/^\w+, /,'')} – ${fmtDate(z).replace(/^\w+, /,'')} · tanpa Preview</small></h2>
       <span class="td-per">${[['week','Mingguan'],['month','Bulanan']].map(([v,n])=>`<button data-p="${v}" class="${stPer===v?'on':''}">${n}</button>`).join('')}</span></div>
     <div class="tiles">
-      <div class="tile"><div class="k">Total konten</div><div class="v">${N}</div><div class="s">${L.filter(i=>i.src!=='kk').length} di antaranya Preview</div></div>
+      <div class="tile"><div class="k">Total konten</div><div class="v">${N}</div><div class="s">Konten KALENDER KONTEN (Preview nggak dihitung)</div></div>
       <div class="tile"><div class="k">Udah tayang</div><div class="v">${pct(up,N)}<small>%</small></div><div class="s">${up} dari ${N} konten (min. 1 platform Uploaded)</div></div>
       <div class="tile"><div class="k">Produksi beres</div><div class="v">${pct(prod,N)}<small>%</small></div><div class="s">${prod} konten PRODUCTION ✅</div></div>
       <div class="tile"><div class="k">Tugas tim beres</div><div class="v">${pct(tDone,tasks.length)}<small>%</small></div><div class="s">${tDone} dari ${tasks.length} tugas</div></div></div>
