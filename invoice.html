@@ -142,7 +142,8 @@
     <label>Pilih klien tersimpan</label>
     <div class="row"><select id="clientPick"><option value="">— klien baru —</option></select><button class="btn ghost sm" id="saveClient" style="flex:0 0 auto;color:var(--d)">Simpan</button></div>
     <label>Nama PIC</label><input id="pic" placeholder="Hendrik">
-    <label>Perusahaan (Brand)</label><input id="company" placeholder="PT. Forta Larese (Cheetah)">
+    <label>Nama Brand</label><input id="brand" placeholder="Cheetah">
+    <label>Nama Perusahaan</label><input id="company" placeholder="PT. Forta Larese">
     <label>Alamat</label><textarea id="address" rows="2" placeholder="Jl. ...&#10;Kota Kode Pos"></textarea>
 
     <h3>Item</h3>
@@ -200,11 +201,16 @@ function commitRef(ref){
 }
 
 let st=LS.get('inv_draft',null);
-function blank(){return{ref:'',refAuto:true,date:today(),pic:'',company:'',address:'',items:[{t:'',d:'',p:''}],disc:'',ppn:'0',showStamp:true,...LS.get('inv_settings',DEF)}}
+function blank(){return{ref:'',refAuto:true,date:today(),pic:'',brand:'',company:'',address:'',items:[{t:'',d:'',p:''}],disc:'',ppn:'0',showStamp:true,...LS.get('inv_settings',DEF)}}
 if(!st)st=blank();
 if(st.refAuto||!st.ref)st.ref=nextRef(st.date);
+// data lama: "PT. X (Brand)" di satu kolom -> dipisah jadi brand + perusahaan
+function splitCo(o){if(o&&o.brand===undefined){const m=/^(.*?)\s*\(([^()]+)\)\s*$/.exec(o.company||'');o.brand=m?m[2].trim():'';if(m)o.company=m[1].trim()}return o}
+splitCo(st);{const cl=LS.get('inv_clients',[]);if(cl.some(c=>c.brand===undefined))LS.set('inv_clients',cl.map(splitCo))}
+const coLine=o=>[o.company,o.brand&&(o.company?'('+o.brand+')':o.brand)].filter(Boolean).join(' ');
+const coShort=o=>o.brand||o.company||o.pic;
 
-const fields=['ref','date','pic','company','address','disc','ppn','signer','bankName','bankAcc','npwp','contact'];
+const fields=['ref','date','pic','brand','company','address','disc','ppn','signer','bankName','bankAcc','npwp','contact'];
 function loadForm(){
   fields.forEach(f=>$(f).value=st[f]??'');
   $('showStamp').checked=st.showStamp!==false;
@@ -230,13 +236,13 @@ function renderItems(){
 }
 function renderClients(){
   const cl=LS.get('inv_clients',[]);const s=$('clientPick');
-  s.innerHTML='<option value="">— klien baru —</option>'+cl.map((c,i)=>`<option value="${i}">${esc(c.company||c.pic)}${c.pic&&c.company?' — '+esc(c.pic):''}</option>`).join('');
+  s.innerHTML='<option value="">— klien baru —</option>'+cl.map((c,i)=>`<option value="${i}">${esc(coShort(c))}${c.pic&&(c.brand||c.company)?' — '+esc(c.pic):''}</option>`).join('');
 }
-$('clientPick').onchange=e=>{const c=LS.get('inv_clients',[])[e.target.value];if(!c)return;st.pic=c.pic;st.company=c.company;st.address=c.address;['pic','company','address'].forEach(f=>$(f).value=st[f]);render()};
+$('clientPick').onchange=e=>{const c=LS.get('inv_clients',[])[e.target.value];if(!c)return;st.pic=c.pic;st.brand=c.brand||'';st.company=c.company;st.address=c.address;['pic','brand','company','address'].forEach(f=>$(f).value=st[f]);render()};
 $('saveClient').onclick=()=>{
-  if(!st.company&&!st.pic){toast('Isi nama PIC / perusahaan dulu');return}
-  const cl=LS.get('inv_clients',[]);const i=cl.findIndex(c=>c.company===st.company&&c.pic===st.pic);
-  const c={pic:st.pic,company:st.company,address:st.address};if(i>=0)cl[i]=c;else cl.push(c);
+  if(!st.company&&!st.brand&&!st.pic){toast('Isi nama PIC / brand / perusahaan dulu');return}
+  const cl=LS.get('inv_clients',[]);const i=cl.findIndex(c=>c.company===st.company&&(c.brand||'')===(st.brand||'')&&c.pic===st.pic);
+  const c={pic:st.pic,brand:st.brand,company:st.company,address:st.address};if(i>=0)cl[i]=c;else cl.push(c);
   LS.set('inv_clients',cl);renderClients();toast('Klien disimpan');
 };
 
@@ -266,10 +272,10 @@ function newPage(first){
   if(first){
     h+=`<h1 class="pg-title">INVOICE</h1><div class="meta">
       <div class="l"><span>Ref</span><span>:</span><span class="v">${esc(st.ref)}</span></div>
-      <div class="l"><span>Client</span><span>:</span><span class="v"><b>${esc(st.pic)}</b><div class="addr">${esc([st.company,st.address].filter(Boolean).join('\n'))}</div></span></div>
+      <div class="l"><span>Client</span><span>:</span><span class="v"><b>${esc(st.pic)}</b><div class="addr">${esc([coLine(st),st.address].filter(Boolean).join('\n'))}</div></span></div>
       <div class="date"><span>Date</span><span style="text-align:center">:</span><b>${esc(fmtDate(st.date))}</b></div></div>`;
   }else{
-    h+=`<div class="cont">INVOICE<span>(lanjutan)</span><div class="cref">Ref : ${esc(st.ref)} &nbsp;·&nbsp; ${esc(st.company||st.pic)}</div></div>`;
+    h+=`<div class="cont">INVOICE<span>(lanjutan)</span><div class="cref">Ref : ${esc(st.ref)} &nbsp;·&nbsp; ${esc(coShort(st))}</div></div>`;
   }
   h+=`<div class="tbl" style="top:${first?TOP1:TOPN}mm"><div class="th"><div>No.</div><div>Item &amp; Description</div><div>Price</div></div><div class="rows"></div></div><div class="pgno"></div>`;
   p.innerHTML=h;$('pages').appendChild(p);return p;
@@ -428,7 +434,7 @@ async function saveToDrive(pdf,name){
 }
 $('pdfBtn').onclick=async()=>{
   if($('pdfBtn').disabled)return;
-  const name=`Invoice_${(st.company||st.pic||'klien').replace(/[^\w]+/g,'_').replace(/^_|_$/g,'')}_${st.ref}.pdf`;
+  const name=`Invoice_${(coShort(st)||'klien').replace(/[^\w]+/g,'_').replace(/^_|_$/g,'')}_${st.ref}.pdf`;
   for(;;){
     let pdf;
     try{busy(true,'Bikin PDF…');pdf=await makePdf()}
