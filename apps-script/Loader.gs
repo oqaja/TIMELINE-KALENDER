@@ -74,3 +74,8 @@ function app_(name) {
   if (typeof f !== 'function' && name !== 'izinDrive') throw new Error('loader: fungsi ' + name + ' nggak ada di Code.gs');
   return f;
 }
+
+// Biar Google minta izin Drive PENUH (bikin file), bukan cuma baca.
+// Google nentuin izin dari kode yang kelihatan di file ini, dan kode dari GitHub nggak kebaca,
+// jadi fungsi ini wajib ada walau nggak pernah dipanggil.
+function izinDriveTulis_() { DriveApp.createFile('x', 'x').setTrashed(true); }

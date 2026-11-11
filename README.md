@@ -68,4 +68,4 @@ Setup sekali:
 
 - Butuh update saat itu juga? Run **updateSekarang**.
 - GitHub down → dipakai salinan terakhir (disimpan di Properti skrip `LOADER_SRC_*`; jangan dihapus).
-- Fitur baru yang butuh izin Google jenis baru (Gmail, Calendar, dll) tetap perlu Run **izinSemua** sekali lagi.
+- Fitur baru yang butuh izin Google jenis baru (Gmail, Calendar, Drive tulis, dll) harus ada pemanggilannya di `Loader.gs` (lihat `izinDriveTulis_`), lalu Run **izinSemua** + Deploy versi baru. Google nentuin izin dari kode yang kelihatan di Apps Script, bukan dari kode yang diambil dari GitHub.
