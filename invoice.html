@@ -420,7 +420,8 @@ async function saveToDrive(pdf,name){
     if(/pin_locked/.test(m))throw new Error('Kebanyakan salah PIN, tunggu 15 menit.');
     if(/pin_not_set/.test(m))throw new Error('PIN belum diatur di Apps Script (EDIT_PIN).');
     if(d&&d.ok&&!d.fileId)throw new Error('Apps Script belum versi baru. Deploy ulang script-nya dulu (lihat README bagian Invoice).');
-    if(/DriveApp|permission|izin|authoriz/i.test(m))throw new Error('Apps Script belum dapet izin Drive. Jalankan fungsi izinDrive sekali di editor Apps Script, lalu deploy ulang.');
+    if(/drive_folder/.test(m))throw new Error(m.replace(/^.*drive_folder:\s*/,''));
+    if(/drive_scope|DriveApp|authoriz/i.test(m))throw new Error('Apps Script belum dapet izin Drive. Di editor Apps Script: pilih fungsi izinSemua → Run → izinkan, lalu Deploy → Kelola deployment → Versi baru. Detail: '+m);
     throw new Error('Drive nolak: '+(m||'error nggak dikenal'));
   }
   throw new Error('PIN gagal diverifikasi.');

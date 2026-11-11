@@ -416,6 +416,8 @@ function doGet(e) {
   try { data.kk = kkRead_(p.from || '', p.to || ''); data.lists = kkLists_(); if (kkWarn_.length) data.kkWarn = kkWarn_; }
   catch (err) { data.kk = null; data.kkError = String(err); }
   data.range = { from: p.from || '', to: p.to || '' };
+  data.loader = typeof LOADER_SRC !== 'undefined';
+  if (p.cek === 'drive') data.drive = driveCek_();
   return out_(data);
 }
 
@@ -479,7 +481,19 @@ function doPost(e) {
 const INVOICE_FOLDER_ID = '1pUNqU1aVozohDB_cRLr7EmmBSt0BjSrF';
 function invoiceFolder_() {
   const id = PropertiesService.getScriptProperties().getProperty('INVOICE_FOLDER_ID') || INVOICE_FOLDER_ID;
-  return DriveApp.getFolderById(id);
+  try { return DriveApp.getFolderById(id); }
+  catch (err) {
+    // bedain: izin Drive belum ada vs folder nggak bisa diakses akun pemilik script
+    let me = '';
+    try { me = DriveApp.getRootFolder().getOwner().getEmail(); } catch (e2) {
+      throw new Error('drive_scope: Apps Script belum dapet izin Drive (' + String(e2) + ')');
+    }
+    throw new Error('drive_folder: folder invoice (' + id + ') nggak bisa dibuka akun ' + me + '. Share folder itu ke akun ini sebagai Editor. (' + String(err) + ')');
+  }
+}
+function driveCek_() {
+  try { const f = invoiceFolder_(); return { ok: true, folder: f.getName() }; }
+  catch (err) { return { ok: false, error: String(err) }; }
 }
 function invoiceSave_(op) {
   const name = String(op.name || '').replace(/[\\/:*?"<>|]+/g, '_').trim();
