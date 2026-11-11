@@ -75,7 +75,7 @@
   .tbl .rows{padding:2.2mm 0 3mm}
   .tbl .r{display:grid;grid-template-columns:14mm 1fr 34mm;align-items:start;margin-bottom:1.2mm}
   .tbl .no{text-align:center;font:10.5pt "Open Sans",sans-serif;padding-left:2mm;padding-top:.6mm}
-  .tbl .it{text-align:center;font:9.5pt/1.4 "Arimo",Arial,sans-serif}
+  .tbl .it{text-align:center;font:9.5pt/1.4 "Arimo",Arial,sans-serif;white-space:pre-line}
   .tbl .it small{display:block;font-size:6.4pt;line-height:1.55;white-space:pre-line}
   .tbl .pr{text-align:right;font:11pt "Open Sans",sans-serif;padding-right:.8mm}
   .tot{position:absolute;left:28.8mm;width:152.9mm;font:700 11pt "Open Sans",sans-serif}
@@ -221,7 +221,7 @@ function renderItems(){
   st.items.forEach((it,i)=>{
     const el=document.createElement('div');el.className='item';
     el.innerHTML=`<div class="hd"><span>Item ${i+1}</span><span>${i>0?'<button class="btn sm ghost up" style="color:var(--d)">↑</button> ':''}<button class="btn sm del">Hapus</button></span></div>
-    <label>Nama item</label><input class="t" value="${esc(it.t)}" placeholder="Konten Video Panjang">
+    <label>Nama item (boleh lebih dari 1 baris)</label><textarea class="t" rows="2" placeholder="Konten Video Panjang">${esc(it.t)}</textarea>
     <label>Deskripsi (kecil, boleh lebih dari 1 baris)</label><textarea class="d" rows="2" placeholder="1 Video Bedah Sepatu (Youtube)">${esc(it.d)}</textarea>
     <label>Harga (Rp)</label><input class="p" inputmode="numeric" value="${it.p?num(it.p).toLocaleString('en-US'):''}" placeholder="kosongin kalau satu paket">`;
     el.querySelector('.t').oninput=e=>{it.t=e.target.value;render()};
