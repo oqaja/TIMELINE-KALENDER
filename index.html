@@ -412,6 +412,21 @@ function askConflict(op,clash){
   w.querySelector('#cfOver').onclick=()=>{w.remove();queue[0]={...queue[0],force:true};flush()};
   w.querySelector('#cfKeep').onclick=()=>{w.remove();queue.shift();if(queue.length)flush();else{setStatus('Pakai data di Sheet');pull(false,true)}};
 }
+function askStuck(op,msg){
+  if(document.getElementById('stuckDlg'))return;
+  const it=state.items.find(x=>x.id===(op.cid||op.id))||{};
+  const what={kkAdd:'Nambah konten',kkUpdate:'Ngedit konten',kkDelete:'Hapus konten',upsert:'Simpan preview',pvUpdate:'Ngedit preview',delete:'Hapus preview',color:'Ganti warna brand',option:'Nambah pilihan',optionDel:'Hapus pilihan',todoUpsert:'Simpan to-do',todoDelete:'Hapus to-do',bulk:'Simpan banyak'}[op.op]||op.op;
+  const ch=op.changes?Object.entries(op.changes).map(([k,v])=>`${kname(k)}: ${nv(k==='type'?(T[v]||{}).name||v:v)||'(kosong)'}`).join(' · '):'';
+  const w=document.createElement('div');w.className='back show';w.id='stuckDlg';w.style.zIndex=80;
+  w.innerHTML=`<div class="modal" style="max-width:460px"><h2>Perubahan ini gagal terus</h2>
+    <div class="sub"><b>${esc(what)}</b>${it.title||op.brand?` — "${esc(it.title||op.brand)}"`:''}${ch?`<br>${esc(ch)}`:''}</div>
+    <div class="clash"><div><b>Alasan dari Sheet</b><span>${esc(msg)}</span></div></div>
+    <div class="sub">Perubahan lain nungguin yang ini. Kalau dibuang, data ditarik ulang dari Sheet.</div>
+    <div class="row"><button id="stDrop">Buang perubahan ini</button><span class="sp"></span><button class="primary" id="stRetry">Coba lagi</button></div></div>`;
+  document.body.appendChild(w);
+  w.querySelector('#stRetry').onclick=()=>{w.remove();saveFails=0;flush()};
+  w.querySelector('#stDrop').onclick=()=>{w.remove();saveFails=0;queue.shift();if(queue.length)flush();else{setStatus('Perubahan dibuang');pull(false,true)}};
+}
 function pinDialog(onDone){
   const w=document.createElement('div');w.className='back show';w.style.zIndex=70;
   w.innerHTML=`<div class="modal" style="max-width:340px"><h2>Masukin PIN</h2><div class="sub">Buat nambah, ngedit, atau ngehapus konten. Cukup sekali di browser ini.</div>
@@ -538,7 +553,7 @@ async function apiGet(){
   d.items=d.items.map(fromRemote).map(i=>({...i,src:'pv'}));return d}
 function toRemote(it){const o={...it,cols:{}};for(const k in XCOL){o.cols[XCOL[k]]=it[k]||'';delete o[k]}return o}
 function fromRemote(it){const o={...it};for(const k in XCOL)o[k]=(it.cols&&it.cols[XCOL[k]])||'';delete o.cols;return o}
-async function apiPost(op){if(op.op==='upsert')op={...op,item:toRemote(op.item)};if(op.op==='bulk')op={...op,items:op.items.map(toRemote)};op={...op,pin:PIN};let r;try{r=await fetch(API,{method:'POST',body:JSON.stringify(op)})}catch(e){throw new Error('nggak nyambung ke Google (cek internet)')}
+async function apiPost(op){if(op.op==='upsert')op={...op,item:toRemote(op.item)};if(op.op==='bulk')op={...op,items:op.items.map(toRemote)};op={...op,pin:PIN};let r;try{r=await fetch(API,{method:'POST',body:JSON.stringify(op)})}catch(e){const er=new Error('nggak nyambung ke Google (cek internet)');er.net=true;throw er}
   const tx=await r.text();let d;try{d=JSON.parse(tx)}catch(e){throw new Error('Apps Script error: '+(tx.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/gi,' ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,200)||('HTTP '+r.status)))}if(!d.ok){const er=new Error(d.error||'gagal');if(d.conflict)er.conflict=d.conflict;throw er}return d}
 function diffOps(){
   const now=snap(state), ops=[];
@@ -587,8 +602,9 @@ async function flush(){
         queue.length=0;busy=false;toast('Gagal simpan: '+mm[2]+'. Data ditarik ulang.');pull(false,true);return}
       saveFails++;console.warn('Gagal simpan',op,m);
       setStatus('Gagal simpan ke Sheet: '+m.slice(0,90)+' — dicoba lagi');
-      if(saveFails===3)toast('Masih gagal simpan ke Sheet: '+m);
-      busy=false;setTimeout(flush,8000);return}
+      busy=false;
+      if(saveFails>=3&&!e.net){askStuck(op,m);return} // error dari Apps Script yang sama terus → tanya, biar antrean nggak macet
+      setTimeout(flush,8000);return}
   }
   saveFails=0;busy=false;lastSync=new Date();setStatus('Tersimpan di Sheet '+hhmm(lastSync));
 }
