@@ -538,7 +538,8 @@ async function apiGet(){
   d.items=d.items.map(fromRemote).map(i=>({...i,src:'pv'}));return d}
 function toRemote(it){const o={...it,cols:{}};for(const k in XCOL){o.cols[XCOL[k]]=it[k]||'';delete o[k]}return o}
 function fromRemote(it){const o={...it};for(const k in XCOL)o[k]=(it.cols&&it.cols[XCOL[k]])||'';delete o.cols;return o}
-async function apiPost(op){if(op.op==='upsert')op={...op,item:toRemote(op.item)};if(op.op==='bulk')op={...op,items:op.items.map(toRemote)};op={...op,pin:PIN};const r=await fetch(API,{method:'POST',body:JSON.stringify(op)});const d=await r.json();if(!d.ok){const er=new Error(d.error||'gagal');if(d.conflict)er.conflict=d.conflict;throw er}return d}
+async function apiPost(op){if(op.op==='upsert')op={...op,item:toRemote(op.item)};if(op.op==='bulk')op={...op,items:op.items.map(toRemote)};op={...op,pin:PIN};let r;try{r=await fetch(API,{method:'POST',body:JSON.stringify(op)})}catch(e){throw new Error('nggak nyambung ke Google (cek internet)')}
+  const tx=await r.text();let d;try{d=JSON.parse(tx)}catch(e){throw new Error('Apps Script error: '+(tx.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/gi,' ').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,200)||('HTTP '+r.status)))}if(!d.ok){const er=new Error(d.error||'gagal');if(d.conflict)er.conflict=d.conflict;throw er}return d}
 function diffOps(){
   const now=snap(state), ops=[];
   for(const it of state.items){
@@ -557,7 +558,7 @@ function diffOps(){
   for(const b in now.colors){if(synced.colors[b]!==now.colors[b])ops.push({op:'color',brand:b,color:now.colors[b]})}
   synced=now;return ops;
 }
-let askingPin=false;
+let askingPin=false,saveFails=0;
 function dropPending(msg){queue.length=0;busy=false;toast(msg);pull(false,true)}
 function askPin(then){
   if(askingPin)return;askingPin=true;
@@ -584,9 +585,12 @@ async function flush(){
       const mm=m.match(/(notfound|dobel): (.*)/);
       if(mm){ // baris di KALENDER KONTEN berubah/hilang → buang perubahan yang antre, tarik ulang data
         queue.length=0;busy=false;toast('Gagal simpan: '+mm[2]+'. Data ditarik ulang.');pull(false,true);return}
-      setStatus('Gagal simpan ke Sheet — dicoba lagi');busy=false;setTimeout(flush,8000);return}
+      saveFails++;console.warn('Gagal simpan',op,m);
+      setStatus('Gagal simpan ke Sheet: '+m.slice(0,90)+' — dicoba lagi');
+      if(saveFails===3)toast('Masih gagal simpan ke Sheet: '+m);
+      busy=false;setTimeout(flush,8000);return}
   }
-  busy=false;lastSync=new Date();setStatus('Tersimpan di Sheet '+hhmm(lastSync));
+  saveFails=0;busy=false;lastSync=new Date();setStatus('Tersimpan di Sheet '+hhmm(lastSync));
 }
 function syncRemote(){if(!API||!synced)return;queue.push(...diffOps());if(queue.length)flush()}
 let localRev=0,pulling=false,lastSync=null;
