@@ -114,6 +114,7 @@ function readOpsi_() {
 function addOpsi_(list, value) {
   const l = String(list || '').trim().toLowerCase(), v = String(value || '').trim();
   if (!l || !v) return;
+  if (l === 'brand') { try { kkListAdd_('brand', v); } catch (e) {} } // biar dropdown BRAND TAP IN di KALENDER KONTEN ikut nambah
   const cur = readOpsi_()[l] || [];
   if (cur.some(function (x) { return x.toLowerCase() === v.toLowerCase(); })) return;
   opsiSheet_().appendRow([l, v]);
@@ -345,6 +346,18 @@ function kkLists_() {
   });
   return out;
 }
+// tambah pilihan ke dropdown kolom KALENDER KONTEN (aturan validasinya di-copy, cuma daftarnya yang ditambah)
+function kkListAdd_(key, value) {
+  const sh = kkSheet_(), c = kkCols_(sh);
+  if (!c[key]) return false;
+  const rule = sh.getRange(2, c[key]).getDataValidation();
+  if (!rule || String(rule.getCriteriaType()) !== 'VALUE_IN_LIST') return false;
+  const args = rule.getCriteriaValues(), list = (args[0] || []).map(String);
+  if (list.some(function (x) { return x.toLowerCase() === String(value).toLowerCase(); })) return false;
+  const nr = rule.copy().withCriteria(rule.getCriteriaType(), [list.concat([value]), args[1] !== false]).build();
+  sh.getRange(2, c[key], sh.getMaxRows() - 1, 1).setDataValidation(nr);
+  return true;
+}
 // cari baris: EVENT ID dulu, lalu baris lama (dicek judul+tanggal), lalu judul+tanggal yang unik
 function kkFind_(sh, c, ref) {
   const last = sh.getLastRow();
@@ -380,6 +393,7 @@ function kkUpdate_(ref, changes, prev, force) {
   if (row === -2) throw new Error('dobel: ada lebih dari satu baris "' + ref.title + '" di tanggal ' + ref.date);
   if (row < 0) throw new Error('notfound: baris "' + ref.title + '" (' + ref.date + ') tidak ketemu, mungkin sudah diubah/dihapus');
   const keys = Object.keys(changes || {}).filter(function (k) { return c[k] && k !== 'eventId'; });
+  if (changes && changes.brand) { try { kkListAdd_('brand', String(changes.brand)); } catch (e) {} }
   if (prev && !force) {
     const disp = sh.getRange(row, 1, 1, c._width).getDisplayValues()[0], raw = sh.getRange(row, 1, 1, c._width).getValues()[0];
     const clash = [];
@@ -396,6 +410,7 @@ function kkUpdate_(ref, changes, prev, force) {
 function kkAdd_(it) {
   if (!it || !it.title || !it.date) throw new Error('judul & tanggal wajib');
   const sh = kkSheet_(), c = kkCols_(sh);
+  if (it.brand) { try { kkListAdd_('brand', String(it.brand)); } catch (e) {} }
   const vals = new Array(c._width).fill('');
   Object.keys(KK).forEach(function (k) { if (c[k] && k !== 'eventId') vals[c[k] - 1] = kkVal_(k, it[k]); });
   sh.appendRow(vals);
