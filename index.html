@@ -790,11 +790,11 @@ function autoTasks(it){
   if(!desain)add(SHOOTER,'Shooting','Shooting','shooting'); // yang ngerekam: ada di semua konten video
   if(desain)add(it.designer,'Desain','Desain','production');
   else{add(it.editor,'Edit','Edit video','production');add(it.designer,'Cover','Cover/Thumb','cover')}
-  // urutan: Writing → Shooting → Edit/Cover (video), Writing → Desain (carousel/story). Cuma penanda, masih bisa diceklis.
+  // urutan: Writing → Shooting → Edit (video), Writing → Cover/Thumb, Writing → Desain (carousel/story). Cuma penanda, masih bisa diceklis.
   const pend=r=>out.some(x=>x.role===r&&!x.done);
   out.forEach(x=>{if(x.done)return;
-    if(x.role==='Shooting'||x.role==='Desain'){if(pend('Writing'))x.wait='Writing'}
-    else if(x.role==='Edit'||x.role==='Cover'){x.wait=pend('Writing')?'Writing':pend('Shooting')?'Shooting':''}});
+    if(x.role==='Shooting'||x.role==='Desain'||x.role==='Cover'){if(pend('Writing'))x.wait='Writing'} // Cover/Thumb nggak perlu nunggu Shooting
+    else if(x.role==='Edit'){x.wait=pend('Writing')?'Writing':pend('Shooting')?'Shooting':''}});
   return out;
 }
 function tdRange(){const k=dayK||todayKey,[y,m,d]=k.split('-').map(Number);
