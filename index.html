@@ -799,7 +799,7 @@ function shiftTodo(n){const [y,m,d]=(dayK||todayKey).split('-').map(Number);
   if(tdPer==='day')return shiftDay(n);if(tdPer==='week')return shiftDay(7*n);
   const t=new Date(y,m-1+n,1);goDay(key(t.getFullYear(),t.getMonth(),1))}
 function allTasks(){
-  const auto=state.items.filter(akunOK).flatMap(autoTasks);
+  const auto=state.items.filter(i=>i.src==='kk'&&akunOK(i)).flatMap(autoTasks); // Preview nggak bikin tugas, biar nggak dobel
   const man=(state.todos||[]).map(t=>({kind:'manual',who:t.who,role:'Manual',label:'To-do',date:t.date,done:!!t.done,t,key:'m|'+t.id}));
   return [...auto,...man];
 }
@@ -948,7 +948,7 @@ function renderTodo(){
   const [a,z]=tdRange(),[ay,am,ad]=a.split('-').map(Number),[zy,zm,zd]=z.split('-').map(Number);
   document.getElementById('monthLbl').textContent=tdPer==='day'?`${ad} ${BULAN[am-1].slice(0,3)} ${ay}`:tdPer==='week'?(am===zm?`${ad}–${zd} ${BULAN[zm-1].slice(0,3)} ${zy}`:`${ad} ${BULAN[am-1].slice(0,3)} – ${zd} ${BULAN[zm-1].slice(0,3)} ${zy}`):`${BULAN[am-1]} ${ay}`;
   const f=document.getElementById('filters');
-  f.innerHTML=akunBar(state.items.filter(i=>i.date>=a&&i.date<=z))+`<span class="status" id="status">${API?(remoteOk?syncLabel():'Narik data dari Sheet…'):'Belum nyambung ke Sheet — klik ⚙'}</span>`;
+  f.innerHTML=akunBar(state.items.filter(i=>i.src==='kk'&&i.date>=a&&i.date<=z))+`<span class="status" id="status">${API?(remoteOk?syncLabel():'Narik data dari Sheet…'):'Belum nyambung ke Sheet — klik ⚙'}</span>`;
   bindAkun(f);
   const all=allTasks();
   const inP=all.filter(x=>x.date>=a&&x.date<=z), late=all.filter(x=>!x.done&&x.date<a&&x.date>=key(ay,am-2,ad));
