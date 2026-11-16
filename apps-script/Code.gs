@@ -25,7 +25,7 @@
  *              daftar '<nama>_hapus' = pilihan yang disembunyiin, mis. tim_hapus = orang yang dihapus dari daftar)
  */
 const TZ = 'Asia/Jakarta';
-const SCRIPT_VER = 3; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
+const SCRIPT_VER = 4; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
 const JENIS = { carousel: 'Desain', short: 'Video Pendek', long: 'Video Panjang', story: 'Story' };
 
 // key di kalender  ->  nama header di sheet
@@ -423,7 +423,14 @@ function kkDelete_(ref) {
 }
 
 function doGet(e) {
-  const p = (e && e.parameter) || {};
+  const t0 = Date.now(), p = (e && e.parameter) || {};
+  if (p.update === '1' && typeof updateSekarang === 'function') { try { updateSekarang(); } catch (err) {} }
+  const useCache = !p.cek && !p.nocache && p.update !== '1';
+  const key = 'g|' + dataRev_() + '|' + (p.from || '') + '|' + (p.to || '');
+  if (useCache) {
+    const hit = cacheGet_(key);
+    if (hit) { const d = JSON.parse(hit); d.cached = true; d.ms = Date.now() - t0; return out_(d); }
+  }
   const data = read_();
   data.items.forEach(function (it) { it.src = 'pv'; });
   data.ver = SCRIPT_VER;
@@ -433,7 +440,36 @@ function doGet(e) {
   data.range = { from: p.from || '', to: p.to || '' };
   data.loader = typeof LOADER_SRC !== 'undefined';
   if (p.cek === 'drive') data.drive = driveCek_();
+  if (useCache && data.kk) { try { cachePut_(key, JSON.stringify(data), READ_TTL); } catch (err) {} }
+  data.cached = false; data.ms = Date.now() - t0;
   return out_(data);
+}
+
+// ---- Simpanan sementara hasil baca (biar narik data cepat). Dianggap basi tiap ada yang nyimpen lewat app.
+// Edit langsung di Google Sheet kebaca paling lambat READ_TTL detik.
+const READ_TTL = 60;
+function dataRev_() {
+  const c = CacheService.getScriptCache();
+  let r = c.get('data_rev');
+  if (!r) { r = String(Date.now()); c.put('data_rev', r, 21600); }
+  return r;
+}
+function bumpRev_() { CacheService.getScriptCache().put('data_rev', String(Date.now()) + Math.random().toString(36).slice(2, 6), 21600); }
+// CacheService maks 100KB per nilai -> dipecah
+function cachePut_(key, str, ttl) {
+  const size = 90000, n = Math.ceil(str.length / size), o = {};
+  if (n > 20) return;
+  for (let i = 0; i < n; i++) o[key + '#' + i] = str.slice(i * size, (i + 1) * size);
+  o[key + '#n'] = String(n);
+  CacheService.getScriptCache().putAll(o, ttl);
+}
+function cacheGet_(key) {
+  const c = CacheService.getScriptCache(), n = Number(c.get(key + '#n') || 0);
+  if (!n) return '';
+  const ks = []; for (let i = 0; i < n; i++) ks.push(key + '#' + i);
+  const got = c.getAll(ks); let s = '';
+  for (let i = 0; i < n; i++) { if (got[ks[i]] == null) return ''; s += got[ks[i]]; }
+  return s;
 }
 
 // ---- PIN: cek + kunci sementara kalau salah terus (anti tebak-tebakan)
@@ -450,45 +486,69 @@ function pinCheck_(pin) {
 }
 
 function doPost(e) {
+  const t0 = Date.now();
   let op0 = {};
   try { op0 = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (err) {}
   try { pinCheck_(op0.pin); } catch (err) { return out_({ ok: false, error: String(err) }); }
   if (op0.op === 'checkPin') return out_({ ok: true });
   if (op0.op === 'invoiceSave') { try { return out_(invoiceSave_(op0)); } catch (err) { return out_({ ok: false, error: String(err) }); } }
   const lock = LockService.getScriptLock();
-  lock.waitLock(20000);
+  lock.waitLock(25000);
   try {
-    const op = JSON.parse(e.postData.contents || '{}');
-    if (op.op === 'upsert') upsert_(op.item);
-    else if (op.op === 'delete') remove_(op.id);
-    else if (op.op === 'color') color_(op.brand, op.color);
-    else if (op.op === 'option') addOpsi_(op.list, op.value);
-    else if (op.op === 'optionDel') delOpsi_(op.list, op.value);
-    else if (op.op === 'todoUpsert') todoUpsert_(op.todo);
-    else if (op.op === 'todoDelete') todoDelete_(op.id);
-    else if (op.op === 'kkAdd') { const row = kkAdd_(op.item); SpreadsheetApp.flush(); return out_({ ok: true, row: row }); }
-    else if (op.op === 'kkUpdate') {
-      const res = kkUpdate_(op.ref, op.changes, op.prev, op.force); SpreadsheetApp.flush();
-      return out_(res && res.conflict ? { ok: false, conflict: res.conflict, error: 'conflict' } : { ok: true, row: res });
-    }
-    else if (op.op === 'pvUpdate') {
-      const res = pvUpdate_(op.id, op.changes, op.cols, op.prev, op.force); SpreadsheetApp.flush();
-      return out_(res && res.conflict ? { ok: false, conflict: res.conflict, error: 'conflict' } : { ok: true });
-    }
-    else if (op.op === 'kkDelete') { kkDelete_(op.ref); SpreadsheetApp.flush(); return out_({ ok: true }); }
-    else if (op.op === 'bulk') { // pindahan data lama dari browser, cuma kalau sheet masih kosong
-      if (read_().items.length === 0) {
-        (op.items || []).forEach(upsert_);
-        Object.keys(op.brandColors || {}).forEach(function (b) { color_(b, op.brandColors[b]); });
+    if (op0.op === 'batch') {
+      // banyak perubahan sekaligus dalam 1 request; berhenti di perubahan pertama yang gagal
+      const ops = op0.ops || [], results = [];
+      for (let i = 0; i < ops.length; i++) {
+        let r;
+        try { r = runOp_(ops[i]); } catch (err) { r = { ok: false, error: String(err) }; }
+        if (!r.ok) { if (results.length) bumpRev_(); return out_({ ok: true, done: results.length, results: results, fail: r, ms: Date.now() - t0 }); }
+        results.push(r);
       }
+      SpreadsheetApp.flush(); bumpRev_();
+      return out_({ ok: true, done: results.length, results: results, ms: Date.now() - t0 });
     }
-    SpreadsheetApp.flush();
-    return out_({ ok: true, data: read_() });
+    const r = runOp_(op0);
+    SpreadsheetApp.flush(); if (r.ok) bumpRev_();
+    r.ms = Date.now() - t0;
+    return out_(r);
   } catch (err) {
     return out_({ ok: false, error: String(err) });
   } finally {
     lock.releaseLock();
   }
+}
+function runOp_(op) {
+  if (op.op === 'upsert') upsert_(op.item);
+  else if (op.op === 'delete') remove_(op.id);
+  else if (op.op === 'color') color_(op.brand, op.color);
+  else if (op.op === 'option') addOpsi_(op.list, op.value);
+  else if (op.op === 'optionDel') delOpsi_(op.list, op.value);
+  else if (op.op === 'todoUpsert') todoUpsert_(op.todo);
+  else if (op.op === 'todoDelete') todoDelete_(op.id);
+  else if (op.op === 'kkAdd') {
+    if (op.dedupe) { // dikirim ulang setelah app ditutup: jangan bikin baris dobel kalau ternyata udah masuk
+      const sh = kkSheet_(), row = kkFind_(sh, kkCols_(sh), { title: op.item && op.item.title, date: op.item && op.item.date });
+      if (row > 0) return { ok: true, row: row };
+    }
+    return { ok: true, row: kkAdd_(op.item) };
+  }
+  else if (op.op === 'kkUpdate') {
+    const res = kkUpdate_(op.ref, op.changes, op.prev, op.force);
+    return res && res.conflict ? { ok: false, conflict: res.conflict, error: 'conflict' } : { ok: true, row: res };
+  }
+  else if (op.op === 'pvUpdate') {
+    const res = pvUpdate_(op.id, op.changes, op.cols, op.prev, op.force);
+    return res && res.conflict ? { ok: false, conflict: res.conflict, error: 'conflict' } : { ok: true };
+  }
+  else if (op.op === 'kkDelete') kkDelete_(op.ref);
+  else if (op.op === 'bulk') { // pindahan data lama dari browser, cuma kalau sheet masih kosong
+    if (read_().items.length === 0) {
+      (op.items || []).forEach(upsert_);
+      Object.keys(op.brandColors || {}).forEach(function (b) { color_(b, op.brandColors[b]); });
+    }
+  }
+  else return { ok: false, error: 'op tidak dikenal: ' + op.op };
+  return { ok: true };
 }
 
 // ---- INVOICE: salinan PDF dari invoice.html disimpan ke folder Drive SEBELUM boleh di-download

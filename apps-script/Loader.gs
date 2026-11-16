@@ -3,15 +3,17 @@
  * Tempel SEKALI di Apps Script (gantiin semua isi Code.gs), lalu file ini nggak perlu diubah lagi.
  *
  * Kode aslinya diambil otomatis dari GitHub: oqaja/timeline-kalender -> apps-script/Code.gs
- * Update di GitHub kepakai sendiri dalam ±5–10 menit. Nggak perlu copas / Deploy ulang.
+ * Update di GitHub kepakai sendiri paling lambat ±1 jam (dicek otomatis tiap jam di belakang layar,
+ * jadi request dari app nggak pernah nunggu GitHub). Mau langsung: Run updateSekarang,
+ * atau buka <URL exec>?update=1 di browser. Nggak perlu copas / Deploy ulang.
  * Kalau GitHub lagi nggak bisa diakses, dipakai salinan terakhir yang tersimpan.
  *
  * Fungsi yang bisa di-Run manual dari editor:
- *   izinSemua      -> SEKALI di awal, buat ngasih izin (Sheet, Drive, internet)
+ *   izinSemua      -> SEKALI di awal, buat ngasih izin (Sheet, Drive, internet) + pasang cek update tiap jam
  *   updateSekarang -> paksa ambil kode terbaru dari GitHub saat itu juga
  */
 const LOADER_SRC = 'https://raw.githubusercontent.com/oqaja/timeline-kalender/main/apps-script/Code.gs';
-const LOADER_TTL = 300; // detik: seberapa sering ngecek GitHub
+const LOADER_TTL = 21600; // detik: simpanan kode di cache (maks 6 jam; diperbarui tiap jam oleh pemicu)
 const LOADER_KEY = 'LOADER_SRC_';
 
 function doGet(e) { return app_('doGet')(e); }
@@ -25,6 +27,9 @@ function izinSemua() {
   CacheService.getScriptCache().get('x');
   LockService.getScriptLock();
   PropertiesService.getScriptProperties().getKeys();
+  // pemicu: ambil kode terbaru dari GitHub tiap jam (dibuang dulu yang lama biar nggak dobel)
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'updateOtomatis') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('updateOtomatis').timeBased().everyHours(1).create();
   updateSekarang();
   const izin = app_('izinDrive');
   if (izin) izin();
@@ -36,6 +41,8 @@ function updateSekarang() {
   if (!src) throw new Error('Gagal ambil kode dari GitHub');
   Logger.log('Kode terbaru kepasang (' + src.length + ' karakter).');
 }
+
+function updateOtomatis() { try { updateSekarang(); } catch (err) {} }
 
 // ---------------------------------------------------------------------------
 function fetchSrc_() {
@@ -65,7 +72,10 @@ function readBackup_() {
 let app__ = null;
 function app_(name) {
   if (!app__) {
-    let src = CacheService.getScriptCache().get('app_src') || fetchSrc_() || readBackup_();
+    // urutan: cache (cepat) -> salinan di Properti (cepat) -> GitHub (lambat, cuma kalau belum pernah ada)
+    let src = CacheService.getScriptCache().get('app_src');
+    if (!src) { src = readBackup_(); if (src) { try { CacheService.getScriptCache().put('app_src', src, LOADER_TTL); } catch (e) {} } }
+    if (!src) src = fetchSrc_();
     if (!src) throw new Error('loader: kode belum pernah ke-download dari GitHub. Run updateSekarang.');
     // eval di dalam closure ini bisa ngakses semua fungsi/const dari Code.gs
     app__ = new Function(src + '\n;return function (n) { try { return eval(n); } catch (e) { return null; } };')();

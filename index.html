@@ -411,7 +411,7 @@ function askConflict(op,clash){
     <div class="row"><button id="cfKeep">Pakai yang di Sheet</button><span class="sp"></span><button class="primary" id="cfOver">Timpa pakai punya gue</button></div></div>`;
   document.body.appendChild(w);
   w.querySelector('#cfOver').onclick=()=>{w.remove();queue[0]={...queue[0],force:true};flush()};
-  w.querySelector('#cfKeep').onclick=()=>{w.remove();queue.shift();if(queue.length)flush();else{setStatus('Pakai data di Sheet');pull(false,true)}};
+  w.querySelector('#cfKeep').onclick=()=>{w.remove();queue.shift();qSave();if(queue.length)flush();else{setStatus('Pakai data di Sheet');pull(false,true)}};
 }
 function askStuck(op,msg){
   if(document.getElementById('stuckDlg'))return;
@@ -426,7 +426,7 @@ function askStuck(op,msg){
     <div class="row"><button id="stDrop">Buang perubahan ini</button><span class="sp"></span><button class="primary" id="stRetry">Coba lagi</button></div></div>`;
   document.body.appendChild(w);
   w.querySelector('#stRetry').onclick=()=>{w.remove();saveFails=0;flush()};
-  w.querySelector('#stDrop').onclick=()=>{w.remove();saveFails=0;queue.shift();if(queue.length)flush();else{setStatus('Perubahan dibuang');pull(false,true)}};
+  w.querySelector('#stDrop').onclick=()=>{w.remove();saveFails=0;queue.shift();qSave();if(queue.length)flush();else{setStatus('Perubahan dibuang');pull(false,true)}};
 }
 function pinDialog(onDone){
   const w=document.createElement('div');w.className='back show';w.style.zIndex=70;
@@ -575,24 +575,37 @@ function diffOps(){
   synced=now;return ops;
 }
 let askingPin=false,saveFails=0;
-function dropPending(msg){queue.length=0;busy=false;toast(msg);pull(false,true)}
+function dropPending(msg){queue.length=0;qSave();busy=false;toast(msg);pull(false,true)}
 function askPin(then){
   if(askingPin)return;askingPin=true;
   pinDialog(async v=>{askingPin=false;
     if(v==null){dropPending('Perubahan dibatalin — butuh PIN buat ngedit.');return}
     then(v)});
 }
+const QK='sp-timeline-queue';
+function qSave(){try{queue.length?localStorage.setItem(QK,JSON.stringify(queue)):localStorage.removeItem(QK)}catch(e){}}
+function okRes(op,res){ // perubahan berhasil: catat nomor baris konten baru
+  if(op.cid&&res&&res.row){const it=state.items.find(x=>x.id===op.cid);if(it)it.row=res.row;if(synced&&synced.items[op.cid])synced.items[op.cid].row=res.row}}
 async function flush(){
+  qSave();
   if(busy)return;
   if(!PIN&&queue.length){askPin(v=>{savePin(v);flush()});return}
-  busy=true;
+  busy=true;let ms=0;
   while(queue.length){
     setStatus('Menyimpan ke Sheet…');
-    const op=queue[0];
+    const t0=Date.now();
     try{
-      const res=await apiPost(op);queue.shift();
-      if(op.cid&&res&&res.row){const it=state.items.find(x=>x.id===op.cid);if(it)it.row=res.row;if(synced&&synced.items[op.cid])synced.items[op.cid].row=res.row}
+      if(scriptVer>=4&&queue.length>1){ // kirim semua yang antre dalam 1 request
+        const batch=queue.slice(0,40),res=await apiPost({op:'batch',ops:batch});
+        for(let i=0;i<res.done;i++){okRes(batch[i],res.results[i]);queue.shift()}
+        qSave();
+        if(res.fail){const er=new Error(res.fail.error||'gagal');if(res.fail.conflict)er.conflict=res.fail.conflict;throw er}
+      }else{
+        const op=queue[0],res=await apiPost(op);queue.shift();qSave();okRes(op,res);
+      }
+      ms=Date.now()-t0;
     }catch(e){
+      const op=queue[0];
       if(e.conflict){busy=false;askConflict(op,e.conflict);return}
       const m=String(e.message||e),pm=m.match(/(pin_wrong|pin_locked|pin_not_set): (.*)/);
       if(pm){busy=false;
@@ -600,14 +613,14 @@ async function flush(){
         dropPending(pm[2]+'.');return}
       const mm=m.match(/(notfound|dobel): (.*)/);
       if(mm){ // baris di KALENDER KONTEN berubah/hilang → buang perubahan yang antre, tarik ulang data
-        queue.length=0;busy=false;toast('Gagal simpan: '+mm[2]+'. Data ditarik ulang.');pull(false,true);return}
+        queue.length=0;qSave();busy=false;toast('Gagal simpan: '+mm[2]+'. Data ditarik ulang.');pull(false,true);return}
       saveFails++;console.warn('Gagal simpan',op,m);
       setStatus('Gagal simpan ke Sheet: '+m.slice(0,90)+' — dicoba lagi');
       busy=false;
       if(saveFails>=3&&!e.net){askStuck(op,m);return} // error dari Apps Script yang sama terus → tanya, biar antrean nggak macet
       setTimeout(flush,8000);return}
   }
-  saveFails=0;busy=false;lastSync=new Date();setStatus('Tersimpan di Sheet '+hhmm(lastSync));
+  saveFails=0;busy=false;lastSync=new Date();setStatus('Tersimpan di Sheet '+hhmm(lastSync)+(ms?' · '+(ms/1000).toFixed(1).replace('.',',')+' dtk':''));
 }
 function syncRemote(){if(!API||!synced)return;queue.push(...diffOps());if(queue.length)flush()}
 let localRev=0,pulling=false,lastSync=null;
@@ -1402,7 +1415,9 @@ if(inClaude)document.getElementById('sheetBtn').style.display='none';
 
 lsLoad();
 render();
-if(API)pull(true);
+// perubahan yang belum kekirim waktu app ditutup → kirim ulang dulu
+try{const q=JSON.parse(localStorage.getItem(QK)||'[]');if(API&&!inClaude&&Array.isArray(q)&&q.length){q.forEach(o=>{if(o.op==='kkAdd')o.dedupe=true});queue.push(...q);setStatus('Ngirim '+q.length+' perubahan yang belum kesimpen…')}}catch(e){}
+if(API)pull(true).then(()=>{if(queue.length)flush()});
 document.getElementById('syncBtn').onclick=()=>pull(false,true);
 if(!API||inClaude)document.getElementById('syncBtn').style.display='none';
 // cek data baru: tiap 20 detik selama tab kebuka, dan tiap balik ke tab/jendela ini

@@ -59,7 +59,7 @@ Setup sekali setelah update script:
 
 ## Loader Apps Script (update otomatis dari GitHub)
 
-Isi Apps Script cukup [`apps-script/Loader.gs`](apps-script/Loader.gs) (ditempel sekali). Loader ngambil `apps-script/Code.gs` terbaru dari repo ini dan ngejalaninnya, jadi tiap perubahan di `Code.gs` yang di-push ke `main` kepakai sendiri dalam ±5–10 menit — **tanpa copas & tanpa Deploy ulang**.
+Isi Apps Script cukup [`apps-script/Loader.gs`](apps-script/Loader.gs) (ditempel sekali). Loader ngambil `apps-script/Code.gs` terbaru dari repo ini dan ngejalaninnya, jadi tiap perubahan di `Code.gs` yang di-push ke `main` kepakai sendiri paling lambat ±1 jam (pemicu `updateOtomatis` tiap jam, dipasang oleh **izinSemua**) — **tanpa copas & tanpa Deploy ulang**. Mau langsung: Run `updateSekarang` atau buka `<URL exec>?update=1`. Hasil baca Sheet disimpan sementara 60 detik (dianggap basi tiap ada yang nyimpen lewat app), jadi edit langsung di Google Sheet kebaca di app paling lambat ±1 menit.
 
 Setup sekali:
 1. Apps Script → hapus semua isi `Code.gs`, tempel isi `Loader.gs`, simpan.
