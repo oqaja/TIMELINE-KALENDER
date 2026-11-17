@@ -25,7 +25,7 @@
  *              daftar '<nama>_hapus' = pilihan yang disembunyiin, mis. tim_hapus = orang yang dihapus dari daftar)
  */
 const TZ = 'Asia/Jakarta';
-const SCRIPT_VER = 4; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
+const SCRIPT_VER = 5; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
 const JENIS = { carousel: 'Desain', short: 'Video Pendek', long: 'Video Panjang', story: 'Story' };
 
 // key di kalender  ->  nama header di sheet
@@ -119,6 +119,117 @@ function addOpsi_(list, value) {
   if (cur.some(function (x) { return x.toLowerCase() === v.toLowerCase(); })) return;
   opsiSheet_().appendRow([l, v]);
 }
+// ===================== BANK KONTEN (tab BANK) =====================
+// konten tanpa tanggal, disimpan buat dipakai kapan aja. Kalau dijadwalin → jadi konten di KALENDER KONTEN & hilang dari bank.
+const BANK_HEAD = ['ID', 'JUDUL', 'JENIS', 'SEGMEN', 'AKUN', 'BRAND TAP IN', 'CATATAN', 'ASAL', 'DIBUAT', 'DIUBAH'];
+function bankSheet_() {
+  let s = sh_('BANK');
+  if (!s) {
+    s = SpreadsheetApp.getActive().insertSheet('BANK');
+    s.getRange(1, 1, 1, BANK_HEAD.length).setValues([BANK_HEAD]).setFontWeight('bold');
+    s.setFrozenRows(1);
+  }
+  return s;
+}
+function readBank_() {
+  const s = bankSheet_(), last = s.getLastRow(), out = [];
+  if (last < 2) return out;
+  const v = s.getRange(2, 1, last - 1, BANK_HEAD.length).getDisplayValues();
+  for (let i = 0; i < v.length; i++) {
+    const title = String(v[i][1] || '').trim();
+    if (!title) continue;
+    let id = String(v[i][0] || '').trim();
+    if (!id) { id = newId_(); s.getRange(i + 2, 1).setValue(id); }
+    out.push({ id: id, title: title, type: typeId_(v[i][2]), segmen: String(v[i][3] || '').trim(), akun: String(v[i][4] || '').trim(),
+      brand: String(v[i][5] || '').trim(), catatan: String(v[i][6] || ''), from: String(v[i][7] || '').trim(), created: String(v[i][8] || '').trim() });
+  }
+  return out;
+}
+function bankRow_(id) {
+  const s = bankSheet_(), last = s.getLastRow();
+  if (last < 2) return -1;
+  const ids = s.getRange(2, 1, last - 1, 1).getDisplayValues();
+  for (let i = 0; i < ids.length; i++) if (String(ids[i][0]) === String(id)) return i + 2;
+  return -1;
+}
+function bankUpsert_(b) {
+  if (!b || !b.id || !b.title) throw new Error('bank konten butuh judul');
+  const s = bankSheet_(), r = bankRow_(b.id), row = r > 0 ? r : s.getLastRow() + 1, now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
+  const created = r > 0 ? s.getRange(r, 9).getDisplayValue() : now;
+  const rng = s.getRange(row, 1, 1, BANK_HEAD.length);
+  rng.setNumberFormat('@');
+  rng.setValues([[b.id, b.title, JENIS[b.type] || b.type || '', b.segmen || '', b.akun || '', b.brand || '', b.catatan || '', b.from || '', created || now, now]]);
+}
+function bankDelete_(id) { const r = bankRow_(id); if (r > 0) bankSheet_().deleteRow(r); }
+// dijadwalin: pindah ke arsip "BANK TERPAKAI" (riset/brief nggak masuk CATATAN KALENDER KONTEN, catatan itu buat otomasi upload)
+const BANKU_HEAD = BANK_HEAD.concat(['DIJADWALIN', 'TANGGAL KONTEN', 'JUDUL KONTEN']);
+function bankUsedSheet_() {
+  let s = sh_('BANK TERPAKAI');
+  if (!s) {
+    s = SpreadsheetApp.getActive().insertSheet('BANK TERPAKAI');
+    s.getRange(1, 1, 1, BANKU_HEAD.length).setValues([BANKU_HEAD]).setFontWeight('bold');
+    s.setFrozenRows(1);
+  }
+  return s;
+}
+function bankUse_(op) {
+  const s = bankSheet_(), r = bankRow_(op.id), now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), b = op.bank || {};
+  let row = r > 0 ? s.getRange(r, 1, 1, BANK_HEAD.length).getDisplayValues()[0]
+    : [op.id, b.title || '', JENIS[b.type] || b.type || '', b.segmen || '', b.akun || '', b.brand || '', b.catatan || '', b.from || '', now, now];
+  const u = bankUsedSheet_(), ur = u.getLastRow() + 1, rng = u.getRange(ur, 1, 1, BANKU_HEAD.length);
+  rng.setNumberFormat('@');
+  rng.setValues([row.concat([now, op.date || '', op.title || row[1]])]);
+  if (r > 0) s.deleteRow(r);
+}
+function readBankUsed_() {
+  const s = sh_('BANK TERPAKAI');
+  if (!s || s.getLastRow() < 2) return [];
+  const v = s.getRange(2, 1, s.getLastRow() - 1, BANKU_HEAD.length).getDisplayValues(), out = [];
+  v.forEach(function (x) { if (x[1] || x[12]) out.push({ id: x[0], title: x[1], catatan: x[6], from: x[7], used: x[10], date: x[11], cTitle: x[12] }); });
+  return out;
+}
+
+// ===================== IDE KONTEN SMO (DASHBOARD KULTURAMA, diisi agent riset) =====================
+// dibaca semua kolomnya; dari web cuma kolom Status yang diubah
+const SMO_TAB = 'Ide Konten SMO';
+const SMO_COLS = { date: 'Tanggal', title: 'Judul', angle: 'Angle/POV', trigger: 'Pemicu', research: 'Bahan Riset', flow: 'Alur Isi',
+  hook: 'Hook', format: 'Format', urgency: 'Urgensi', sources: 'Sumber', status: 'Status' };
+function smoSheet_() { const sh = kkBook_().getSheetByName(SMO_TAB); if (!sh) throw new Error('Tab "' + SMO_TAB + '" nggak ketemu'); return sh; }
+function smoCols_(sh) {
+  const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0].map(function (h) { return String(h).trim().toLowerCase(); }), c = {};
+  Object.keys(SMO_COLS).forEach(function (k) { const i = head.indexOf(SMO_COLS[k].toLowerCase()); if (i >= 0) c[k] = i; });
+  if (c.title == null) throw new Error('Kolom Judul nggak ketemu di ' + SMO_TAB);
+  return c;
+}
+function smoRead_(from) {
+  const sh = smoSheet_(), last = sh.getLastRow();
+  if (last < 2) return [];
+  const c = smoCols_(sh), w = sh.getLastColumn(), rng = sh.getRange(2, 1, last - 1, w), raw = rng.getValues(), disp = rng.getDisplayValues(), out = [];
+  for (let i = 0; i < raw.length; i++) {
+    const g = function (k) { return c[k] == null ? '' : String(disp[i][c[k]] || '').trim(); };
+    const title = g('title');
+    if (!title) continue;
+    const d = c.date == null ? '' : (date_(raw[i][c.date]) || date_(disp[i][c.date]) || '');
+    if (from && d && d < from) continue;
+    out.push({ row: i + 2, date: d, title: title, angle: g('angle'), trigger: g('trigger'), research: g('research'), flow: g('flow'),
+      hook: g('hook'), format: g('format'), urgency: g('urgency'), sources: g('sources'), status: g('status') });
+  }
+  return out;
+}
+function smoStatus_(ref, status) {
+  const sh = smoSheet_(), c = smoCols_(sh);
+  if (c.status == null) throw new Error('Kolom Status nggak ada di ' + SMO_TAB);
+  let row = Number(ref && ref.row) || 0;
+  const titleAt = function (r) { return r >= 2 && r <= sh.getLastRow() ? String(sh.getRange(r, c.title + 1).getDisplayValue()).trim() : ''; };
+  if (titleAt(row) !== String(ref.title || '').trim()) { // baris geser → cari pakai judul
+    const t = sh.getRange(2, c.title + 1, Math.max(1, sh.getLastRow() - 1), 1).getDisplayValues();
+    row = 0;
+    for (let i = 0; i < t.length; i++) if (String(t[i][0]).trim() === String(ref.title || '').trim()) { row = i + 2; break; }
+    if (!row) throw new Error('notfound: ide "' + ref.title + '" nggak ketemu di ' + SMO_TAB);
+  }
+  sh.getRange(row, c.status + 1).setValue(status || '');
+}
+
 // ===================== TO-DO MANUAL (tab TODO) =====================
 const TODO_HEAD = ['ID', 'TANGGAL', 'ORANG', 'TUGAS', 'SELESAI', 'CATATAN', 'DIUBAH'];
 function todoSheet_() {
@@ -318,7 +429,7 @@ function kkDate_(v) {
 function kkRead_(from, to) {
   const sh = kkSheet_(), c = kkCols_(sh), last = sh.getLastRow(), items = [];
   if (last < 2) return items;
-  const rng = sh.getRange(2, 1, last - 1, c._width), raw = rng.getValues(), disp = rng.getDisplayValues();
+  const rng = sh.getRange(2, 1, last - 1, c._width), raw = rng.getValues(), disp = rng.getDisplayValues(), bankOf = kkBankRows_(sh);
   for (let i = 0; i < raw.length; i++) {
     const title = String(disp[i][c.title - 1] || '').trim();
     const date = kkDate_(raw[i][c.date - 1]) || date_(disp[i][c.date - 1]);
@@ -329,9 +440,27 @@ function kkRead_(from, to) {
     it.title = title; it.date = date;
     it.jenis = it.type; it.type = typeId_(it.type);
     it.id = it.eventId ? 'ev:' + it.eventId : 'row:' + it.row;
+    if (bankOf[it.row]) it.bankId = bankOf[it.row];
     items.push(it);
   }
   return items;
+}
+// penanda tersembunyi di baris KALENDER KONTEN (developer metadata, nggak kelihatan & nggak ngisi sel apa pun):
+// konten ini asalnya dari bank konten mana. Ikut pindah kalau baris digeser/di-sort, tetap nyambung walau judul/tanggal diganti.
+const KK_BANK_KEY = 'tl_bank';
+function kkMarkBank_(sh, row, bankId) {
+  if (!bankId) return;
+  try { sh.getRange(row + ':' + row).addDeveloperMetadata(KK_BANK_KEY, String(bankId)); } catch (e) {}
+}
+function kkBankRows_(sh) {
+  const out = {};
+  try {
+    sh.createDeveloperMetadataFinder().withKey(KK_BANK_KEY).find().forEach(function (md) {
+      const loc = md.getLocation();
+      if (String(loc.getLocationType()) === 'ROW') out[loc.getRow().getRow()] = md.getValue();
+    });
+  } catch (e) {}
+  return out;
 }
 // pilihan dropdown langsung dari aturan validasi di KALENDER KONTEN
 function kkLists_() {
@@ -420,6 +549,7 @@ function kkAdd_(it) {
   sh.appendRow(vals);
   const row = sh.getLastRow();
   kkDateFmt_(sh, row, c);
+  kkMarkBank_(sh, row, it.bankId);
   return row;
 }
 function kkDelete_(ref) {
@@ -432,10 +562,17 @@ function doGet(e) {
   const t0 = Date.now(), p = (e && e.parameter) || {};
   if (p.update === '1' && typeof updateSekarang === 'function') { try { updateSekarang(); } catch (err) {} }
   const useCache = !p.cek && !p.nocache && p.update !== '1';
-  const key = (p.ins === '1' ? 'i|' : 'g|') + dataRev_() + '|' + (p.from || '') + '|' + (p.to || '');
+  const key = (p.smo === '1' ? 's|' : p.ins === '1' ? 'i|' : 'g|') + dataRev_() + '|' + (p.from || '') + '|' + (p.to || '');
   if (useCache) {
     const hit = cacheGet_(key);
     if (hit) { const d = JSON.parse(hit); d.cached = true; d.ms = Date.now() - t0; return out_(d); }
+  }
+  if (p.smo === '1') { // tab Ide SMO
+    const d = { ok: true, ver: SCRIPT_VER };
+    try { d.smo = smoRead_(p.from || ''); } catch (err) { d.smo = null; d.smoError = String(err); }
+    if (useCache && d.smo) { try { cachePut_(key, JSON.stringify(d), READ_TTL); } catch (err) {} }
+    d.cached = false; d.ms = Date.now() - t0;
+    return out_(d);
   }
   if (p.ins === '1') { // tab Insight: cuma data INSIGHT, terpisah biar tarikan kalender tetap ringan
     const d = { ok: true, ver: SCRIPT_VER };
@@ -448,6 +585,8 @@ function doGet(e) {
   data.items.forEach(function (it) { it.src = 'pv'; });
   data.ver = SCRIPT_VER;
   try { data.todos = readTodo_(); } catch (err) { data.todos = null; }
+  try { data.bank = readBank_(); } catch (err) { data.bank = null; }
+  try { data.bankUsed = readBankUsed_(); } catch (err) { data.bankUsed = null; }
   try { data.kk = kkRead_(p.from || '', p.to || ''); data.lists = kkLists_(); if (kkWarn_.length) data.kkWarn = kkWarn_; }
   catch (err) { data.kk = null; data.kkError = String(err); }
   data.range = { from: p.from || '', to: p.to || '' };
@@ -580,6 +719,10 @@ function runOp_(op) {
   else if (op.op === 'optionDel') delOpsi_(op.list, op.value);
   else if (op.op === 'todoUpsert') todoUpsert_(op.todo);
   else if (op.op === 'todoDelete') todoDelete_(op.id);
+  else if (op.op === 'bankUpsert') bankUpsert_(op.bank);
+  else if (op.op === 'bankDelete') bankDelete_(op.id);
+  else if (op.op === 'bankUse') bankUse_(op);
+  else if (op.op === 'smoStatus') smoStatus_(op.ref, op.status);
   else if (op.op === 'kkAdd') {
     if (op.dedupe) { // dikirim ulang setelah app ditutup: jangan bikin baris dobel kalau ternyata udah masuk
       const sh = kkSheet_(), row = kkFind_(sh, kkCols_(sh), { title: op.item && op.item.title, date: op.item && op.item.date });
