@@ -405,8 +405,12 @@ function kkUpdate_(ref, changes, prev, force) {
     if (clash.length) return { conflict: clash, row: row };
   }
   keys.forEach(function (k) { sh.getRange(row, c[k]).setValue(kkVal_(k, changes[k])); });
+  if (keys.indexOf('date') >= 0) kkDateFmt_(sh, row, c);
   return row;
 }
+// tanggal ditulis "yyyy-MM-dd" → Sheets ikut pakai format itu; samain ke format kolom TANGGAL (01-Nov-2026)
+const KK_DATE_FMT = 'dd"-"mmm"-"yyyy';
+function kkDateFmt_(sh, row, c) { if (c.date) sh.getRange(row, c.date).setNumberFormat(KK_DATE_FMT); }
 function kkAdd_(it) {
   if (!it || !it.title || !it.date) throw new Error('judul & tanggal wajib');
   const sh = kkSheet_(), c = kkCols_(sh);
@@ -414,7 +418,9 @@ function kkAdd_(it) {
   const vals = new Array(c._width).fill('');
   Object.keys(KK).forEach(function (k) { if (c[k] && k !== 'eventId') vals[c[k] - 1] = kkVal_(k, it[k]); });
   sh.appendRow(vals);
-  return sh.getLastRow();
+  const row = sh.getLastRow();
+  kkDateFmt_(sh, row, c);
+  return row;
 }
 function kkDelete_(ref) {
   const sh = kkSheet_(), c = kkCols_(sh), row = kkFind_(sh, c, ref);
@@ -426,10 +432,17 @@ function doGet(e) {
   const t0 = Date.now(), p = (e && e.parameter) || {};
   if (p.update === '1' && typeof updateSekarang === 'function') { try { updateSekarang(); } catch (err) {} }
   const useCache = !p.cek && !p.nocache && p.update !== '1';
-  const key = 'g|' + dataRev_() + '|' + (p.from || '') + '|' + (p.to || '');
+  const key = (p.ins === '1' ? 'i|' : 'g|') + dataRev_() + '|' + (p.from || '') + '|' + (p.to || '');
   if (useCache) {
     const hit = cacheGet_(key);
     if (hit) { const d = JSON.parse(hit); d.cached = true; d.ms = Date.now() - t0; return out_(d); }
+  }
+  if (p.ins === '1') { // tab Insight: cuma data INSIGHT, terpisah biar tarikan kalender tetap ringan
+    const d = { ok: true, ver: SCRIPT_VER };
+    try { d.ins = insightRead_(p.from || '', p.to || ''); } catch (err) { d.ins = null; d.insError = String(err); }
+    if (useCache && d.ins) { try { cachePut_(key, JSON.stringify(d), READ_TTL); } catch (err) {} }
+    d.cached = false; d.ms = Date.now() - t0;
+    return out_(d);
   }
   const data = read_();
   data.items.forEach(function (it) { it.src = 'pv'; });
@@ -443,6 +456,48 @@ function doGet(e) {
   if (useCache && data.kk) { try { cachePut_(key, JSON.stringify(data), READ_TTL); } catch (err) {} }
   data.cached = false; data.ms = Date.now() - t0;
   return out_(data);
+}
+
+// ---- INSIGHT (DASHBOARD KULTURAMA): cuma dibaca, nggak pernah ditulis dari web
+const INS_TAB = 'INSIGHT';
+const INS_COLS = { date: 'Tanggal Upload', title: 'Judul', jenis: 'Jenis Konten', platform: 'Platform', akun: 'Akun', link: 'Link Video',
+  views: 'Views', subs: 'Subscriber Gained', likes: 'Likes', comments: 'Comments', shares: 'Shares', saved: 'Saved',
+  updated: 'Terakhir Update', postId: 'POST ID', brand: 'BRAND TAP IN' };
+const INS_PF = { youtube: 'YT', instagram: 'IG', tiktok: 'TT', facebook: 'FB' };
+function insNum_(raw, disp) {
+  if (typeof raw === 'number') return raw;
+  const s = String(disp || '').trim();
+  if (!s || s === '-') return null;
+  const n = Number(s.replace(/\./g, '').replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+function insDate_(raw, disp, tz) { // -> ['yyyy-MM-dd', 'HH:mm']
+  if (raw instanceof Date) return [Utilities.formatDate(raw, tz, 'yyyy-MM-dd'), Utilities.formatDate(raw, tz, 'HH:mm')];
+  const m = String(disp || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if (!m) return ['', ''];
+  return [m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2), m[4] ? ('0' + m[4]).slice(-2) + ':' + m[5] : ''];
+}
+function insightRead_(from, to) {
+  const book = kkBook_(), sh = book.getSheetByName(INS_TAB);
+  if (!sh) throw new Error('Tab INSIGHT nggak ketemu');
+  const last = sh.getLastRow(), width = sh.getLastColumn();
+  if (last < 2) return [];
+  const head = sh.getRange(1, 1, 1, width).getDisplayValues()[0].map(function (h) { return String(h).trim().toLowerCase(); });
+  const c = {};
+  Object.keys(INS_COLS).forEach(function (k) { const i = head.indexOf(INS_COLS[k].toLowerCase()); if (i >= 0) c[k] = i; });
+  if (c.date == null || c.title == null) throw new Error('Kolom Tanggal Upload / Judul nggak ketemu di INSIGHT');
+  const rng = sh.getRange(2, 1, last - 1, width), raw = rng.getValues(), disp = rng.getDisplayValues(), tz = book.getSpreadsheetTimeZone(), out = [];
+  const g = function (i, k) { return c[k] == null ? '' : String(disp[i][c[k]] || '').trim(); };
+  const n = function (i, k) { return c[k] == null ? null : insNum_(raw[i][c[k]], disp[i][c[k]]); };
+  for (let i = 0; i < raw.length; i++) {
+    const dt = insDate_(raw[i][c.date], disp[i][c.date], tz);
+    if (!dt[0] || (from && dt[0] < from) || (to && dt[0] > to)) continue;
+    const pf = g(i, 'platform');
+    out.push({ d: dt[0], tm: dt[1], ti: g(i, 'title'), j: g(i, 'jenis'), pf: INS_PF[pf.toLowerCase()] || pf, ak: g(i, 'akun'), url: g(i, 'link'),
+      v: n(i, 'views'), sg: n(i, 'subs'), l: n(i, 'likes'), c: n(i, 'comments'), sh: n(i, 'shares'), sv: n(i, 'saved'),
+      up: g(i, 'updated'), id: g(i, 'postId'), br: g(i, 'brand') });
+  }
+  return out;
 }
 
 // ---- Simpanan sementara hasil baca (biar narik data cepat). Dianggap basi tiap ada yang nyimpen lewat app.

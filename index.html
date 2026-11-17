@@ -33,7 +33,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body)
 header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px}
 h1{font-family:var(--head);font-weight:800;font-size:20px;letter-spacing:.5px;margin:0;text-transform:uppercase}
 h1 small{display:block;font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0}
-.nav{display:flex;align-items:center;gap:6px}
+.nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .nav .month{font-family:var(--head);font-weight:700;font-size:18px;min-width:170px;text-align:center;text-transform:uppercase}
 button{font-family:var(--body);cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:14px;font-weight:600}
 button:hover{border-color:#bbb}
@@ -148,7 +148,11 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
 .tabs a.tablink:hover{color:var(--ink)}
 .tabs{max-width:100%;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tabs button{white-space:nowrap;flex:none}
 .tabs button.on{background:#fff;color:#111;box-shadow:0 1px 2px rgba(0,0,0,.12)}
-body.v-day .main,body.v-week .main,body.v-todo .main,body.v-stat .main{display:none}
+.subtabs{display:inline-flex;background:#e9e7e1;border-radius:10px;padding:3px;gap:2px}.subtabs[hidden]{display:none!important}
+.subtabs button{border:0;background:transparent;padding:6px 10px;font-size:13px;border-radius:8px;color:#555;white-space:nowrap}
+.subtabs button.on{background:#fff;color:#111;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+@media(max-width:700px){.subtabs{width:100%}.subtabs button{flex:1}}
+body.v-day .main,body.v-week .main,body.v-todo .main,body.v-stat .main,body.v-ins .main{display:none}
 .statview{display:flex;flex-direction:column;gap:12px}
 .st-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .st-top h2{font-family:var(--head);font-size:18px;margin:0;text-transform:uppercase;flex:1;min-width:220px}
@@ -207,6 +211,32 @@ body.v-day .main,body.v-week .main,body.v-todo .main,body.v-stat .main{display:n
 .upn{font-size:11.5px;color:#8a1c1c;background:#fdf1f1;border-radius:6px;padding:5px 8px;margin-top:6px;white-space:pre-wrap;word-break:break-word}
 #tip{position:fixed;z-index:90;pointer-events:none;background:#111;color:#fff;border-radius:8px;padding:6px 9px;font-size:12px;line-height:1.35;display:none;max-width:240px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
 #tip b{font-size:14px}
+.insf-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.insf-bar .grp{display:flex;flex-wrap:wrap;gap:6px}
+.insf-bar select{width:auto;max-width:200px;border:1px solid var(--line);border-radius:99px;padding:6px 10px;font:inherit;font-size:13px;background:var(--card)}
+.insf-bar .chip-f i.pf,.ihr .nm i.pf,.itbl i.pf,.itr i.pf,.insc i.pf{display:inline-block;font-style:normal;font-size:10px;padding:2px 6px;min-width:26px;border-radius:5px;margin-right:2px}
+.ihr .nm i.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.td-per #insRe{border:0;background:transparent;font-size:16px;cursor:pointer;padding:4px 8px}.td-per #insRe.spin{animation:spin 1s linear infinite}
+.itop{display:flex;flex-direction:column;gap:2px}
+.itr{display:grid;grid-template-columns:22px 34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 6px;border-radius:10px;color:inherit;text-decoration:none}
+.itr:hover{background:#f4f3ee}.itr .rk{font-weight:800;color:var(--muted);text-align:right}
+.itr .tt b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.itr .tt small{font-size:11px;color:var(--muted)}
+.itr .nv{text-align:right;font-weight:800;font-size:15px}.itr .nv small{display:block;font-weight:500;font-size:11px;color:var(--muted)}
+.isearch{width:100%;max-width:320px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;margin-bottom:10px}
+.itbl-w{overflow-x:auto;margin:0 -16px;padding:0 16px}
+.itbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:760px}
+.itbl th{text-align:left;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.itbl th[data-s]{cursor:pointer}.itbl th.on{color:var(--ink,#111)}
+.itbl td{padding:7px 8px;border-bottom:1px solid #f0efe9;white-space:nowrap}
+.itbl td.t{white-space:normal;min-width:220px;font-weight:600}.itbl td.t small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+.itbl td.n{text-align:right;font-variant-numeric:tabular-nums}
+.itbl tbody tr{cursor:pointer}.itbl tbody tr:hover{background:#f7f6f1}
+.imore{margin-top:10px;border:1px solid var(--line);background:var(--card);border-radius:99px;padding:7px 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.insg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.insc{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;color:inherit;text-decoration:none;font-size:12px}
+.insc:hover{background:#f7f6f1}.insc b{font-size:20px;line-height:1.1;margin-top:4px}.insc i.pf{align-self:flex-start}
+.insc.none{background:#faf9f5}.mut{color:var(--muted);font-size:12px}
+@media(max-width:800px){.itr{grid-template-columns:18px 30px minmax(0,1fr) auto;gap:8px}}
 @media(max-width:800px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.cards{grid-template-columns:1fr}.tile .v{font-size:28px}.hr{grid-template-columns:104px minmax(0,1fr) 50px}}
 .td-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
 .td-ctl select{width:auto;padding:7px 10px;font-size:14px;font-weight:700}
@@ -329,8 +359,9 @@ body.v-day .main,body.v-week .main,body.v-todo .main,body.v-stat .main{display:n
 <div class="wrap">
   <header>
     <div class="ttl"><h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
-      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button><a class="tablink" href="invoice.html">Invoice ↗</a></nav></div>
+      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button><button data-v="ins">Insight</button><a class="tablink" href="invoice.html">Invoice ↗</a></nav></div>
     <div class="nav">
+      <span class="subtabs" id="calSub"><button data-v="cal">Bulanan</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button></span>
       <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
       <div class="month" id="monthLbl"></div>
       <button class="icon" id="next" aria-label="Bulan berikutnya">›</button>
@@ -348,6 +379,7 @@ body.v-day .main,body.v-week .main,body.v-todo .main,body.v-stat .main{display:n
   <section class="dayview" id="dayView" hidden></section>
   <section class="dayview todoview" id="todoView" hidden></section>
   <section class="statview" id="statView" hidden></section>
+  <section class="statview" id="insView" hidden></section>
 </div>
 
 <div class="back" id="back">
@@ -761,7 +793,7 @@ function goDay(k){dayK=k;const [y,m]=k.split('-').map(Number);
   if(y!==viewY||m-1!==viewM){viewY=y;viewM=m-1;navTo()}else render()}
 function shiftDay(n){const [y,m,d]=(dayK||todayKey).split('-').map(Number);const t=new Date(y,m-1,d+n);goDay(key(t.getFullYear(),t.getMonth(),t.getDate()))}
 function setView(v){view=v;try{localStorage.setItem('sp-timeline-view',v)}catch(e){}
-  if(v==='day'||v==='week'||v==='todo'||v==='stat'){goDay(dayK||todayKey)}else render()}
+  if(v==='day'||v==='week'||v==='todo'||v==='stat'||v==='ins'){goDay(dayK||todayKey)}else render()}
 const mondayOf=k=>{const [y,m,d]=k.split('-').map(Number);const t=new Date(y,m-1,d);t.setDate(t.getDate()-((t.getDay()+6)%7));return t};
 function renderWeek(){
   if(!dayK)dayK=todayKey;
@@ -888,6 +920,121 @@ function showUploads(L,pf,st,a,z){
   w.querySelector('#upClose').onclick=done;w.onclick=e=>{if(e.target===w)done()};
   w.querySelectorAll('.upi').forEach(el=>el.onclick=()=>{const x=rows[+el.dataset.i];done();openForm(state.items.find(i=>i.id===x.it.id))});
 }
+// ===== INSIGHT (tab INSIGHT di DASHBOARD KULTURAMA, cuma dibaca) =====
+const INS={cache:{},f:{pf:'',ak:'',j:'',br:'',q:'',sort:'v',dir:-1,n:30}};
+const INSPF={YT:'YouTube',IG:'Instagram',TT:'TikTok',FB:'Facebook'};
+const nf=n=>n==null?'–':Math.round(n).toLocaleString('id-ID');
+const nfc=n=>n==null?'–':n>=1e6?(n/1e6).toFixed(1).replace('.',',').replace(',0','')+' jt':n>=1e4?(n/1e3).toFixed(n>=1e5?0:1).replace('.',',').replace(',0','')+' rb':nf(n);
+const erOf=l=>{const v=l.reduce((s,x)=>s+(x.v||0),0),e=l.reduce((s,x)=>s+(x.l||0)+(x.c||0)+(x.sh||0)+(x.sv||0),0);return v?e/v*100:null};
+const erTxt=x=>x==null?'–':x.toFixed(x<10?1:0).replace('.',',')+'%';
+async function loadIns(a,z,force){
+  const k=a+'|'+z,c=INS.cache[k];
+  if(c&&!force&&Date.now()-c.at<60000)return c.rows;
+  let rows;
+  if(window.__INS)rows=window.__INS.filter(x=>x.d>=a&&x.d<=z);
+  else{if(!API)throw new Error('Belum nyambung ke Sheet');
+    const r=await fetch(API+(API.includes('?')?'&':'?')+'ins=1&from='+a+'&to='+z,{cache:'no-store'}),d=await r.json();
+    if(!d.ins)throw new Error(d.insError||'Gagal narik INSIGHT (script perlu versi terbaru)');rows=d.ins}
+  INS.cache[k]={rows,at:Date.now()};return rows;
+}
+const jenisType=j=>{const s=String(j||'').toLowerCase();return TYPES.find(t=>t.name.toLowerCase()===s)||null};
+function renderIns(){
+  if(!dayK)dayK=todayKey;
+  const [a,z]=stRange(),[ay,am,ad]=a.split('-').map(Number),[zy,zm,zd]=z.split('-').map(Number);
+  document.getElementById('monthLbl').textContent=stPer==='week'?(am===zm?`${ad}–${zd} ${BULAN[zm-1].slice(0,3)} ${zy}`:`${ad} ${BULAN[am-1].slice(0,3)} – ${zd} ${BULAN[zm-1].slice(0,3)} ${zy}`):`${BULAN[am-1]} ${ay}`;
+  document.getElementById('filters').innerHTML=`<span class="status" id="status">${API||window.__INS?'Data dari tab INSIGHT · cuma dibaca':'Belum nyambung ke Sheet — klik ⚙'}</span>`;
+  const iv=document.getElementById('insView'),key0=a+'|'+z;
+  if(!INS.cache[key0])iv.innerHTML=`<div class="dv-empty">Narik data INSIGHT…</div>`;
+  loadIns(a,z).then(rows=>{if(view==='ins'&&stRange().join('|')===key0)drawIns(rows,a,z)})
+    .catch(e=>{if(view==='ins')iv.innerHTML=`<div class="dv-empty">⚠ ${esc(e.message||e)}</div>`});
+}
+function drawIns(all,a,z){
+  const iv=document.getElementById('insView'),F=INS.f,[ay,am]=a.split('-').map(Number);
+  const uniq=k=>[...new Set(all.map(x=>x[k]).filter(Boolean))].sort();
+  const brOf=x=>String(x.br||'').split(/\s*,\s*/).filter(Boolean); // 1 sel bisa isi beberapa brand → dipecah
+  const allBr=[...new Set([...brands(),...all.flatMap(brOf)])].sort((p,q)=>p.localeCompare(q,'id',{numeric:true,sensitivity:'base'})); // daftar brand sama kayak di form konten, 1 brand 1 baris
+  const L0=all.filter(x=>(!F.pf||x.pf===F.pf)&&(!F.ak||x.ak===F.ak)&&(!F.j||x.j===F.j)); // semua filter kecuali brand (buat daftar brand di samping)
+  const L=L0.filter(x=>!F.br||(F.br==='__none'?!x.br:brOf(x).includes(F.br)));
+  const sum=k=>L.reduce((s,x)=>s+(x[k]||0),0),V=sum('v'),N=L.length,ER=erOf(L);
+  const chip=(k,v,lbl)=>`<span class="chip-f${F[k]===v?' on':''}" data-fk="${k}" data-fv="${esc(v)}">${lbl}</span>`;
+  // per hari
+  const days=[];{const s0=new Date(a+'T00:00'),s1=new Date(z+'T00:00');for(let t=new Date(s0);t<=s1;t.setDate(t.getDate()+1))days.push(key(t.getFullYear(),t.getMonth(),t.getDate()))}
+  const perDay=days.map(k=>{const l=L.filter(x=>x.d===k);return {k,v:l.reduce((s,x)=>s+(x.v||0),0),n:l.length,by:Object.keys(INSPF).map(p=>[p,l.filter(x=>x.pf===p).reduce((s,x)=>s+(x.v||0),0)]).filter(y=>y[1])}});
+  const maxD=Math.max(1,...perDay.map(d=>d.v)),bestD=perDay.reduce((b,d)=>d.v>b.v?d:b,{v:0});
+  const colsHtml=perDay.map(d=>`<div class="col" data-tv="${nf(d.v)} views" data-tl="${fmtDate(d.k)} · ${d.n} postingan${d.by.length?' · '+d.by.map(([p,v])=>p+' '+nfc(v)).join(', '):''}" tabindex="0">${d.v?`<div class="sg" style="height:${d.v/maxD*100}%;background:#2b2b2b"></div>`:''}</div>`).join('');
+  const xax=perDay.map(d=>{const dd=+d.k.slice(8);return `<span class="${d.k===todayKey?'td':''}">${stPer==='week'?['Min','Sen','Sel','Rab','Kam','Jum','Sab'][new Date(d.k+'T00:00').getDay()]+' '+dd:(dd===1||dd%5===0?dd:'')}</span>`}).join('');
+  const grp=(kf,lst)=>lst.map(k=>{const l=L.filter(x=>kf(x)===k);return {k,n:l.length,v:l.reduce((s,x)=>s+(x.v||0),0),er:erOf(l)}}).filter(g=>g.n).sort((p,q)=>q.v-p.v);
+  const plat=grp(x=>x.pf,Object.keys(INSPF)),maxP=Math.max(1,...plat.map(x=>x.v));
+  const jen=grp(x=>x.j,uniq('j')),maxJ=Math.max(1,...jen.map(x=>x.v));
+  const aks=grp(x=>x.ak,uniq('ak')),maxA=Math.max(1,...aks.map(x=>x.v));
+  const withBr=L.filter(x=>x.br),brs=allBr.map(k=>{const l=L.filter(x=>brOf(x).includes(k));return {k,n:l.length,v:l.reduce((s,x)=>s+(x.v||0),0),er:erOf(l)}}).filter(g=>g.n).sort((p,q)=>q.v-p.v).slice(0,8),maxB=Math.max(1,...brs.map(x=>x.v));
+  const top=[...L].sort((p,q)=>(q.v||0)-(p.v||0)).slice(0,10);
+  const row=(nm,g,mx,col,extra)=>`<div class="hr ihr"><span class="nm">${nm}</span><span class="tr" data-tv="${nf(g.v)} views" data-tl="${g.n} postingan · rata-rata ${nfc(g.v/g.n)} · ER ${erTxt(g.er)}"><i style="width:${g.v/mx*100}%;background:${col}"></i></span><span class="vl">${nfc(g.v)}</span></div>`;
+  // daftar
+  const q=F.q.trim().toLowerCase();
+  const list=L.filter(x=>!q||x.ti.toLowerCase().includes(q)).map(x=>({...x,er:erOf([x])}));
+  const sk=F.sort;list.sort((p,r)=>{const A=sk==='d'?p.d+p.tm:sk==='ti'?p.ti.toLowerCase():(p[sk]==null?-1:p[sk]),B=sk==='d'?r.d+r.tm:sk==='ti'?r.ti.toLowerCase():(r[sk]==null?-1:r[sk]);return (A>B?1:A<B?-1:0)*F.dir});
+  const th=(k,n)=>`<th data-s="${k}" class="${F.sort===k?'on':''}">${n}${F.sort===k?(F.dir<0?' ↓':' ↑'):''}</th>`;
+  const brLbl=F.br==='__none'?'Non brand':F.br;
+  iv.innerHTML=`<div class="st-top"><h2>Insight ${stPer==='week'?'minggu ini':BULAN[am-1]+' '+ay}${F.br?' · '+esc(brLbl):''}<small>${fmtDate(a).replace(/^\w+, /,'')} – ${fmtDate(z).replace(/^\w+, /,'')} · dari tab INSIGHT, berdasarkan tanggal upload</small></h2>
+      <span class="td-per">${[['week','Mingguan'],['month','Bulanan']].map(([v,n])=>`<button data-p="${v}" class="${stPer===v?'on':''}">${n}</button>`).join('')}<button id="insRe" title="Tarik ulang">⟳</button></span></div>
+    <div class="insf-bar">
+      <span class="grp">${chip('pf','','Semua platform')}${Object.keys(INSPF).filter(p=>all.some(x=>x.pf===p)).map(p=>chip('pf',p,`<i class="pf ${p}">${p}</i>`)).join('')}</span>
+      <span class="grp">${chip('ak','','Semua akun')}${uniq('ak').map(k=>chip('ak',k,esc(k))).join('')}</span>
+      <select data-fk="br"><option value="">Semua brand</option>${allBr.map(b=>`<option${F.br===b?' selected':''}>${esc(b)}</option>`).join('')}${all.some(x=>!x.br)?`<option value="__none"${F.br==='__none'?' selected':''}>Non brand</option>`:''}</select>
+      <select data-fk="j"><option value="">Semua jenis</option>${uniq('j').map(j=>`<option${F.j===j?' selected':''}>${esc(j)}</option>`).join('')}</select>
+    </div>
+    <div class="tiles">
+      <div class="tile"><div class="k">Total views</div><div class="v">${nfc(V)}</div><div class="s">dari ${N} postingan</div></div>
+      <div class="tile"><div class="k">Rata-rata views</div><div class="v">${nfc(N?V/N:0)}</div><div class="s">per postingan</div></div>
+      <div class="tile"><div class="k">Engagement rate</div><div class="v">${ER==null?'–':erTxt(ER).replace('%','')}<small>%</small></div><div class="s">(likes + komen + share + saved) ÷ views</div></div>
+      <div class="tile"><div class="k">Interaksi</div><div class="v" style="font-size:22px;line-height:1.35">${nfc(sum('l'))} <small>likes</small><br>${nfc(sum('c'))} <small>komen</small></div><div class="s">${nfc(sum('sh'))} share · ${nfc(sum('sv'))} saved${sum('sg')?' · +'+nf(sum('sg'))+' subscriber':''}</div></div></div>
+    ${!N?'<div class="dv-empty">Belum ada postingan di periode/filter ini.</div>':`<div class="cards">
+      <div class="card wide"><h3>Views per hari</h3><div class="sub2">Total views postingan yang di-upload tiap hari${bestD.v?` · tertinggi ${fmtDate(bestD.k).replace(/ \d{4}$/,'')} (${nfc(bestD.v)})`:''}</div>
+        <div class="cols">${colsHtml}</div><div class="xax">${xax}</div></div>
+      <div class="card"><h3>Per platform</h3><div class="sub2">Total views · arahkan kursor buat rata-rata &amp; ER</div>
+        <div class="rows">${plat.map(g=>row(`<i class="pf ${g.k}">${g.k}</i> ${INSPF[g.k]}`,g,maxP,'#2b2b2b')).join('')}</div></div>
+      <div class="card"><h3>Per jenis konten</h3><div class="sub2">Total views per jenis</div>
+        <div class="rows">${jen.map(g=>{const t=jenisType(g.k);return row(`${t?`<i class="sw" style="background:${t.color}"></i>`:''}${esc(g.k)}`,g,maxJ,t?t.color:'#2b2b2b')}).join('')}</div></div>
+      <div class="card"><h3>Per akun</h3><div class="sub2">Total views per akun</div>
+        <div class="rows">${aks.map(g=>row(esc(g.k),g,maxA,'#2b2b2b')).join('')}</div></div>
+      <div class="card"><h3>Per brand tap-in</h3><div class="sub2">Cuma ${withBr.length} dari ${N} postingan yang BRAND TAP IN-nya keisi (maks. 8)</div>
+        <div class="rows">${brs.map(g=>row(`<span class="dot" style="display:inline-block;background:${brandColor(g.k)};margin-right:6px"></span>${esc(g.k)}`,g,maxB,brandColor(g.k))).join('')||'<div class="dv-empty" style="padding:8px">Belum ada brand yang keisi.</div>'}</div></div>
+      <div class="card wide"><h3>Top 10 konten</h3><div class="sub2">Views tertinggi · klik buat buka postingannya</div>
+        <div class="itop">${top.map((x,i)=>`<a class="itr" href="${esc(x.url)}" target="_blank" rel="noopener"><span class="rk">${i+1}</span><i class="pf ${x.pf}">${x.pf}</i><span class="tt"><b>${esc(x.ti)}</b><small>${fmtDate(x.d).replace(/ \d{4}$/,'')} · ${esc(x.ak)} · ${esc(x.j)}${x.br?' · '+esc(x.br):''}</small></span><span class="nv">${nfc(x.v)}<small>views · ER ${erTxt(erOf([x]))}</small></span></a>`).join('')}</div></div>
+    </div>
+    <div class="card"><h3>Semua postingan</h3><div class="sub2">${list.length} postingan · klik judul kolom buat ngurutin · klik baris buat buka postingannya</div>
+      <input class="isearch" id="insQ" placeholder="Cari judul…" value="${esc(F.q)}">
+      <div class="itbl-w"><table class="itbl"><thead><tr>${th('d','Tanggal')}<th>Platform</th>${th('ti','Judul')}<th>Akun</th><th>Jenis</th>${th('v','Views')}${th('l','Likes')}${th('c','Komen')}${th('sh','Share')}${th('sv','Saved')}${th('er','ER')}</tr></thead>
+      <tbody>${list.slice(0,F.n).map(x=>`<tr data-u="${esc(x.url)}"><td>${fmtDate(x.d).replace(/^\w+, /,'').replace(/ \d{4}$/,'')} ${x.tm}</td><td><i class="pf ${x.pf}">${x.pf}</i></td><td class="t">${esc(x.ti)}${x.br?`<small>${esc(x.br)}</small>`:''}</td><td>${esc(x.ak)}</td><td>${esc(x.j)}</td><td class="n">${nf(x.v)}</td><td class="n">${nf(x.l)}</td><td class="n">${nf(x.c)}</td><td class="n">${nf(x.sh)}</td><td class="n">${nf(x.sv)}</td><td class="n">${erTxt(x.er)}</td></tr>`).join('')}</tbody></table></div>
+      ${list.length>F.n?`<button class="imore" id="insMore">Tampilkan ${Math.min(30,list.length-F.n)} lagi</button>`:''}
+      <div class="sub2" style="margin:8px 0 0">Angka diisi otomatis ke tab INSIGHT; postingan yang baru di-upload bisa masih 0 sampai di-update lagi.</div></div>`}`;
+  const re=()=>drawIns(all,a,z);
+  iv.querySelectorAll('.td-per button[data-p]').forEach(b=>b.onclick=()=>{stPer=b.dataset.p;try{localStorage.setItem('sp-timeline-stper',stPer)}catch(e){};render()});
+  iv.querySelector('#insRe').onclick=()=>{iv.querySelector('#insRe').classList.add('spin');loadIns(a,z,true).then(r=>drawIns(r,a,z)).catch(e=>toast(String(e.message||e)))};
+  iv.querySelectorAll('.chip-f[data-fk]').forEach(el=>el.onclick=()=>{F[el.dataset.fk]=el.dataset.fv;F.n=30;re()});
+  iv.querySelectorAll('select[data-fk]').forEach(el=>el.onchange=()=>{F[el.dataset.fk]=el.value;F.n=30;re()});
+  iv.querySelectorAll('th[data-s]').forEach(el=>el.onclick=()=>{const k=el.dataset.s;if(F.sort===k)F.dir*=-1;else{F.sort=k;F.dir=k==='ti'?1:-1}re()});
+  iv.querySelectorAll('tr[data-u]').forEach(el=>el.onclick=()=>{if(el.dataset.u)window.open(el.dataset.u,'_blank','noopener')});
+  const qi=iv.querySelector('#insQ');if(qi)qi.oninput=()=>{F.q=qi.value;F.n=30;clearTimeout(INS.qt);INS.qt=setTimeout(()=>{re();const n=document.getElementById('insQ');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},250)};
+  const mo=iv.querySelector('#insMore');if(mo)mo.onclick=()=>{F.n+=30;re()};
+  tipOn(iv);
+}
+// insight 1 konten di form detail, dicocokin pakai POST ID
+async function fillInsSec(it){
+  const box=document.getElementById('insSec');if(!box)return;
+  const ids=PLAT.map(([c])=>[c,String(it['id'+c]||'').trim()]).filter(x=>x[1]);
+  const body=box.querySelector('.insb');
+  if(!ids.length){body.innerHTML='<span class="mut">Belum ada Post ID — isi Post ID di bagian Upload biar insight-nya nongol.</span>';return}
+  const t=new Date(it.date+'T00:00'),sh=n=>{const x=new Date(t);x.setDate(x.getDate()+n);return key(x.getFullYear(),x.getMonth(),x.getDate())};
+  try{
+    const rows=await loadIns(sh(-14),sh(30));
+    if(!document.body.contains(body))return;
+    body.innerHTML=`<div class="insg">${ids.map(([c,id])=>{const x=rows.find(r=>r.id===id);
+      return x?`<a class="insc" href="${esc(x.url)}" target="_blank" rel="noopener"><i class="pf ${c}">${c}</i><b>${nf(x.v)}</b><small>views</small><span>${nf(x.l)} likes · ${nf(x.c)} komen · ${nf(x.sh)} share · ${nf(x.sv)} saved</span><span class="mut">ER ${erTxt(erOf([x]))} · update ${esc(x.up||'-')}</span></a>`
+        :`<div class="insc none"><i class="pf ${c}">${c}</i><span class="mut">Post ID ${esc(id)} belum ada di INSIGHT</span></div>`}).join('')}</div>`;
+  }catch(e){body.innerHTML=`<span class="mut">⚠ ${esc(e.message||e)}</span>`}
+}
 function renderStat(){
   if(!dayK)dayK=todayKey;
   const [a,z]=stRange(),[ay,am,ad]=a.split('-').map(Number),[zy,zm,zd]=z.split('-').map(Number);
@@ -1012,15 +1159,20 @@ function render(){
   document.body.classList.toggle('v-week',view==='week');
   document.body.classList.toggle('v-todo',view==='todo');
   document.body.classList.toggle('v-stat',view==='stat');
+  document.body.classList.toggle('v-ins',view==='ins');
   document.getElementById('statView').hidden=view!=='stat';
+  document.getElementById('insView').hidden=view!=='ins';
   document.getElementById('todoView').hidden=view!=='todo';
   document.getElementById('dayView').hidden=view!=='day';
   document.getElementById('weekView').hidden=view!=='week';
-  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
+  const isCal=view==='cal'||view==='week'||view==='day';
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v==='cal'?isCal:b.dataset.v===view));
+  const cs=document.getElementById('calSub');cs.hidden=!isCal;cs.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
   if(view==='day')return renderDay();
   if(view==='week')return renderWeek();
   if(view==='todo')return renderTodo();
   if(view==='stat')return renderStat();
+  if(view==='ins')return renderIns();
   document.getElementById('monthLbl').textContent=`${BULAN[viewM]} ${viewY}`;
   renderFilters();
   const g=document.getElementById('grid');
@@ -1198,6 +1350,7 @@ function openForm(item,k){
       <span></span><span class="h">Jam up</span><span class="h">Status</span><span class="h pidh">Post ID</span>
       ${PLAT.map(([c,n])=>`<b title="${n}">${c}</b>${sel('jam'+c,'',OPT.jam,true)}${sel('st'+c,'',OPT.status,true)}<input class="pid" data-k="id${c}" value="${esc(cur['id'+c]||'')}" placeholder="Post ID ${c}" autocomplete="off">`).join('')}
     </div></div>
+    ${!isNew&&cur.src==='kk'&&(API||window.__INS)?'<div class="sec" id="insSec"><h3>Insight</h3><div class="insb"><span class="mut">Narik insight…</span></div></div>':''}
     <div class="sec"><h3>Lainnya</h3>
       <label for="fCat">Catatan</label><textarea id="fCat" data-k="catatan">${esc(cur.catatan||'')}</textarea>
       <label>Event ID</label><input data-k="eventId" value="${esc(cur.eventId||'')}" autocomplete="off">
@@ -1211,6 +1364,7 @@ function openForm(item,k){
       <button type="submit" class="primary">${isNew?'Tambah':'Simpan'}</button>
     </div>
    </form>`;
+  if(!isNew&&cur.src==='kk')fillInsSec(cur);
   const srcSeg=modal.querySelector('#srcSeg');
   if(srcSeg){const paintS=()=>srcSeg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.s===cur.src));
     srcSeg.querySelectorAll('button').forEach(b=>b.onclick=()=>{cur.src=b.dataset.s;paintS();const ev=modal.querySelector('[data-k=eventId]');if(ev)ev.readOnly=cur.src==='kk'});paintS();}
@@ -1315,8 +1469,9 @@ function cleanBody(){
 <div class="wrap">
   <header>
     <div class="ttl"><h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
-      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button><a class="tablink" href="invoice.html">Invoice ↗</a></nav></div>
+      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button><button data-v="ins">Insight</button><a class="tablink" href="invoice.html">Invoice ↗</a></nav></div>
     <div class="nav">
+      <span class="subtabs" id="calSub"><button data-v="cal">Bulanan</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button></span>
       <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
       <div class="month" id="monthLbl"></div>
       <button class="icon" id="next" aria-label="Bulan berikutnya">›</button>
@@ -1334,6 +1489,7 @@ function cleanBody(){
   <section class="dayview" id="dayView" hidden></section>
   <section class="dayview todoview" id="todoView" hidden></section>
   <section class="statview" id="statView" hidden></section>
+  <section class="statview" id="insView" hidden></section>
 </div>
 
 <div class="back" id="back">
@@ -1360,10 +1516,12 @@ function save(){
   },700);
 }
 
-document.getElementById('prev').onclick=()=>{if(view==='day')return shiftDay(-1);if(view==='week')return shiftWeek(-1);if(view==='todo')return shiftTodo(-1);if(view==='stat')return shiftStat(-1);viewM--;if(viewM<0){viewM=11;viewY--}navTo()};
-document.getElementById('next').onclick=()=>{if(view==='day')return shiftDay(1);if(view==='week')return shiftWeek(1);if(view==='todo')return shiftTodo(1);if(view==='stat')return shiftStat(1);viewM++;if(viewM>11){viewM=0;viewY++}navTo()};
-document.getElementById('todayBtn').onclick=()=>{if(view==='day'||view==='week'||view==='todo'||view==='stat')return goDay(todayKey);viewY=now.getFullYear();viewM=now.getMonth();navTo()};
-document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>setView(b.dataset.v));
+document.getElementById('prev').onclick=()=>{if(view==='day')return shiftDay(-1);if(view==='week')return shiftWeek(-1);if(view==='todo')return shiftTodo(-1);if(view==='stat'||view==='ins')return shiftStat(-1);viewM--;if(viewM<0){viewM=11;viewY--}navTo()};
+document.getElementById('next').onclick=()=>{if(view==='day')return shiftDay(1);if(view==='week')return shiftWeek(1);if(view==='todo')return shiftTodo(1);if(view==='stat'||view==='ins')return shiftStat(1);viewM++;if(viewM>11){viewM=0;viewY++}navTo()};
+document.getElementById('todayBtn').onclick=()=>{if(view==='day'||view==='week'||view==='todo'||view==='stat'||view==='ins')return goDay(todayKey);viewY=now.getFullYear();viewM=now.getMonth();navTo()};
+// tab Kalender = 1 tab, isinya Bulanan / Mingguan / Upload Harian (diinget pilihan terakhirnya)
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{let v=b.dataset.v;if(v==='cal'){let c='cal';try{c=localStorage.getItem('sp-timeline-calsub')||'cal'}catch(e){}v=['cal','week','day'].includes(c)?c:'cal'}setView(v)});
+document.querySelectorAll('#calSub button').forEach(b=>b.onclick=()=>{try{localStorage.setItem('sp-timeline-calsub',b.dataset.v)}catch(e){}setView(b.dataset.v)});
 // refresh garis "sekarang" tiap menit di menu Upload Harian
 setInterval(()=>{if(view==='day'&&!back.classList.contains('show'))render()},60000);
 addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(render,150)});
