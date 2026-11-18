@@ -1429,7 +1429,7 @@ function attachDrag(el,onDrop){
       document.body.classList.remove('dragging');ghost.remove();el.classList.remove('src');
       if(over)over.classList.remove('drop');
       justDragged=true;setTimeout(()=>justDragged=false,50);
-      if(onDrop){if(over)onDrop(over.dataset.k);return} // dari bank konten
+      if(typeof onDrop==='function'){if(over)onDrop(over.dataset.k);return} // dari bank konten (forEach ngirim index, jadi wajib cek function)
       const it=state.items.find(x=>x.id===id);
       if(over&&it&&over.dataset.k!==it.date){
         const from=it.date;it.date=over.dataset.k;
