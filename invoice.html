@@ -151,11 +151,8 @@
     <button class="btn ghost sm" id="addItem" style="color:var(--d)">+ Tambah item</button>
     <p class="hint">Harga boleh dikosongin kalau item itu satu paket sama item di atasnya.</p>
 
-    <h3>Pajak & potongan</h3>
-    <div class="row">
-      <div><label>Diskon (Rp)</label><input id="disc" inputmode="numeric" placeholder="0"></div>
-      <div><label>PPN</label><select id="ppn"><option value="0">Tanpa PPN</option><option value="11">PPN 11%</option><option value="12">PPN 12%</option></select></div>
-    </div>
+    <h3>Potongan</h3>
+    <label>Diskon (Rp)</label><input id="disc" inputmode="numeric" placeholder="0">
     <div class="total-box"><span>GRAND TOTAL</span><span id="gtForm">Rp 0</span></div>
 
     <h3>Tanda tangan</h3>
@@ -201,7 +198,7 @@ function commitRef(ref){
 }
 
 let st=LS.get('inv_draft',null);
-function blank(){return{ref:'',refAuto:true,date:today(),pic:'',brand:'',company:'',address:'',items:[{t:'',d:'',p:''}],disc:'',ppn:'0',showStamp:true,...LS.get('inv_settings',DEF)}}
+function blank(){return{ref:'',refAuto:true,date:today(),pic:'',brand:'',company:'',address:'',items:[{t:'',d:'',p:''}],disc:'',showStamp:true,...LS.get('inv_settings',DEF)}}
 if(!st)st=blank();
 if(st.refAuto||!st.ref)st.ref=nextRef(st.date);
 // data lama: "PT. X (Brand)" di satu kolom -> dipisah jadi brand + perusahaan
@@ -210,7 +207,7 @@ splitCo(st);{const cl=LS.get('inv_clients',[]);if(cl.some(c=>c.brand===undefined
 const coLine=o=>[o.company,o.brand&&(o.company?'('+o.brand+')':o.brand)].filter(Boolean).join(' ');
 const coShort=o=>o.brand||o.company||o.pic;
 
-const fields=['ref','date','pic','brand','company','address','disc','ppn','signer','bankName','bankAcc','npwp','contact'];
+const fields=['ref','date','pic','brand','company','address','disc','signer','bankName','bankAcc','npwp','contact'];
 function loadForm(){
   fields.forEach(f=>$(f).value=st[f]??'');
   $('showStamp').checked=st.showStamp!==false;
@@ -253,7 +250,6 @@ fields.forEach(f=>$(f).addEventListener('input',e=>{
   if(['signer','bankName','bankAcc','npwp','contact'].includes(f)){const s={};['signer','bankName','bankAcc','npwp','contact'].forEach(k=>s[k]=st[k]);LS.set('inv_settings',s)}
   render();
 }));
-$('ppn').addEventListener('change',e=>{st.ppn=e.target.value;render()});
 $('showStamp').onchange=e=>{st.showStamp=e.target.checked;render()};
 $('addItem').onclick=()=>{st.items.push({t:'',d:'',p:''});renderItems();render()};
 $('newBtn').onclick=()=>{const keep=st;st=blank();st.ref=nextRef(st.date);loadForm();toast('Invoice baru');};
@@ -261,8 +257,7 @@ $('newBtn').onclick=()=>{const keep=st;st=blank();st.ref=nextRef(st.date);loadFo
 function calc(){
   const sub=st.items.reduce((a,it)=>a+num(it.p),0);
   const disc=num(st.disc);const base=Math.max(0,sub-disc);
-  const tax=Math.round(base*(+st.ppn||0)/100);
-  return{sub,disc,base,tax,gt:base+tax};
+  return{sub,disc,base,gt:base}; // tanpa pajak (fitur PPN dihapus)
 }
 const IMG={header:'invoice-assets/header.jpg',stripe:'invoice-assets/stripe.png',thanks:'invoice-assets/thanks.png',stamp:'invoice-assets/stamp.png',sign:'invoice-assets/sign.png'};
 const MM=96/25.4, TOP1=110.3, TOPN=70, TBL_MAX=274, FOOT_MAX=272;
@@ -283,10 +278,9 @@ function newPage(first){
 const tblBottom=p=>{const t=p.querySelector('.tbl');return t.classList.contains('empty')?TOPN-8:parseFloat(t.style.top)+t.offsetHeight/MM};
 function tailHTML(c){
   let h='';
-  if(c.disc||c.tax){
+  if(c.disc){
     h+=`<div class="tr sub"><span>Subtotal</span><span>:</span><span>${rp(c.sub)}</span></div>`;
     if(c.disc)h+=`<div class="tr sub"><span>Diskon</span><span>:</span><span>- ${rp(c.disc)}</span></div>`;
-    if(c.tax)h+=`<div class="tr sub"><span>PPN ${esc(st.ppn)}%</span><span>:</span><span>${rp(c.tax)}</span></div>`;
   }
   return h+`<div class="tr"><span>GRAND TOTAL</span><span>:</span><span>${rp(c.gt)}</span></div>`;
 }
