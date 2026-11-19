@@ -261,7 +261,26 @@ function smoBrief_(ref, action) {
   if (cur && low.indexOf('gagal') !== 0) return { ok: true, brief: cur }; // udah antri / proses / jadi → biarin
   const v = 'antri · ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
   cell.setValue(v);
-  return { ok: true, brief: v };
+  SpreadsheetApp.flush();
+  return { ok: true, brief: v, fired: briefFire_() };
+}
+// Colek agent Content Writer biar langsung jalan (API trigger routine Claude).
+// Isi di Properti skrip: BRIEF_FIRE_URL (URL /fire dari claude.ai/code/routines) + BRIEF_FIRE_TOKEN (sk-ant-oat01-…).
+// Kosong → nggak nyolek, antrian tetap dikerjain run per jam. Jeda min. 2 menit antar colekan biar agent nggak jalan dobel.
+function briefFire_() {
+  const pr = PropertiesService.getScriptProperties(), url = pr.getProperty('BRIEF_FIRE_URL'), tok = pr.getProperty('BRIEF_FIRE_TOKEN');
+  if (!url || !tok) return 'off';
+  const cache = CacheService.getScriptCache();
+  if (cache.get('brief_fired')) return 'soon'; // baru dicolek, run itu bakal ngambil antrian ini juga / run berikutnya
+  try {
+    const r = UrlFetchApp.fetch(url, { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      headers: { Authorization: 'Bearer ' + tok, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'experimental-cc-routine-2026-04-01' },
+      payload: JSON.stringify({ text: 'Dipicu tombol Bikin Brief di TIMELINE KALENDER.' }) });
+    const code = r.getResponseCode();
+    if (code >= 200 && code < 300) { cache.put('brief_fired', '1', 120); return 'ok'; }
+    console.warn('briefFire_ HTTP ' + code + ': ' + r.getContentText().slice(0, 300));
+    return 'err';
+  } catch (err) { console.warn('briefFire_: ' + err); return 'err'; }
 }
 
 // ===================== TO-DO MANUAL (tab TODO) =====================

@@ -1181,7 +1181,7 @@ async function smoBriefReq(x,action,re){
   for(let i=0;i<30&&(busy||queue.length);i++)await new Promise(r=>setTimeout(r,500)); // tunggu status "ambil" kesimpen dulu
   const prev=x.brief;x.brief=action==='cancel'?'':'antri · …';x._briefBusy=true;re();
   try{const d=await apiPost({op:'smoBrief',ref:{row:x.row,title:x.title},action});x.brief=d.brief||'';x._briefBusy=false;re();
-    toast(action==='cancel'?'Permintaan brief dibatalin':`"${x.title}" masuk antrian brief — dikerjain agent di run berikutnya (maks ±1 jam)`)}
+    toast(action==='cancel'?'Permintaan brief dibatalin':d.fired==='ok'?`Agent dicolek — brief "${x.title}" lagi dikerjain (±10–20 menit)`:d.fired==='soon'?`"${x.title}" masuk antrian — agent baru aja dicolek, ikut dikerjain dalam beberapa menit`:`"${x.title}" masuk antrian brief — dikerjain agent di run berikutnya (maks ±1 jam)`)}
   catch(e){x._briefBusy=false;const m=String(e.message||e);
     if(/pin_wrong/.test(m)){savePin('');x.brief=prev;re();toast('PIN salah, coba lagi.');return}
     const bm=m.match(/brief_(?:busy|status): (.*)/);x.brief=prev;re();toast(bm?bm[1]:'Gagal minta brief: '+m.slice(0,90));if(bm)loadSmo(true).then(r=>{if(view==='smo')drawSmo(r)}).catch(()=>{})}

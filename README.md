@@ -82,3 +82,8 @@ Isi kolom Brief & tampilannya di kartu:
 - `gagal: <alasan>` → ⚠ Brief gagal + Coba lagi
 
 Butuh `SCRIPT_VER` ≥ 6 (Loader update sendiri ±1 jam, atau Run `updateSekarang`).
+
+### Langsung jalan (tanpa nunggu run per jam)
+1. claude.ai/code/routines → buka **Content Writer Shoe Police** → ✏ Edit → **Add another trigger** → **API** → **Generate token**. Salin URL `/fire` dan token-nya (token cuma muncul sekali).
+2. Apps Script → ⚙ Setelan project → Properti skrip → tambah `BRIEF_FIRE_URL` (URL tadi) dan `BRIEF_FIRE_TOKEN` (token tadi).
+3. Selesai. Klik Bikin Brief → agent langsung dicolek (jeda min. 2 menit antar colekan). Tanpa 2 properti itu, antrian tetap dikerjain run per jam.
