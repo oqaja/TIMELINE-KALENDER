@@ -25,7 +25,7 @@
  *              daftar '<nama>_hapus' = pilihan yang disembunyiin, mis. tim_hapus = orang yang dihapus dari daftar)
  */
 const TZ = 'Asia/Jakarta';
-const SCRIPT_VER = 5; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
+const SCRIPT_VER = 6; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
 const JENIS = { carousel: 'Desain', short: 'Video Pendek', long: 'Video Panjang', story: 'Story' };
 
 // key di kalender  ->  nama header di sheet
@@ -190,10 +190,10 @@ function readBankUsed_() {
 }
 
 // ===================== IDE KONTEN SMO (DASHBOARD KULTURAMA, diisi agent riset) =====================
-// dibaca semua kolomnya; dari web cuma kolom Status yang diubah
+// dibaca semua kolomnya; dari web cuma kolom Status & kolom Brief (minta brief) yang diubah
 const SMO_TAB = 'Ide Konten SMO';
 const SMO_COLS = { date: 'Tanggal', title: 'Judul', angle: 'Angle/POV', trigger: 'Pemicu', research: 'Bahan Riset', flow: 'Alur Isi',
-  hook: 'Hook', format: 'Format', urgency: 'Urgensi', sources: 'Sumber', status: 'Status' };
+  hook: 'Hook', format: 'Format', urgency: 'Urgensi', sources: 'Sumber', status: 'Status', brief: 'Brief' };
 function smoSheet_() { const sh = kkBook_().getSheetByName(SMO_TAB); if (!sh) throw new Error('Tab "' + SMO_TAB + '" nggak ketemu'); return sh; }
 function smoCols_(sh) {
   const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0].map(function (h) { return String(h).trim().toLowerCase(); }), c = {};
@@ -212,7 +212,7 @@ function smoRead_(from) {
     const d = c.date == null ? '' : (date_(raw[i][c.date]) || date_(disp[i][c.date]) || '');
     if (from && d && d < from) continue;
     out.push({ row: i + 2, date: d, title: title, angle: g('angle'), trigger: g('trigger'), research: g('research'), flow: g('flow'),
-      hook: g('hook'), format: g('format'), urgency: g('urgency'), sources: g('sources'), status: g('status') });
+      hook: g('hook'), format: g('format'), urgency: g('urgency'), sources: g('sources'), status: g('status'), brief: g('brief') });
   }
   return out;
 }
@@ -228,6 +228,38 @@ function smoStatus_(ref, status) {
     if (!row) throw new Error('notfound: ide "' + ref.title + '" nggak ketemu di ' + SMO_TAB);
   }
   sh.getRange(row, c.status + 1).setValue(status || '');
+}
+// cari baris ide (pakai nomor baris, kalau geser cari pakai judul)
+function smoFindRow_(sh, c, ref) {
+  let row = Number(ref && ref.row) || 0;
+  const titleAt = function (r) { return r >= 2 && r <= sh.getLastRow() ? String(sh.getRange(r, c.title + 1).getDisplayValue()).trim() : ''; };
+  if (titleAt(row) === String(ref.title || '').trim()) return row;
+  const t = sh.getRange(2, c.title + 1, Math.max(1, sh.getLastRow() - 1), 1).getDisplayValues();
+  for (let i = 0; i < t.length; i++) if (String(t[i][0]).trim() === String(ref.title || '').trim()) return i + 2;
+  throw new Error('notfound: ide "' + ref.title + '" nggak ketemu di ' + SMO_TAB);
+}
+// Tombol "Bikin Brief": nulis "antri · <waktu>" di kolom Brief (L). Agent Content Writer cuma ngerjain baris "antri".
+// Isi kolom Brief: kosong | antri · … | proses · … | gagal: … | <link brief> — <Jenis>
+function smoBrief_(ref, action) {
+  const sh = smoSheet_(), c = smoCols_(sh);
+  if (c.brief == null) { // kolom Brief belum ada → pakai kolom L
+    const L = 12, h = String(sh.getRange(1, L).getDisplayValue()).trim();
+    if (h && h.toLowerCase() !== 'brief') throw new Error('Kolom L di ' + SMO_TAB + ' udah dipakai "' + h + '", bukan Brief');
+    sh.getRange(1, L).setValue('Brief');
+    c.brief = L - 1;
+  }
+  const row = smoFindRow_(sh, c, ref), cell = sh.getRange(row, c.brief + 1), cur = String(cell.getDisplayValue()).trim(), low = cur.toLowerCase();
+  if (action === 'cancel') {
+    if (low.indexOf('antri') !== 0) return { ok: false, error: 'brief_busy: brief udah nggak di antrian (' + (cur || 'kosong') + ')', brief: cur };
+    cell.setValue('');
+    return { ok: true, brief: '' };
+  }
+  const st = c.status == null ? '' : String(sh.getRange(row, c.status + 1).getDisplayValue()).trim().toLowerCase();
+  if (st !== 'ambil' && st !== 'bank') return { ok: false, error: 'brief_status: ide ini belum "ambil"', brief: cur };
+  if (cur && low.indexOf('gagal') !== 0) return { ok: true, brief: cur }; // udah antri / proses / jadi → biarin
+  const v = 'antri · ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
+  cell.setValue(v);
+  return { ok: true, brief: v };
 }
 
 // ===================== TO-DO MANUAL (tab TODO) =====================
@@ -723,6 +755,7 @@ function runOp_(op) {
   else if (op.op === 'bankDelete') bankDelete_(op.id);
   else if (op.op === 'bankUse') bankUse_(op);
   else if (op.op === 'smoStatus') smoStatus_(op.ref, op.status);
+  else if (op.op === 'smoBrief') return smoBrief_(op.ref, op.action);
   else if (op.op === 'kkAdd') {
     if (op.dedupe) { // dikirim ulang setelah app ditutup: jangan bikin baris dobel kalau ternyata udah masuk
       const sh = kkSheet_(), row = kkFind_(sh, kkCols_(sh), { title: op.item && op.item.title, date: op.item && op.item.date });

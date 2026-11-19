@@ -240,7 +240,7 @@ body.v-smo #prev,body.v-smo #next,body.v-smo #todayBtn{display:none}
 .smo-d h5{margin:0 0 4px;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}.smo-d p{margin:0;font-size:13px;line-height:1.5;white-space:pre-wrap}
 .smo-src{margin:0;padding-left:18px;font-size:12.5px}.smo-src a{color:inherit;word-break:break-all}
 .smo-a{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.smo-a .sp{flex:1}.smo-a button{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
-.smo-a button.primary{background:#111;color:#fff;border-color:#111}.smo-a button.lnk{border:0;background:none;padding:6px 0;color:var(--muted);text-decoration:underline}
+.smo-a button.primary{background:#111;color:#fff;border-color:#111}.smo-a .brf{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:99px;background:#f1f0ea;color:#555;text-decoration:none}.smo-a .brf.q{background:#fff3dc;color:#8a5200}.smo-a .brf.p{background:#e6effd;color:#1d4ea3}.smo-a .brf.ok{background:#111;color:#fff}.smo-a .brf.err{background:#ffe7e1;color:#a3290f}.smo-a button.brief{background:#ffc131;border-color:#ffc131;color:#111}.smo-a button.lnk{border:0;background:none;padding:6px 0;color:var(--muted);text-decoration:underline}
 #smoRe{border:0;background:transparent;font-size:16px;cursor:pointer}#smoRe.spin{animation:spin 1s linear infinite}
 @media(max-width:900px){.sidecol{width:100%;position:static}.bk-list{max-height:none;flex-direction:row;flex-wrap:wrap}.bk-it{flex:1 1 220px}.smo-g{grid-template-columns:1fr}}
 .ihr .nm i.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
@@ -1170,6 +1170,29 @@ function smoSetStatus(x,st){
   x.status=st;
   if(API){queue.push({op:'smoStatus',ref:{row:x.row,title:x.title},status:st});flush()}
 }
+// kolom Brief (L): kosong | antri · … | proses · … | gagal: … | <link brief> — <Jenis>
+function smoBriefSt(b){b=String(b||'').trim();const l=b.toLowerCase();
+  if(!b)return{k:'none'};if(l.startsWith('antri'))return{k:'q',t:b};if(l.startsWith('proses'))return{k:'p',t:b};if(l.startsWith('gagal'))return{k:'err',t:b.replace(/^gagal:?\s*/i,'')};
+  const m=b.match(/https?:\/\/\S+/);if(m)return{k:'ok',url:m[0],jenis:(b.split(/\s+[—-]\s+/)[1]||'').trim()};return{k:'other',t:b}}
+async function smoBriefReq(x,action,re){
+  if(!API){toast('Belum nyambung ke Sheet');return}
+  if(scriptVer&&scriptVer<6){toast('Script belum versi terbaru — jalanin updateSekarang di Apps Script.');return}
+  if(!PIN){askPin(v=>{savePin(v);smoBriefReq(x,action,re)});return}
+  for(let i=0;i<30&&(busy||queue.length);i++)await new Promise(r=>setTimeout(r,500)); // tunggu status "ambil" kesimpen dulu
+  const prev=x.brief;x.brief=action==='cancel'?'':'antri · …';x._briefBusy=true;re();
+  try{const d=await apiPost({op:'smoBrief',ref:{row:x.row,title:x.title},action});x.brief=d.brief||'';x._briefBusy=false;re();
+    toast(action==='cancel'?'Permintaan brief dibatalin':`"${x.title}" masuk antrian brief — dikerjain agent di run berikutnya (maks ±1 jam)`)}
+  catch(e){x._briefBusy=false;const m=String(e.message||e);
+    if(/pin_wrong/.test(m)){savePin('');x.brief=prev;re();toast('PIN salah, coba lagi.');return}
+    const bm=m.match(/brief_(?:busy|status): (.*)/);x.brief=prev;re();toast(bm?bm[1]:'Gagal minta brief: '+m.slice(0,90));if(bm)loadSmo(true).then(r=>{if(view==='smo')drawSmo(r)}).catch(()=>{})}
+}
+function smoBriefUi(x){const b=smoBriefSt(x.brief);
+  if(b.k==='ok')return `<a class="brf ok" href="${esc(b.url)}" target="_blank" rel="noopener">📄 Lihat brief${b.jenis?' · '+esc(b.jenis):''} ↗</a>`;
+  if(b.k==='q')return `<span class="brf q" title="${esc(b.t)}">⏳ Antri brief</span>${x._briefBusy?'':'<button class="lnk" data-a="briefCancel">Batal</button>'}`;
+  if(b.k==='p')return `<span class="brf p" title="${esc(b.t)}">✍️ Lagi dibikin…</span>`;
+  if(b.k==='err')return `<span class="brf err" title="${esc(b.t)}">⚠ Brief gagal</span><button class="brief" data-a="brief">Coba lagi</button>`;
+  if(b.k==='other')return `<span class="brf" title="${esc(b.t)}">${esc(b.t.slice(0,40))}</span>`;
+  return `<button class="brief" data-a="brief">📝 Bikin Brief</button>`}
 function drawSmo(all){
   const v=document.getElementById('smoView'),F=SMO.f;
   const uniq=k=>[...new Set(all.map(x=>x[k]).filter(Boolean))];
@@ -1187,7 +1210,7 @@ function drawSmo(all){
       ${op?`<div class="smo-d">${[['Angle / POV',x.angle],['Pemicu',x.trigger],['Alur isi',x.flow],['Bahan riset',x.research]].filter(y=>y[1]).map(([h,tx])=>`<div><h5>${h}</h5><p>${esc(tx)}</p></div>`).join('')}
         ${src.length?`<div><h5>Sumber</h5><ol class="smo-src">${src.map(u=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\/(www\.)?/,'').slice(0,70))}</a></li>`).join('')}</ol></div>`:''}</div>`:''}
       <div class="smo-a"><button class="lnk" data-a="open">${op?'Tutup detail':'Lihat detail'}</button><span class="sp"></span>
-        ${st==='baru'?`<button data-a="skip">Skip</button><button class="primary" data-a="bank">＋ Masukin bank konten</button>`:`<button data-a="reset">Balikin ke Baru</button>`}</div></div>`};
+        ${st==='baru'?`<button data-a="skip">Skip</button><button class="primary" data-a="bank">＋ Masukin bank konten</button>`:st==='ambil'?`${smoBriefSt(x.brief).k==='none'?'<button data-a="reset">Balikin ke Baru</button>':''}${smoBriefUi(x)}`:`<button data-a="reset">Balikin ke Baru</button>`}</div></div>`};
   v.innerHTML=`<div class="dv-top"><h2>Ide Konten SMO<small>Saran konten dari agent riset · masukin ke bank konten biar bisa dipakai kapan aja</small></h2><button id="smoRe" title="Tarik ulang">⟳</button></div>
     <div class="insf-bar">
       <span class="grp">${chip('st','baru',`Baru <b>${cnt('baru')}</b>`)}${chip('st','ambil',`Masuk bank <b>${cnt('ambil')}</b>`)}${chip('st','skip',`Skip <b>${cnt('skip')}</b>`)}${chip('st','','Semua')}</span>
@@ -1207,6 +1230,8 @@ function drawSmo(all){
     el.querySelector('.smo-h').onclick=()=>{SMO.open[k]=!SMO.open[k];re()};
     el.querySelectorAll('[data-a]').forEach(bt=>bt.onclick=e=>{e.stopPropagation();const a=bt.dataset.a;
       if(a==='open'){SMO.open[k]=!SMO.open[k];re();return}
+      if(a==='brief'){smoBriefReq(x,'req',re);return}
+      if(a==='briefCancel'){smoBriefReq(x,'cancel',re);return}
       if(API&&scriptVer&&scriptVer<5){toast('Script belum versi terbaru — jalanin updateSekarang di Apps Script.');return}
       if(a==='bank'){const t=smoType(x.format),b={id:newId(),title:x.title,type:t,segmen:smoSeg(x.format),akun:'',brand:'',catatan:smoBankText(x),from:'Ide SMO '+(x.date?fmtDate(x.date).replace(/^\w+, /,''):'')};
         if(!state.bank)state.bank=[];state.bank.unshift(b);bankSave(b);smoSetStatus(x,'ambil');re();

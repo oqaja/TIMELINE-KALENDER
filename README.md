@@ -69,3 +69,16 @@ Setup sekali:
 - Butuh update saat itu juga? Run **updateSekarang**.
 - GitHub down → dipakai salinan terakhir (disimpan di Properti skrip `LOADER_SRC_*`; jangan dihapus).
 - Fitur baru yang butuh izin Google jenis baru (Gmail, Calendar, Drive tulis, dll) harus ada pemanggilannya di `Loader.gs` (lihat `izinDriveTulis_`), lalu Run **izinSemua** + Deploy versi baru. Google nentuin izin dari kode yang kelihatan di Apps Script, bukan dari kode yang diambil dari GitHub.
+
+## Tombol "Bikin Brief" (tab Ide SMO)
+
+Ide yang udah **Masuk bank** (Status `ambil`) punya tombol **📝 Bikin Brief**. Klik → Apps Script nulis `antri · <waktu>` di kolom **L "Brief"** tab *Ide Konten SMO*. Scheduled task **Content Writer Shoe Police** (tiap jam, 07.07–22.07 WIB) cuma ngerjain baris yang `antri`.
+
+Isi kolom Brief & tampilannya di kartu:
+- kosong → 📝 Bikin Brief
+- `antri · …` → ⏳ Antri brief (masih bisa **Batal**)
+- `proses · …` → ✍️ Lagi dibikin…
+- `<link doc> — <Jenis>` → 📄 Lihat brief ↗
+- `gagal: <alasan>` → ⚠ Brief gagal + Coba lagi
+
+Butuh `SCRIPT_VER` ≥ 6 (Loader update sendiri ±1 jam, atau Run `updateSekarang`).
