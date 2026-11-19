@@ -249,6 +249,8 @@ function smoBrief_(ref, action) {
     c.brief = L - 1;
   }
   const row = smoFindRow_(sh, c, ref), cell = sh.getRange(row, c.brief + 1), cur = String(cell.getDisplayValue()).trim(), low = cur.toLowerCase();
+  // kolom Brief teks bebas: buang dropdown yang kebawa dari kolom Status (bikin setValue ditolak)
+  if (cell.getDataValidation()) cell.clearDataValidations();
   if (action === 'cancel') {
     if (low.indexOf('antri') !== 0) return { ok: false, error: 'brief_busy: brief udah nggak di antrian (' + (cur || 'kosong') + ')', brief: cur };
     cell.setValue('');
