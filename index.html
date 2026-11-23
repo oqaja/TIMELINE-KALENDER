@@ -30,10 +30,8 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body)
 .bi.brand:hover .ed{opacity:1}
 .side .none{font-size:13px;color:var(--muted);padding:4px 6px}
 @media(max-width:900px){.main{flex-direction:column;align-items:stretch}.side{width:100%;position:static}.bi .ed{opacity:1}}
-header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px}
 h1{font-family:var(--head);font-weight:800;font-size:20px;letter-spacing:.5px;margin:0;text-transform:uppercase}
 h1 small{display:block;font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0}
-.nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .nav .month{font-family:var(--head);font-weight:700;font-size:18px;min-width:170px;text-align:center;text-transform:uppercase}
 button{font-family:var(--body);cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 12px;font-size:14px;font-weight:600}
 button:hover{border-color:#bbb}
@@ -141,21 +139,38 @@ textarea{width:100%;font-family:var(--body);font-size:15px;padding:10px 12px;bor
 .pl:hover{background:#f1f0ec}
 .pl.on{color:#fff}.pl.all.on{background:#111}
 .pl.on{background:#111}.pl.none{font-weight:700}
-.ttl{display:flex;flex-direction:column;gap:8px;min-width:0;max-width:100%}
-.tabs{display:inline-flex;background:#e9e7e1;border-radius:10px;padding:3px;gap:2px;align-self:flex-start}
-.tabs button{border:0;background:transparent;padding:6px 12px;font-size:13px;border-radius:8px;color:#555}
-.tabs a.tablink{padding:6px 12px;font-size:13px;font-weight:600;border-radius:8px;color:#555;text-decoration:none;white-space:nowrap;flex:none;display:inline-flex;align-items:center}
-.tabs a.tablink:hover{color:var(--ink)}
-.tabs{max-width:100%;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tabs button{white-space:nowrap;flex:none}
-.tabs button.on{background:#fff;color:#111;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+header.top{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.brand{display:flex;align-items:center;gap:8px;flex:none}.brand b{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#111;color:#ffc131;font:800 13px/1 var(--head);letter-spacing:.5px}
+.brand span{font:800 14px/1.05 var(--head);text-transform:uppercase;letter-spacing:.3px}.brand em{display:block;font-style:normal;color:var(--muted);font-weight:700}
+.tabs{display:flex;gap:2px;background:#e9e7e1;border-radius:12px;padding:3px}
+.tabs button,.tabs a.tablink{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;padding:7px 14px;font:inherit;font-size:13.5px;font-weight:700;border-radius:9px;color:#5b5a55;text-decoration:none;white-space:nowrap;cursor:pointer;min-height:38px}
+.tabs svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.tabs button.on{background:#fff;color:#111;box-shadow:0 1px 2px rgba(0,0,0,.12)}.tabs button:hover,.tabs a.tablink:hover{color:#111}
+.acts{display:flex;gap:6px;margin-left:auto}#syncBtn{position:relative}
+#syncDot{position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:99px;background:#9aa;box-shadow:0 0 0 2px var(--card,#fff)}#syncDot.ok{background:#2fa84f}#syncDot.err{background:#e0452b}#syncDot.busy{background:#f0a400}
+.nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.dnav{display:flex;align-items:center;gap:6px;margin-left:auto}
+.nav .subtabs:empty{display:none}
+body.v-smo .dnav{display:none}
+.bar .status{font-size:11.5px}
+.fab{display:none}
+.dvact{display:flex;align-items:center;gap:6px;margin-left:auto}.dvact .pelb{margin-left:0}
+@media(max-width:700px){
+  body{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+  header.top{margin-bottom:8px;gap:10px}.brand b{width:30px;height:30px;font-size:12px}.brand span{font-size:13px}
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;border-radius:0;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border-top:1px solid var(--line);gap:0;justify-content:space-around}
+  .tabs button,.tabs a.tablink{flex:1;flex-direction:column;gap:3px;padding:6px 2px;font-size:11px;min-height:52px;justify-content:center;border-radius:10px}
+  .tabs svg{width:22px;height:22px}.tabs button.on{background:#111;color:#fff;box-shadow:none}
+  .nav{gap:6px}.nav .subtabs{width:100%}.nav .subtabs button{flex:1;padding:8px 6px;min-height:38px}
+  .dnav{width:100%;margin-left:0}.dnav .month{flex:1;min-width:0;font-size:15px}
+  .bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -10px 10px;padding:0 10px}.bar::-webkit-scrollbar{display:none}.bar>*{flex:none}
+  .bar .status{display:none}body .dv-top h2 small{display:none}body .dv-top h2{min-width:0;font-size:16px}.bar .plats{flex-wrap:nowrap;white-space:nowrap}.bar .plats .pl{white-space:nowrap}
+  .fab{display:grid;place-items:center;position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:41;width:56px;height:56px;border-radius:18px;border:0;background:#111;color:#ffc131;font:700 30px/1 var(--head);box-shadow:0 8px 20px rgba(0,0,0,.25);cursor:pointer}.fab[hidden]{display:none}
+}
 .subtabs{display:inline-flex;background:#e9e7e1;border-radius:10px;padding:3px;gap:2px}.subtabs[hidden]{display:none!important}
 .subtabs button{border:0;background:transparent;padding:6px 10px;font-size:13px;border-radius:8px;color:#555;white-space:nowrap}
 .subtabs button.on{background:#fff;color:#111;box-shadow:0 1px 2px rgba(0,0,0,.12)}
-@media(max-width:700px){.subtabs{width:100%}.subtabs button{flex:1}}
 body.v-day .main,body.v-week .main,body.v-todo .main,body.v-stat .main,body.v-ins .main,body.v-smo .main{display:none}
-body.v-smo #prev,body.v-smo #next,body.v-smo #todayBtn{display:none}
-body.v-map .main{display:none}
-body.v-map #prev,body.v-map #next,body.v-map #todayBtn{display:none}
 .statview{display:flex;flex-direction:column;gap:12px}
 .st-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .st-top h2{font-family:var(--head);font-size:18px;margin:0;text-transform:uppercase;flex:1;min-width:220px}
@@ -304,41 +319,8 @@ svg.off .pp-n{font:700 12px inherit;fill:#2b2b2b;text-anchor:middle;paint-order:
 svg.off .pp-c{font:800 10px inherit;fill:#fff;text-anchor:middle;pointer-events:none}
 svg.off .pp.carry>circle:first-child{stroke:#ffd34d;stroke-width:5}
 svg.off .fx-t{font:700 12.5px inherit;fill:#fff;text-anchor:middle}
-.map-leg{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5}
-.iso-wrap{background:radial-gradient(ellipse at 50% 40%,#f7f3ea,#e7e0d0);border:3px solid #2b2b2b;border-radius:18px;overflow:auto;max-height:80vh;-webkit-overflow-scrolling:touch}
-canvas.iso{display:block;margin:0 auto}
-.camb{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.camb .cg{display:inline-flex;background:#ece9e1;border-radius:9px;padding:2px;gap:2px}
-.camb .cg button{border:0;background:transparent;border-radius:7px;padding:6px 10px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;min-width:34px}.camb .cg button.on{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.12)}.camb .cg button:hover{background:#fff}
-.msheet{position:fixed;z-index:70;right:0;top:0;bottom:0;width:400px;max-width:100%;transform:translateX(105%);transition:transform .22s ease;pointer-events:none}
-.msheet.show{transform:none;pointer-events:auto}
-.ms-in{height:100%;background:#fffdf7;border-left:3px solid #2b2b2b;box-shadow:-8px 0 30px rgba(0,0,0,.15);display:flex;flex-direction:column;padding:18px 16px 12px;position:relative}
-.ms-grab{display:none}.ms-x{position:absolute;right:12px;top:12px;border:0;background:#eee;border-radius:50%;width:32px;height:32px;font-size:14px;cursor:pointer}
-.ms-h{display:flex;align-items:center;gap:12px;padding-right:36px}.ms-h h3{margin:0;font-size:20px}.ms-room{font-size:12.5px;color:var(--muted);margin-top:2px}
-.ms-av{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px;flex:none;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)}.ms-av.rm{border-radius:14px;font-size:26px;border:3px solid #2b2b2b;box-shadow:none}
-.ms-ring{--p:0;margin-left:auto;width:54px;height:54px;border-radius:50%;background:conic-gradient(#12a150 calc(var(--p)*1%),#e8e5dc 0);display:flex;align-items:center;justify-content:center;flex:none}
-.ms-ring span{width:42px;height:42px;border-radius:50%;background:#fffdf7;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
-.ms-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:14px 0 10px}.ms-stats div{background:#f3f1ea;border-radius:10px;padding:8px 6px;text-align:center}
-.ms-stats b{display:block;font-size:20px;line-height:1.1}.ms-stats small{font-size:10.5px;color:var(--muted)}.ms-stats .bad{background:#ffe6e1}.ms-stats .bad b{color:#c0392b}
-.ms-tabs{display:flex;background:#ece9e1;border-radius:10px;padding:3px;gap:2px;margin-bottom:10px}.ms-tabs button{flex:1;border:0;background:transparent;border-radius:8px;padding:7px 6px;font:inherit;font-size:13px;font-weight:700;color:#666;cursor:pointer}
-.ms-tabs button.on{background:#fff;color:#111;box-shadow:0 1px 2px rgba(0,0,0,.12)}.ms-tabs button span{font-weight:500;color:var(--muted);margin-left:2px}
-.ms-list{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:2px 2px 8px}
-.ms-sub{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-top:8px}
-.mt{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 10px 10px 12px;cursor:pointer;transition:transform .15s,box-shadow .15s,opacity .2s}
-.mt:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.08)}.mt.wait{background:#faf8f2}.mt.done{opacity:.6}.mt.done b{text-decoration:line-through}
-.mt.pop{transform:scale(.97);opacity:.4}
-.mt-ck{width:28px;height:28px;flex:none;border-radius:9px;border:2px solid #bbb;background:#fff;font-weight:900;color:#fff;cursor:pointer;font-size:15px}
-.mt-ck:hover{border-color:#12a150;background:#eafaf0}.mt.done .mt-ck{background:#12a150;border-color:#12a150}
-.mt-b{flex:1;min-width:0}.mt-b b{display:block;font-size:13.5px;line-height:1.3;margin:3px 0 2px}.mt-b small{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:5px;flex-wrap:wrap}.mt-b small i{width:8px;height:8px;border-radius:3px;display:inline-block}
-.mt-top{display:flex;align-items:center;gap:6px}.mt-role{color:#fff;font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 7px}
-.mt-due{font-size:11px;font-weight:700;color:#666;background:#f1efe8;border-radius:6px;padding:2px 7px}.mt-due.late{background:#ffe1db;color:#b02a17}.mt-due.today{background:#fff1c2;color:#7a5a00}.mt-due.soon{background:#e5efff;color:#1d3f8f}
-.mt-who{margin-left:auto;width:24px;height:24px;border-radius:50%;color:#fff;font-size:10px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
-.mt-who.big{width:40px;height:40px;font-size:13px;margin:0;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}.mt-who i{position:absolute;right:-5px;top:-5px;background:#111;color:#fff;font-style:normal;font-size:9.5px;border-radius:99px;min-width:16px;height:16px;line-height:16px;text-align:center}
-.ms-ppl{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
-.mt-go{color:#bbb;font-size:22px;font-weight:300}
-.ms-empty{text-align:center;color:var(--muted);padding:30px 10px;font-size:13px}.ms-foot{font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px}
 svg.off .pp .ring{stroke:#111;stroke-width:3;opacity:0}svg.off .pp.sel .ring{opacity:1;stroke-dasharray:6 5;animation:spin 6s linear infinite;transform-box:fill-box;transform-origin:center}
 svg.off .rm-t.sm{font-size:15px}
-@media(max-width:700px){.msheet{left:0;right:0;top:auto;bottom:0;width:auto;height:82vh;transform:translateY(105%)}
   .ms-in{border-left:0;border-top:3px solid #2b2b2b;border-radius:20px 20px 0 0;padding-top:22px}.ms-grab{display:block;position:absolute;top:8px;left:50%;width:44px;height:5px;border-radius:9px;background:#ccc;transform:translateX(-50%)}
   .off-wrap{padding:5px;border-radius:14px}}
 .rmc{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12.5px;cursor:pointer}
@@ -488,19 +470,15 @@ svg.off .rm-t.sm{font-size:15px}
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div class="ttl"><h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
-      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="map">Kantor</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button><button data-v="ins">Insight</button><button data-v="smo">Ide SP</button><button data-v="nsp">Ide NSP</button><a class="tablink" href="invoice.html">Invoice ↗</a></nav></div>
-    <div class="nav">
-      <span class="subtabs" id="calSub"><button data-v="cal">Bulanan</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button></span>
-      <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
-      <div class="month" id="monthLbl"></div>
-      <button class="icon" id="next" aria-label="Bulan berikutnya">›</button>
-      <button id="todayBtn">Hari ini</button>
-      <button class="icon" id="syncBtn" title="Tarik data terbaru dari Sheet">⟳</button>
-      <button class="icon" id="sheetBtn" title="Sambungan Google Sheet">⚙</button>
-    </div>
+  <header class="top">
+    <div class="brand"><b>SP</b><span>Timeline<em>Konten</em></span></div>
+    <nav class="tabs" id="tabs"><button data-g="cal"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Kalender</span></button><button data-g="ide"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1.1 1.3 1.1 2.2h5c0-.9.5-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg><span>Ide</span></button><button data-g="tim"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg><span>To-do</span></button><button data-g="data"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg><span>Data</span></button><a class="tablink" href="invoice.html"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span>Invoice</span></a></nav>
+    <div class="acts"><button class="icon" id="syncBtn" title="Tarik data terbaru dari Sheet">⟳<em id="syncDot"></em></button><button class="icon" id="sheetBtn" title="Sambungan Google Sheet">⚙</button></div>
   </header>
+  <div class="nav">
+      <span class="subtabs" id="calSub"></span>
+      <div class="dnav"><button class="icon" id="prev" aria-label="Sebelumnya">‹</button><div class="month" id="monthLbl"></div><button class="icon" id="next" aria-label="Berikutnya">›</button><button id="todayBtn">Hari ini</button></div>
+  </div>
   <div class="bar" id="filters"></div>
   <div class="main">
     <div class="grid" id="grid"></div>
@@ -512,7 +490,6 @@ svg.off .rm-t.sm{font-size:15px}
   <section class="statview" id="statView" hidden></section>
   <section class="statview" id="insView" hidden></section>
   <section class="statview" id="smoView" hidden></section>
-  <section class="statview" id="mapView" hidden></section>
 </div>
 
 <div class="back" id="back">
@@ -690,7 +667,7 @@ const colorOf=it=>mode==='brand'?brandColor(it.brand):(T[it.type]||TYPES[0]).col
 
 let artifact=null, canPublish=false;
 const statusEl=()=>document.getElementById('status');
-function setStatus(t){const s=statusEl();if(s)s.textContent=t}
+function setStatus(t){const s=statusEl();if(s)s.textContent=t;syncDot()}
 
 // fallback: browser-only storage when the page can't save itself
 // Outside Claude (e.g. GitHub Pages) the browser copy is the source of truth.
@@ -828,6 +805,7 @@ function navTo(){setRange();render();const mf=`${viewY}-${String(viewM+1).padSta
 setRange();
 const hidden=new Set();let hidePv=false;
 let view='cal';try{view=localStorage.getItem('sp-timeline-view')||'cal'}catch(e){}
+if(!['cal','week','day','todo','stat','ins','smo','nsp'].includes(view))view=view==='map'?'todo':'cal';
 let dayK=null; // tanggal di menu Upload Harian (default: hari ini)
 
 const pad=n=>String(n).padStart(2,'0');
@@ -929,7 +907,7 @@ function goDay(k){dayK=k;const [y,m]=k.split('-').map(Number);
   if(y!==viewY||m-1!==viewM){viewY=y;viewM=m-1;navTo()}else render()}
 function shiftDay(n){const [y,m,d]=(dayK||todayKey).split('-').map(Number);const t=new Date(y,m-1,d+n);goDay(key(t.getFullYear(),t.getMonth(),t.getDate()))}
 function setView(v){view=v;try{localStorage.setItem('sp-timeline-view',v)}catch(e){}
-  if(v==='day'||v==='week'||v==='todo'||v==='stat'||v==='ins'||v==='smo'||v==='nsp'||v==='map'){goDay(dayK||todayKey)}else render()}
+  if(v==='day'||v==='week'||v==='todo'||v==='stat'||v==='ins'||v==='smo'||v==='nsp'){goDay(dayK||todayKey)}else render()}
 const mondayOf=k=>{const [y,m,d]=k.split('-').map(Number);const t=new Date(y,m-1,d);t.setDate(t.getDate()-((t.getDay()+6)%7));return t};
 function renderWeek(){
   if(!dayK)dayK=todayKey;
@@ -1485,7 +1463,7 @@ function drawSmo(all){
       ${st==='skip'&&SMO.why&&SMO.why[x.row+'|'+x.title]?(SMO.why[x.row+'|'+x.title]==='done'?'<div class="skw done">✓ Dicatet buat pelajaran agent</div>':`<div class="skw"><span>Kenapa di-skip? <i>(opsional, biar agent belajar)</i></span>${SKIP_WHY.map(r=>`<button data-a="why" data-w="${esc(r)}">${esc(r)}</button>`).join('')}</div>`):''}
       <div class="smo-a"><button class="lnk" data-a="open">${op?'Tutup detail':'Lihat detail'}</button><span class="sp"></span>
         ${st==='baru'?`<button data-a="skip">Skip</button><button class="primary" data-a="bank">＋ Masukin bank konten</button>`:st==='ambil'?(I.brief?`${smoBriefSt(x.brief).k==='none'?'<button data-a="reset">Balikin ke Baru</button>':''}${smoBriefUi(x)}`:'<button data-a="reset">Balikin ke Baru</button>'):`<button data-a="reset">Balikin ke Baru</button>`}</div></div>`};
-  v.innerHTML=`<div class="dv-top"><h2>${I.tab}<small>Saran konten dari agent riset · masukin ke bank konten biar bisa dipakai kapan aja</small></h2><button id="smoPel" class="pelb" title="Aturan & feedback yang dipelajari agent">🧠 Pelajaran agent</button><button id="smoRe" title="Tarik ulang">⟳</button></div>
+  v.innerHTML=`<div class="dv-top"><h2>${I.tab}<small>Saran konten dari agent riset · masukin ke bank konten biar bisa dipakai kapan aja</small></h2><span class="dvact"><button id="smoPel" class="pelb" title="Aturan & feedback yang dipelajari agent">🧠 Pelajaran agent</button><button id="smoRe" title="Tarik ulang">⟳</button></span></div>
     <div class="insf-bar">
       <span class="grp">${chip('st','baru',`Baru <b>${cnt('baru')}</b>`)}${chip('st','ambil',`Masuk bank <b>${cnt('ambil')}</b>`)}${chip('st','skip',`Skip <b>${cnt('skip')}</b>`)}${chip('st','','Semua')}</span>
       <select data-fk="fmt"><option value="">Semua format</option>${uniq('format').map(f=>`<option${F.fmt===f?' selected':''}>${esc(f)}</option>`).join('')}</select>
@@ -1516,266 +1494,6 @@ function drawSmo(all){
       if(a==='skip'){SMO.why={[k]:true};smoSetStatus(x,'skip');re();toast('Ide di-skip',()=>{smoSetStatus(x,'baru');re()});return}
       if(a==='reset'){smoSetStatus(x,'baru');re();return}
     });
-  });
-}
-// ===================== KANTOR 2D (denah; orang duduk di ruangan sesuai tugasnya, jalan nyerahin tugas pas diceklis) =====================
-// ===================== KANTOR ISOMETRIK (canvas) =====================
-const ROOM_META={writing:{n:'Ruang Writing',ic:'✍️',f:'#f3e2b8',f2:'#ead6a6'},shoot:{n:'Studio Shooting',ic:'🎥',f:'#cfdcf5',f2:'#c2d1ef'},edit:{n:'Ruang Editor',ic:'🎬',f:'#e5d3f2',f2:'#dac5ea'},
-  ide:{n:'Ruang Ide',ic:'💡',f:'#f6edbf',f2:'#efe3ad'},design:{n:'Ruang Designer',ic:'🎨',f:'#f6d3cb',f2:'#efc6bc'},upload:{n:'Meja Upload',ic:'📤',f:'#cfeadb',f2:'#c1e1cf'},lounge:{n:'Pantry',ic:'☕',f:'#e4dccb',f2:'#d9d0bd'}};
-const ISO={tw:64,th:32,zh:30,ox:0,oy:0,W:1000,H:640,
-  rooms:{writing:{x:0,y:0,w:6,h:5,door:3},shoot:{x:6,y:0,w:6,h:5,door:9},edit:{x:12,y:0,w:6,h:5,door:15},
-    ide:{x:0,y:7,w:4,h:5,door:2},design:{x:4,y:7,w:6,h:5,door:7},upload:{x:10,y:7,w:4,h:5,door:12},lounge:{x:14,y:7,w:4,h:5,door:16}},
-  GW:18,GH:12,hallY:6};
-// kamera: putar 4 arah (3D) atau tampak atas, plus zoom
-const CAM=(()=>{try{return Object.assign({rot:0,mode:'iso',zoom:1},JSON.parse(localStorage.getItem('sp-map-cam')||'{}'))}catch(e){return {rot:0,mode:'iso',zoom:1}}})();
-const TOPT=46;
-function camSetup(){const odd=CAM.rot%2,RW=odd?ISO.GH:ISO.GW,RH=odd?ISO.GW:ISO.GH;ISO.RW=RW;ISO.RH=RH;
-  if(CAM.mode==='top'){ISO.W=RW*TOPT+60;ISO.H=RH*TOPT+150;ISO.ox=30;ISO.oy=115}
-  else{ISO.W=(RW+RH)*ISO.tw/2+60;ISO.H=(RW+RH)*ISO.th/2+170;ISO.ox=RH*ISO.tw/2+30;ISO.oy=125}}
-const rot=(x,y)=>{const W=ISO.GW,H=ISO.GH;switch(CAM.rot){case 1:return [H-y,x];case 2:return [W-x,H-y];case 3:return [y,W-x];default:return [x,y]}};
-const unrot=(a,b)=>{const W=ISO.GW,H=ISO.GH;switch(CAM.rot){case 1:return [b,H-a];case 2:return [W-a,H-b];case 3:return [W-b,a];default:return [a,b]}};
-const P0=(rx,ry,z=0)=>CAM.mode==='top'?[ISO.ox+rx*TOPT,ISO.oy+ry*TOPT-z*TOPT*.22]:[ISO.ox+(rx-ry)*ISO.tw/2,ISO.oy+(rx+ry)*ISO.th/2-z*ISO.zh];
-camSetup();
-const ROLE_ROOM={Writing:'writing',Shooting:'shoot',Edit:'edit',Desain:'design',Cover:'design'};
-const NEXT_ROOM=t=>t.role==='Writing'?((t.it.type==='carousel'||t.it.type==='story')?'design':'shoot'):t.role==='Shooting'?'edit':'upload';
-const ROLE_C={Writing:'#1d3f8f',Shooting:'#7a5230',Desain:'#2f6bff',Edit:'#ff4d2e',Cover:'#9b3dff'};
-const ok=v=>String(v||'').trim()==='✅';
-function roomsOf(it){
-  const vid=!(it.type==='carousel'||it.type==='story'),st=PLAT2.map(([c])=>String(it['st'+c]||'').trim()).filter(Boolean);
-  if(st.includes('Uploaded'))return ['live'];
-  if(!ok(it.writing))return ['writing'];
-  const r=[];
-  if(vid){if(!ok(it.shooting))r.push('shoot');else if(!ok(it.production))r.push('edit');if(!ok(it.cover))r.push('design')}
-  else if(!ok(it.production))r.push('design');
-  return r.length?r:['upload'];
-}
-const ini=n=>String(n).trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
-const MAP={ppl:{},doneSeen:null,raf:0,last:0,sheet:null,cv:null,ctx:null,cnt:{},bubbles:[],hover:null};
-const addD=n=>{const d=new Date(todayKey+'T00:00');d.setDate(d.getDate()+n);return key(d.getFullYear(),d.getMonth(),d.getDate())};
-const inWin=i=>i.src==='kk'&&akunOK(i)&&i.date>=addD(-30)&&i.date<=addD(14);
-function mapPeople(){
-  const T0=state.items.filter(inWin).flatMap(autoTasks),people={};
-  T0.forEach(t=>{const p=people[t.who]=people[t.who]||{who:t.who,tasks:[],done:[]};(t.done?p.done:p.tasks).push(t)});
-  Object.values(people).forEach(p=>{p.tasks.sort((a,b)=>a.it.date.localeCompare(b.it.date));const act=p.tasks.find(t=>!t.wait)||p.tasks[0];
-    p.room=act?ROLE_ROOM[act.role]:'lounge';p.cur=act||null;p.late=p.tasks.filter(t=>t.it.date<todayKey).length});
-  return {T0,people};
-}
-// --- proyeksi isometrik
-const P=(gx,gy,z=0)=>{const [a,b]=rot(gx,gy);return P0(a,b,z)};
-const dkey=(x,y)=>{const [a,b]=rot(x,y);return a+b};
-function shade(hex,f){const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;r=Math.round(r*f);g=Math.round(g*f);b=Math.round(b*f);return `rgb(${Math.min(255,r)},${Math.min(255,g)},${Math.min(255,b)})`}
-function poly(c,pts,fill,stroke){c.beginPath();pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.closePath();if(fill){c.fillStyle=fill;c.fill()}if(stroke){c.strokeStyle=stroke;c.lineWidth=1;c.stroke()}}
-function box(c,x,y,w,d,z,h,col){ // kotak: atas + sisi depan-kiri + depan-kanan (dihitung di arah kamera)
-  const [a1,b1]=rot(x,y),[a2,b2]=rot(x+w,y+d);x=Math.min(a1,a2);y=Math.min(b1,b2);w=Math.abs(a2-a1);d=Math.abs(b2-b1);
-  const t=[P0(x,y,z+h),P0(x+w,y,z+h),P0(x+w,y+d,z+h),P0(x,y+d,z+h)];
-  poly(c,[P0(x,y+d,z),P0(x+w,y+d,z),P0(x+w,y+d,z+h),P0(x,y+d,z+h)],shade(col,.78),'rgba(0,0,0,.18)');
-  if(CAM.mode!=='top')poly(c,[P0(x+w,y,z),P0(x+w,y+d,z),P0(x+w,y+d,z+h),P0(x+w,y,z+h)],shade(col,.62),'rgba(0,0,0,.18)');
-  poly(c,t,col,'rgba(0,0,0,.15)');
-}
-// furnitur per ruangan: [x,y (lokal), jenis]; kursi = tempat duduk
-const DESKS={writing:[[.7,.8],[3.3,.8],[.7,2.8],[3.3,2.8]],shoot:[],edit:[[.7,.8],[3.3,.8],[.7,2.8],[3.3,2.8]],design:[[.7,.8],[3.3,.8],[.7,2.8],[3.3,2.8]],
-  ide:[[.6,.9],[.6,2.9]],upload:[[.6,.9],[.6,2.9]],lounge:[]};
-function seatsOf(k){const r=ISO.rooms[k];
-  if(k==='shoot')return [[r.x+1.6,r.y+3.2],[r.x+2.6,r.y+3.6],[r.x+3.6,r.y+3.2],[r.x+1.4,r.y+4.3],[r.x+4.4,r.y+4.2],[r.x+3,r.y+4.5]];
-  if(k==='lounge')return [[r.x+1.2,r.y+1.9],[r.x+2.2,r.y+1.9],[r.x+1,r.y+3.6],[r.x+2.4,r.y+3.8],[r.x+3.3,r.y+3.1],[r.x+1.8,r.y+4.5],[r.x+3.2,r.y+4.5]];
-  const s=DESKS[k].map(([dx,dy])=>[r.x+dx+.8,r.y+dy+1.15]);
-  return s.concat([[r.x+r.w-1,r.y+r.h-.7],[r.x+r.w-2,r.y+r.h-.6]]);
-}
-function drawFurniture(c,k,list){const r=ISO.rooms[k],X=r.x,Y=r.y;
-  const desk=(dx,dy,mon2)=>{list.push({x:X+dx+.8,y:Y+dy+.4,f:()=>{box(c,X+dx,Y+dy,1.6,.75,0,.48,'#a8855c');box(c,X+dx+.05,Y+dy+.05,1.5,.65,.48,.04,'#c49a6c');
-      box(c,X+dx+.35,Y+dy+.12,mon2?.45:.8,.08,.52,.45,'#2f3640');if(mon2)box(c,X+dx+.9,Y+dy+.12,.45,.08,.52,.45,'#2f3640');
-      const g=P(X+dx+.75,Y+dy+.18,.75);c.fillStyle=k==='design'?'#ff9a7a':k==='edit'?'#b98cff':'#7fb3ff';c.globalAlpha=.55;c.fillRect(g[0]-8,g[1]-6,16,8);c.globalAlpha=1;
-      box(c,X+dx+.55,Y+dy+1,.5,.45,0,.32,'#454c57');box(c,X+dx+.55,Y+dy+1.35,.5,.1,.32,.35,'#454c57')}})};
-  (DESKS[k]||[]).forEach(([dx,dy])=>desk(dx,dy,k==='edit'));
-  if(k==='writing'){list.push({x:X+5.5,y:Y+1,f:()=>{box(c,X+5.2,Y+.15,.6,1.8,0,1.4,'#8a6a45');[.3,.7,1.1].forEach((h,i)=>box(c,X+5.25,Y+.25+i*.55,.5,.4,h,.25,['#d9534f','#4a90d9','#f0ad4e'][i]))}})}
-  if(k==='shoot'){list.push({x:X+2.7,y:Y+.3,f:()=>{box(c,X+.3,Y+.2,4.8,.15,0,1.9,'#f4f1ea')}});
-    list.push({x:X+4.65,y:Y+2.35,f:()=>{box(c,X+4.6,Y+2.3,.12,.12,0,1.2,'#333');box(c,X+4.35,Y+2.1,.6,.4,1.2,.35,'#222');box(c,X+4.2,Y+2.15,.2,.3,1.25,.25,'#555')}});
-    [[.6,1.4],[5,1]].forEach(([a,b])=>list.push({x:X+a+.05,y:Y+b+.05,f:()=>{box(c,X+a,Y+b,.1,.1,0,1.4,'#444');box(c,X+a-.3,Y+b-.3,.7,.7,1.4,.5,'#fff5d6')}}))}
-  if(k==='ide'){list.push({x:X+1.7,y:Y+.15,f:()=>{box(c,X+.3,Y+.1,2.8,.1,.4,1.1,'#ffffff');const a=P(X+.8,Y+.15,1.1);c.fillStyle='#ffd34d';c.fillRect(a[0],a[1],14,10);c.fillStyle='#7fd1a7';c.fillRect(a[0]+20,a[1]+4,14,10);c.fillStyle='#ff9a7a';c.fillRect(a[0]+40,a[1]+8,14,10)}});
-    list.push({x:X+2.95,y:Y+3.65,f:()=>{box(c,X+2.5,Y+3.2,.9,.9,0,.4,'#e2735b')}})}
-  if(k==='upload'){list.push({x:X+3.25,y:Y+.15,f:()=>{box(c,X+2.7,Y+.1,1.1,.1,.6,.9,'#20262e');const a=P(X+3.1,Y+.15,1.2);c.fillStyle='#3ddc84';c.fillRect(a[0]-6,a[1]-4,30,12)}})}
-  if(k==='lounge'){list.push({x:X+1.9,y:Y+.55,f:()=>{box(c,X+.2,Y+.2,3.4,.7,0,.9,'#7d6a55');box(c,X+2.6,Y+.25,.6,.5,.9,.45,'#2b2b2b');box(c,X+.5,Y+.3,.3,.3,.9,.25,'#d9d9d9')}});
-    list.push({x:X+1.9,y:Y+2.9,f:()=>{box(c,X+.6,Y+2.5,2.6,.8,0,.35,'#5b7fa3');box(c,X+.6,Y+2.5,2.6,.2,.35,.4,'#4f6f8f')}});
-    list.push({x:X+3.7,y:Y+4.5,f:()=>{box(c,X+3.5,Y+4.3,.4,.4,0,.35,'#8b5a3c');const a=P(X+3.7,Y+4.5,.6);c.fillStyle='#3f8f4f';c.beginPath();c.arc(a[0],a[1],12,0,7);c.fill()}})}
-  if(k==='design'){list.push({x:X+5.5,y:Y+4.4,f:()=>{box(c,X+5.3,Y+4.2,.4,.4,0,.35,'#8b5a3c');const a=P(X+5.5,Y+4.4,.6);c.fillStyle='#4caf50';c.beginPath();c.arc(a[0],a[1],13,0,7);c.fill()}})}
-}
-function drawPerson(c,p,t){const [x,y]=P(p.pos[0],p.pos[1]);const walk=p.path&&p.path.length,ph=walk?Math.sin(t/90):0,col=brandColor(p.who);
-  c.fillStyle='rgba(0,0,0,.18)';c.beginPath();c.ellipse(x,y,11,5,0,0,7);c.fill();
-  if(p.sel){c.strokeStyle='#111';c.lineWidth=2;c.setLineDash([4,3]);c.beginPath();c.ellipse(x,y,17,8,0,0,7);c.stroke();c.setLineDash([])}
-  c.strokeStyle='#2b2b2b';c.lineWidth=3.2;c.lineCap='round';
-  c.beginPath();c.moveTo(x-3,y-14);c.lineTo(x-3+ph*3,y-2);c.moveTo(x+3,y-14);c.lineTo(x+3-ph*3,y-2);c.stroke();
-  c.fillStyle=col;c.beginPath();c.roundRect(x-8,y-33,16,21,6);c.fill();
-  c.strokeStyle=shade(col,.75);c.lineWidth=3;c.beginPath();c.moveTo(x-8,y-28);c.lineTo(x-10-ph*2,y-17);c.moveTo(x+8,y-28);c.lineTo(x+10+ph*2,y-17);c.stroke();
-  const bob=walk?Math.abs(ph)*1.5:Math.sin(t/650+p.who.length)*.8;
-  c.fillStyle='#f1c9a5';c.beginPath();c.arc(x,y-41-bob,7.5,0,7);c.fill();
-  c.fillStyle='#3b2a20';c.beginPath();c.arc(x,y-43-bob,7.8,Math.PI*1.05,Math.PI*1.95);c.fill();
-  c.fillStyle='#fff';c.font='800 8px sans-serif';c.textAlign='center';c.fillText(ini(p.who),x,y-20);
-  if(p.carry){c.fillStyle='#fff';c.strokeStyle='#999';c.lineWidth=1;c.fillRect(x+9,y-30,10,12);c.strokeRect(x+9,y-30,10,12)}
-  const nm=p.who.split(' ')[0];c.font='700 11px sans-serif';const w=c.measureText(nm).width+12;
-  c.fillStyle='rgba(255,255,255,.92)';c.beginPath();c.roundRect(x-w/2,y-66-bob,w,16,8);c.fill();c.fillStyle='#222';c.fillText(nm,x,y-54.5-bob);
-  const n=p.late||p.tasks.length;if(n){c.fillStyle=p.late?'#e0483a':'#111';c.beginPath();c.arc(x+w/2+3,y-60-bob,8,0,7);c.fill();c.fillStyle='#fff';c.font='800 9px sans-serif';c.fillText(n,x+w/2+3,y-57-bob)}
-  p.hit=[x,y-30];
-}
-function drawOffice(t){const c=MAP.ctx;if(!c)return;const R=ISO.rooms;
-  c.clearRect(0,0,ISO.W,ISO.H);
-  // lantai luar + lorong
-  poly(c,[P(0,0),P(ISO.GW,0),P(ISO.GW,ISO.GH),P(0,ISO.GH)],'#d7cfbd');
-  for(let gx=0;gx<ISO.GW;gx++)poly(c,[P(gx,5),P(gx+1,5),P(gx+1,7),P(gx,7)],gx%2?'#e9e2d2':'#e3dbc9');
-  // lantai ruangan (kotak-kotak)
-  Object.entries(R).forEach(([k,r])=>{const m=ROOM_META[k];for(let i=0;i<r.w;i++)for(let j=0;j<r.h;j++)poly(c,[P(r.x+i,r.y+j),P(r.x+i+1,r.y+j),P(r.x+i+1,r.y+j+1),P(r.x+i,r.y+j+1)],(i+j)%2?m.f:m.f2);
-    if(MAP.hover===k)poly(c,[P(r.x,r.y),P(r.x+r.w,r.y),P(r.x+r.w,r.y+r.h),P(r.x,r.y+r.h)],'rgba(255,255,255,.25)')});
-  // dinding belakang (selalu di 2 sisi yang jauh dari kamera)
-  const RW=ISO.RW,RH=ISO.RH,WH=CAM.mode==='top'?1.2:2.4;
-  poly(c,[P0(0,0,0),P0(RW,0,0),P0(RW,0,WH),P0(0,0,WH)],'#efe8da','rgba(0,0,0,.2)');
-  if(CAM.mode!=='top')poly(c,[P0(0,0,0),P0(0,RH,0),P0(0,RH,WH),P0(0,0,WH)],'#ddd4c2','rgba(0,0,0,.2)');
-  for(let i=1;i<RW-1;i+=3){poly(c,[P0(i,0,WH*.42),P0(i+1.6,0,WH*.42),P0(i+1.6,0,WH*.83),P0(i,0,WH*.83)],'#bcd8ec','rgba(0,0,0,.15)')}
-  // dinding sekat (rendah, potongan ala The Sims) + pintu
-  const walls=[];const W=(x,y,w,d)=>walls.push([x,y,w,d]);
-  [6,12].forEach(x=>W(x-.06,0,.12,5));[4,10,14].forEach(x=>W(x-.06,7,.12,5));
-  Object.entries(R).forEach(([k,r])=>{const yy=r.y===0?5-.06:7-.06,d=r.door;W(r.x,yy,d-.6-r.x,.12);W(d+.6,yy,r.x+r.w-d-.6,.12)});
-  W(-.06,0,.12,ISO.GH);
-  const list=walls.map(([x,y,w,d])=>({x:x+w/2,y:y+d/2,f:()=>box(c,x,y,w,d,0,.45,'#f4efe4')}));
-  Object.keys(R).forEach(k=>drawFurniture(c,k,list));
-  Object.values(MAP.ppl).forEach(p=>list.push({x:p.pos[0]+.1,y:p.pos[1]+.1,f:()=>drawPerson(c,p,t)}));
-  list.forEach(o=>o.k=dkey(o.x,o.y));list.sort((a,b)=>a.k-b.k).forEach(o=>o.f());
-  // papan nama ruangan
-  Object.entries(R).forEach(([k,r])=>{const m=ROOM_META[k],n=MAP.cnt[k];
-    c.font='800 13px sans-serif';const txt=`${m.ic} ${m.n}`,w=c.measureText(txt).width+(k==='lounge'?16:46);
-    const cs=[P(r.x,r.y),P(r.x+r.w,r.y),P(r.x+r.w,r.y+r.h),P(r.x,r.y+r.h)],cx=cs.reduce((a,q)=>a+q[0],0)/4,my=Math.max(...cs.map(q=>q[1]));
-    let x=cx-w/2,y=my-(CAM.mode==='top'?30:14); // tepi depan ruangan (ikut arah kamera)
-    c.fillStyle='rgba(43,43,43,.9)';c.beginPath();c.roundRect(x-4,y-4,w,24,12);c.fill();
-    c.fillStyle='#fff';c.textAlign='left';c.fillText(txt,x+6,y+12);
-    if(k!=='lounge'){c.fillStyle='#ffd34d';c.beginPath();c.roundRect(x+w-36,y,30,16,8);c.fill();c.fillStyle='#111';c.textAlign='center';c.font='800 11px sans-serif';c.fillText(n||0,x+w-21,y+12)}});
-  // gelembung "nyerahin"
-  MAP.bubbles=MAP.bubbles.filter(b=>t-b.t0<2600);
-  MAP.bubbles.forEach(b=>{const [x,y]=P(b.pos[0],b.pos[1]);c.font='700 12px sans-serif';const s=b.txt.length>48?b.txt.slice(0,47)+'…':b.txt,w=c.measureText(s).width+20;
-    const bx=Math.max(6,Math.min(ISO.W-w-6,x-w/2)),by=y-96-Math.min(10,(t-b.t0)/60);
-    c.globalAlpha=Math.min(1,(2600-(t-b.t0))/400);c.fillStyle='#111';c.beginPath();c.roundRect(bx,by,w,26,13);c.fill();c.fillStyle='#fff';c.textAlign='center';c.fillText(s,bx+w/2,by+17);c.globalAlpha=1});
-}
-function camApply(){const cv=MAP.cv;if(!cv)return;camSetup();const wr=cv.parentElement,dpr=Math.min(2.5,devicePixelRatio||1);
-  const base=Math.max((wr.clientWidth||ISO.W)-6,CAM.mode==='top'?640:860),cssW=base*CAM.zoom,k=cssW/ISO.W;
-  cv.style.width=cssW+'px';cv.style.height=ISO.H*k+'px';cv.width=Math.round(cssW*dpr);cv.height=Math.round(ISO.H*k*dpr);MAP.ctx.setTransform(dpr*k,0,0,dpr*k,0,0);
-  const mv=document.getElementById('mapView');mv.querySelectorAll('[data-cam]').forEach(b=>b.classList.toggle('on',b.dataset.cam===CAM.mode));
-  const zl=mv.querySelector('.zl');if(zl)zl.textContent=Math.round(CAM.zoom*100)+'%';
-  setTimeout(()=>{wr.scrollLeft=(wr.scrollWidth-wr.clientWidth)/2},0);
-}
-addEventListener('resize',()=>{if(view==='map')camApply()});
-function toGrid(sx,sy){let ra,rb;if(CAM.mode==='top'){ra=(sx-ISO.ox)/TOPT;rb=(sy-ISO.oy)/TOPT}else{const a=(sx-ISO.ox)/(ISO.tw/2),b=(sy-ISO.oy)/(ISO.th/2);ra=(a+b)/2;rb=(b-a)/2}return unrot(ra,rb)}
-function renderMap(){
-  document.getElementById('monthLbl').textContent='Kantor';
-  const f=document.getElementById('filters');
-  f.innerHTML=akunBar(state.items.filter(i=>i.src==='kk'))+`<span class="status" id="status">Tugas 30 hari ke belakang s/d 2 minggu ke depan · Preview nggak dihitung</span>`;bindAkun(f);
-  const mv=document.getElementById('mapView');
-  const {T0,people}=mapPeople();
-  const seatN={};Object.values(people).sort((a,b)=>a.who.localeCompare(b.who)).forEach(p=>{const ss=seatsOf(p.room),i=seatN[p.room]=(seatN[p.room]||0);seatN[p.room]++;const s=ss[i%ss.length];p.seat=[s[0]+(i>=ss.length?.3:0),s[1]]});
-  const cnt={};state.items.filter(inWin).forEach(it=>roomsOf(it).forEach(k=>cnt[k]=(cnt[k]||0)+1));cnt.ide=(state.bank||[]).length;MAP.cnt=cnt;
-  const doneNow=new Set(T0.filter(t=>t.done).map(t=>t.key)),fresh=MAP.doneSeen?T0.filter(t=>t.done&&!MAP.doneSeen.has(t.key)):[];
-  MAP.doneSeen=doneNow;
-  if(!mv.querySelector('canvas.iso')){
-    mv.innerHTML=`<div class="st-top"><h2>Kantor<small>Orang duduk di ruangan tugas yang lagi dikerjain · pas tugas diceklis dia jalan nyerahin ke ruangan berikutnya</small></h2>
-      <div class="camb"><span class="cg"><button data-cam="rl" title="Putar kiri">⟲</button><button data-cam="rr" title="Putar kanan">⟳</button></span>
-        <span class="cg"><button data-cam="iso" title="Tampilan 3D miring">3D</button><button data-cam="top" title="Tampilan dari atas">Atas</button></span>
-        <span class="cg"><button data-cam="zo" title="Perkecil">−</button><button data-cam="z1" title="Ukuran normal" class="zl">100%</button><button data-cam="zi" title="Perbesar">+</button></span>
-        <button id="mDemo">▶ Contoh gerakan</button></div></div>
-      <div class="iso-wrap"><canvas class="iso"></canvas></div>
-      <div class="map-leg">Klik <b>orang</b> buat liat & ceklis tugasnya · klik <b>lantai ruangan</b> buat liat kontennya · angka merah = tugas telat · kuning = jumlah konten di ruangan · di HP geser denahnya ke samping.</div>`;
-    const cv=mv.querySelector('canvas.iso');MAP.cv=cv;MAP.ctx=cv.getContext('2d');MAP.ppl={};camApply();
-    mv.querySelectorAll('[data-cam]').forEach(bt=>bt.onclick=()=>{const a=bt.dataset.cam;
-      if(a==='rl')CAM.rot=(CAM.rot+3)%4;else if(a==='rr')CAM.rot=(CAM.rot+1)%4;else if(a==='iso'||a==='top')CAM.mode=a;
-      else if(a==='zi')CAM.zoom=Math.min(2.5,+(CAM.zoom+.25).toFixed(2));else if(a==='zo')CAM.zoom=Math.max(.5,+(CAM.zoom-.25).toFixed(2));else if(a==='z1')CAM.zoom=1;
-      try{localStorage.setItem('sp-map-cam',JSON.stringify(CAM))}catch(e){}camApply()});
-    const pt=e=>{const r=cv.getBoundingClientRect();return [(e.clientX-r.left)*ISO.W/r.width,(e.clientY-r.top)*ISO.H/r.height]};
-    const hitP=([x,y])=>Object.values(MAP.ppl).find(p=>p.hit&&Math.hypot(p.hit[0]-x,p.hit[1]-y)<22);
-    const hitR=xy=>{const [gx,gy]=toGrid(...xy);return Object.keys(ISO.rooms).find(k=>{const r=ISO.rooms[k];return gx>=r.x&&gx<=r.x+r.w&&gy>=r.y&&gy<=r.y+r.h})};
-    cv.onclick=e=>{const xy=pt(e),p=hitP(xy);if(p)return openPersonSheet(p.who);const k=hitR(xy);if(k)openRoomSheet(k)};
-    cv.onmousemove=e=>{const xy=pt(e),p=hitP(xy),k=p?null:hitR(xy);cv.style.cursor=p||k?'pointer':'default';MAP.hover=k||null};
-    cv.onmouseleave=()=>{MAP.hover=null};
-    mv.querySelector('#mDemo').onclick=()=>mapDemo();
-  }
-  const old=MAP.ppl;MAP.ppl={};
-  Object.values(people).forEach(p=>{const prev=old[p.who];const pos=prev?prev.pos.slice():p.seat.slice();
-    MAP.ppl[p.who]={...p,pos,path:prev?prev.path:[],then:prev?prev.then:null,carry:prev?prev.carry:null,sel:!!(MAP.sheet&&MAP.sheet.who===p.who)};
-    if(prev&&!(prev.path&&prev.path.length)&&(prev.room!==p.room||Math.hypot(prev.pos[0]-p.seat[0],prev.pos[1]-p.seat[1])>.05))walkTo(MAP.ppl[p.who],p.room,p.seat,null);
-  });
-  fresh.forEach(t=>handoff(t));
-  if(MAP.sheet)MAP.sheet.redraw();
-  if(!MAP.raf){MAP.last=performance.now();MAP.raf=requestAnimationFrame(tick)}
-}
-function roomAt(gx,gy){return Object.keys(ISO.rooms).find(k=>{const r=ISO.rooms[k];return gx>=r.x&&gx<=r.x+r.w&&gy>=r.y&&gy<=r.y+r.h})}
-function route(from,toRoom,to){const a=roomAt(from[0],from[1]),b=ISO.rooms[toRoom],pts=[];
-  if(a!==toRoom){if(a){const ra=ISO.rooms[a],top=ra.y===0;pts.push([ra.door,top?4.3:7.7],[ra.door,ISO.hallY])}else pts.push([from[0],ISO.hallY]);
-    const top=b.y===0;pts.push([b.door,ISO.hallY],[b.door,top?4.3:7.7])}
-  pts.push(to);return pts}
-function walkTo(p,room,to,then){p.path=route(p.pos,room,to);p.then=then}
-function handoff(t){const p=MAP.ppl[t.who];if(!p)return;const dest=NEXT_ROOM(t),r=ISO.rooms[dest];
-  const spot=[r.door+(Math.random()-.5),r.y===0?r.y+3.6:r.y+1.8];
-  p.carry=t.it.title;
-  walkTo(p,dest,spot,()=>{MAP.bubbles.push({pos:spot,txt:`📄 ${t.label} beres: ${t.it.title}`,t0:performance.now()});p.carry=null;
-    setTimeout(()=>{const q=MAP.ppl[t.who];if(q)walkTo(q,q.room,q.seat,null)},1300)});
-}
-function tick(now){const dt=Math.min(.05,(now-MAP.last)/1000);MAP.last=now;
-  if(view!=='map'||!document.body.contains(MAP.cv)){MAP.raf=0;return}
-  Object.values(MAP.ppl).forEach(p=>{if(p.path&&p.path.length){const [tx,ty]=p.path[0],dx=tx-p.pos[0],dy=ty-p.pos[1],d=Math.hypot(dx,dy),sp=2.6*dt;
-    if(d<=sp){p.pos=[tx,ty];p.path.shift();if(!p.path.length&&p.then){const f=p.then;p.then=null;f()}}else{p.pos[0]+=dx/d*sp;p.pos[1]+=dy/d*sp}}});
-  drawOffice(now);MAP.raf=requestAnimationFrame(tick)}
-function mapDemo(){const ps=Object.values(MAP.ppl).filter(p=>p.cur&&!(p.path&&p.path.length));
-  if(!ps.length){toast('Belum ada yang lagi ngerjain tugas');return}
-  ps.slice(0,4).forEach((p,i)=>setTimeout(()=>handoff(p.cur),i*700))}
-// ---- panel samping (laptop) / dari bawah (HP): daftar kerjaan yang bisa langsung diceklis
-const dueTxt=d=>{const n=Math.round((new Date(d+'T00:00')-new Date(todayKey+'T00:00'))/864e5);return n<0?{t:`telat ${-n} hari`,c:'late'}:n===0?{t:'hari ini',c:'today'}:n===1?{t:'besok',c:'soon'}:{t:fmtDate(d).replace(/^\w+, /,'').replace(/ \d{4}$/,''),c:''}};
-function closeSheet(){if(!MAP.sheet)return;MAP.sheet.el.classList.remove('show');const el=MAP.sheet.el;setTimeout(()=>el.remove(),220);MAP.sheet=null;Object.values(MAP.ppl).forEach(p=>p.sel=false)}
-function mkSheet(who,draw){
-  closeSheet();const el=document.createElement('div');el.className='msheet';document.body.appendChild(el);
-  const S={el,who,tab:'kerjain',redraw:()=>{draw(S);bind()}};
-  const bind=()=>{el.querySelector('.ms-x').onclick=closeSheet;
-    el.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;S.redraw()});
-    el.querySelectorAll('[data-open]').forEach(b=>b.onclick=e=>{e.stopPropagation();const it=state.items.find(x=>x.id===b.dataset.open);if(it)openForm(it);else{const bk=(state.bank||[]).find(x=>x.id===b.dataset.open);if(bk)openBank(bk)}});
-    el.querySelectorAll('[data-ck]').forEach(b=>b.onclick=e=>{e.stopPropagation();const t=S.tasks&&S.tasks[+b.dataset.ck];if(!t)return;
-      b.closest('.mt').classList.add('pop');setTimeout(()=>{toggleTask(t);if(!t.done)toast(`${t.label} "${t.it.title}" beres ✓`)},180)});
-    el.querySelectorAll('[data-who]').forEach(b=>b.onclick=e=>{e.stopPropagation();openPersonSheet(b.dataset.who)});
-  };
-  MAP.sheet=S;S.redraw();requestAnimationFrame(()=>el.classList.add('show'));
-  Object.values(MAP.ppl).forEach(p=>p.sel=p.who===who);
-  return S;
-}
-function taskCard(t,i,showWho){const d=dueTxt(t.it.date),ty=T[t.it.type]||TYPES[0];
-  return `<div class="mt${t.done?' done':''}${t.wait?' wait':''}" data-open="${esc(t.it.id)}">
-    <button class="mt-ck" data-ck="${i}" title="${t.done?'Batalin ceklis':'Tandai beres'}">${t.done?'✓':''}</button>
-    <div class="mt-b"><div class="mt-top"><span class="mt-role" style="background:${ROLE_C[t.role]||'#444'}">${esc(t.label)}</span><span class="mt-due ${t.done?'':d.c}">${t.done?'beres':d.t}</span>${showWho?`<span class="mt-who" data-who="${esc(t.who)}" style="background:${brandColor(t.who)}">${esc(ini(t.who))}</span>`:''}</div>
-      <b>${esc(t.it.title)}</b><small><i style="background:${ty.color}"></i>${esc(ty.name)}${t.it.akun?' · '+esc(t.it.akun):''}${t.it.brand?' · '+esc(t.it.brand):''}${t.wait?` · <em>⏳ nunggu ${t.wait}</em>`:''}</small></div>
-    <span class="mt-go">›</span></div>`}
-function openPersonSheet(who){
-  mkSheet(who,S=>{const {people}=mapPeople(),p=people[S.who]||{who:S.who,tasks:[],done:[],room:'lounge',late:0};
-    const kerjain=p.tasks.filter(t=>!t.wait),nunggu=p.tasks.filter(t=>t.wait),beres=p.done.slice().sort((a,b)=>b.it.date.localeCompare(a.it.date));
-    const L=S.tab==='nunggu'?nunggu:S.tab==='beres'?beres:kerjain;S.tasks=L;
-    const tot=p.tasks.length+p.done.length,pct=tot?Math.round(p.done.length/tot*100):0,m=ROOM_META[p.room];
-    S.el.innerHTML=`<div class="ms-in"><div class="ms-grab"></div><button class="ms-x" title="Tutup">✕</button>
-      <div class="ms-h"><span class="ms-av" style="background:${brandColor(p.who)}">${esc(ini(p.who))}</span><div><h3>${esc(p.who)}</h3><div class="ms-room">${m.ic} lagi di ${m.n}${p.cur?` · ngerjain <b>${esc(p.cur.label)}</b>`:''}</div></div>
-        <div class="ms-ring" style="--p:${pct}"><span>${pct}%</span></div></div>
-      <div class="ms-stats"><div><b>${kerjain.length}</b><small>bisa dikerjain</small></div><div><b>${nunggu.length}</b><small>nunggu</small></div><div class="${p.late?'bad':''}"><b>${p.late}</b><small>telat</small></div><div><b>${p.done.length}</b><small>beres</small></div></div>
-      <div class="ms-tabs">${[['kerjain','Kerjain',kerjain.length],['nunggu','Nunggu',nunggu.length],['beres','Beres',beres.length]].map(([k,n,c])=>`<button data-tab="${k}" class="${S.tab===k?'on':''}">${n} <span>${c}</span></button>`).join('')}</div>
-      <div class="ms-list">${L.map((t,i)=>taskCard(t,i,false)).join('')||`<div class="ms-empty">${S.tab==='kerjain'?(p.tasks.length?'Semua tugasnya lagi nunggu tahap sebelumnya ⏳':'Nggak ada tugas, santai di Pantry ☕'):S.tab==='nunggu'?'Nggak ada yang nunggu 👍':'Belum ada yang beres'}</div>`}</div>
-      <div class="ms-foot">Ceklis ☐ = tandain beres → ${esc(p.who.split(' ')[0])} jalan nyerahin ke ruangan berikutnya</div></div>`;
-  });
-}
-function openRoomSheet(k){
-  if(k==='ide'){mkSheet(null,S=>{const L=state.bank||[];
-    S.el.innerHTML=`<div class="ms-in"><div class="ms-grab"></div><button class="ms-x">✕</button><div class="ms-h"><span class="ms-av rm" style="background:${ROOM_META.ide.f}">💡</span><div><h3>Ruang Ide</h3><div class="ms-room">${L.length} konten di bank · drag dari panel Bank Konten di tab Kalender buat dijadwalin</div></div></div>
-      <div class="ms-list">${L.map(b=>{const ty=T[b.type]||TYPES[0];return `<div class="mt" data-open="${esc(b.id)}"><div class="mt-b"><b>${esc(b.title)}</b><small><i style="background:${ty.color}"></i>${esc(ty.name)}${b.segmen?' · '+esc(b.segmen):''}</small></div><span class="mt-go">›</span></div>`}).join('')||'<div class="ms-empty">Bank kosong</div>'}</div></div>`});return}
-  mkSheet(null,S=>{const m=ROOM_META[k];
-    if(k==='lounge'){const {people}=mapPeople(),idle=Object.values(people).filter(p=>p.room==='lounge');
-      S.el.innerHTML=`<div class="ms-in"><div class="ms-grab"></div><button class="ms-x">✕</button><div class="ms-h"><span class="ms-av rm" style="background:${m.f}">☕</span><div><h3>Pantry</h3><div class="ms-room">${idle.length} orang lagi nggak ada tugas</div></div></div>
-        <div class="ms-ppl">${idle.map(p=>`<span class="mt-who big" data-who="${esc(p.who)}" style="background:${brandColor(p.who)}">${esc(ini(p.who))}</span>`).join('')||'<div class="ms-empty">Semua lagi kerja 💪</div>'}</div></div>`;return}
-    const its=state.items.filter(i=>inWin(i)&&roomsOf(i).includes(k)).sort((a,b)=>a.date.localeCompare(b.date));
-    const tasks=its.flatMap(autoTasks).filter(t=>ROLE_ROOM[t.role]===k&&!t.done);S.tasks=tasks;
-    const orphan=its.filter(it=>!tasks.some(t=>t.it.id===it.id));
-    const late=its.filter(i=>i.date<todayKey).length;
-    S.el.innerHTML=`<div class="ms-in"><div class="ms-grab"></div><button class="ms-x">✕</button>
-      <div class="ms-h"><span class="ms-av rm" style="background:${m.f}">${m.ic}</span><div><h3>${m.n}</h3><div class="ms-room">${its.length} konten${late?` · <b style="color:#c0392b">${late} telat</b>`:''}</div></div></div>
-      <div class="ms-ppl">${[...new Set(tasks.map(t=>t.who))].map(w=>`<span class="mt-who big" data-who="${esc(w)}" style="background:${brandColor(w)}" title="${esc(w)}">${esc(ini(w))}<i>${tasks.filter(t=>t.who===w).length}</i></span>`).join('')}</div>
-      <div class="ms-list">${tasks.map((t,i)=>taskCard(t,i,true)).join('')}
-        ${orphan.length?`<div class="ms-sub">Belum ada orangnya (${orphan.length})</div>${orphan.map(it=>{const d=dueTxt(it.date),ty=T[it.type]||TYPES[0];return `<div class="mt" data-open="${esc(it.id)}"><div class="mt-b"><div class="mt-top"><span class="mt-due ${d.c}">${d.t}</span></div><b>${esc(it.title)}</b><small><i style="background:${ty.color}"></i>${esc(ty.name)} · isi nama ${k==='writing'?'Producer':k==='shoot'?'Talent':k==='edit'?'Editor':k==='design'?'Designer':'PIC'}-nya di detail</small></div><span class="mt-go">›</span></div>`}).join('')}`:''}
-        ${!its.length?'<div class="ms-empty">Ruangan kosong</div>':''}</div></div>`;
   });
 }
 function renderStat(){
@@ -1901,6 +1619,12 @@ function renderTodo(){
   tv.querySelectorAll('.td-prog span[data-w]').forEach(sp=>sp.onclick=()=>{tdWho=tdWho===sp.dataset.w?'':sp.dataset.w;tdSave();render()});
   const ds=tv.querySelector('#tdDateSel');if(ds)ds.onchange=e=>{if(e.target.value)goDay(e.target.value)};
 }
+const NAVG={cal:[['cal','Bulanan'],['week','Mingguan'],['day','Harian']],ide:[['smo','Ide SP'],['nsp','Ide NSP']],tim:[['todo','To-do']],data:[['stat','Ringkasan'],['ins','Insight']]};
+const grpOf=v=>Object.keys(NAVG).find(g=>NAVG[g].some(x=>x[0]===v))||'cal';
+// status sambungan Sheet → titik kecil di tombol ⟳ (teks lengkapnya di tooltip)
+function syncDot(){const d=document.getElementById('syncDot'),s=statusEl(),t=s?s.textContent:'';if(!d)return;
+  const k=/gagal|⚠|belum nyambung|offline/i.test(t)?'err':/narik|nyimpen|menyimpan|antri|…/i.test(t)?'busy':'ok';d.className=k;
+  const b=document.getElementById('syncBtn');if(b)b.title=(t||'Tarik data terbaru dari Sheet')+' · klik buat tarik ulang'}
 function render(){
   document.body.classList.toggle('v-day',view==='day');
   document.body.classList.toggle('v-week',view==='week');
@@ -1908,25 +1632,23 @@ function render(){
   document.body.classList.toggle('v-stat',view==='stat');
   document.body.classList.toggle('v-ins',view==='ins');
   document.body.classList.toggle('v-smo',view==='smo'||view==='nsp');
-  document.body.classList.toggle('v-map',view==='map');
-  document.getElementById('mapView').hidden=view!=='map';
   document.getElementById('smoView').hidden=!(view==='smo'||view==='nsp');
   document.getElementById('statView').hidden=view!=='stat';
   document.getElementById('insView').hidden=view!=='ins';
   document.getElementById('todoView').hidden=view!=='todo';
   document.getElementById('dayView').hidden=view!=='day';
   document.getElementById('weekView').hidden=view!=='week';
-  const isCal=view==='cal'||view==='week'||view==='day';
-  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v==='cal'?isCal:b.dataset.v===view));
-  const cs=document.getElementById('calSub');cs.hidden=!isCal;cs.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
+  const grp=grpOf(view);document.body.dataset.g=grp;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.g===grp));
+  const cs=document.getElementById('calSub');cs.innerHTML=NAVG[grp].length<2?'':NAVG[grp].map(([v,l])=>`<button data-v="${v}" class="${v===view?'on':''}">${l}</button>`).join('');
+  const fab=document.getElementById('fab');if(fab)fab.hidden=grp!=='cal';
+  setTimeout(syncDot,0);
   if(view==='day')return renderDay();
   if(view==='week')return renderWeek();
   if(view==='todo')return renderTodo();
   if(view==='stat')return renderStat();
   if(view==='ins')return renderIns();
   if(view==='smo'||view==='nsp')return renderSmo();
-  if(view!=='map'&&MAP.sheet)closeSheet();
-  if(view==='map')return renderMap();
   document.getElementById('monthLbl').textContent=`${BULAN[viewM]} ${viewY}`;
   renderFilters();
   const g=document.getElementById('grid');
@@ -2225,19 +1947,15 @@ function cleanBody(){
   // static shell only — never the rendered calendar
   return `
 <div class="wrap">
-  <header>
-    <div class="ttl"><h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
-      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="map">Kantor</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button><button data-v="ins">Insight</button><button data-v="smo">Ide SP</button><button data-v="nsp">Ide NSP</button><a class="tablink" href="invoice.html">Invoice ↗</a></nav></div>
-    <div class="nav">
-      <span class="subtabs" id="calSub"><button data-v="cal">Bulanan</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button></span>
-      <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
-      <div class="month" id="monthLbl"></div>
-      <button class="icon" id="next" aria-label="Bulan berikutnya">›</button>
-      <button id="todayBtn">Hari ini</button>
-      <button class="icon" id="syncBtn" title="Tarik data terbaru dari Sheet">⟳</button>
-      <button class="icon" id="sheetBtn" title="Sambungan Google Sheet">⚙</button>
-    </div>
+  <header class="top">
+    <div class="brand"><b>SP</b><span>Timeline<em>Konten</em></span></div>
+    <nav class="tabs" id="tabs"><button data-g="cal"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Kalender</span></button><button data-g="ide"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1.1 1.3 1.1 2.2h5c0-.9.5-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg><span>Ide</span></button><button data-g="tim"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg><span>To-do</span></button><button data-g="data"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg><span>Data</span></button><a class="tablink" href="invoice.html"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span>Invoice</span></a></nav>
+    <div class="acts"><button class="icon" id="syncBtn" title="Tarik data terbaru dari Sheet">⟳<em id="syncDot"></em></button><button class="icon" id="sheetBtn" title="Sambungan Google Sheet">⚙</button></div>
   </header>
+  <div class="nav">
+      <span class="subtabs" id="calSub"></span>
+      <div class="dnav"><button class="icon" id="prev" aria-label="Sebelumnya">‹</button><div class="month" id="monthLbl"></div><button class="icon" id="next" aria-label="Berikutnya">›</button><button id="todayBtn">Hari ini</button></div>
+  </div>
   <div class="bar" id="filters"></div>
   <div class="main">
     <div class="grid" id="grid"></div>
@@ -2249,7 +1967,6 @@ function cleanBody(){
   <section class="statview" id="statView" hidden></section>
   <section class="statview" id="insView" hidden></section>
   <section class="statview" id="smoView" hidden></section>
-  <section class="statview" id="mapView" hidden></section>
 </div>
 
 <div class="back" id="back">
@@ -2276,12 +1993,17 @@ function save(){
   },700);
 }
 
-document.getElementById('prev').onclick=()=>{if(view==='day')return shiftDay(-1);if(view==='week')return shiftWeek(-1);if(view==='todo')return shiftTodo(-1);if(view==='stat'||view==='ins'||view==='map')return shiftStat(-1);viewM--;if(viewM<0){viewM=11;viewY--}navTo()};
-document.getElementById('next').onclick=()=>{if(view==='day')return shiftDay(1);if(view==='week')return shiftWeek(1);if(view==='todo')return shiftTodo(1);if(view==='stat'||view==='ins'||view==='map')return shiftStat(1);viewM++;if(viewM>11){viewM=0;viewY++}navTo()};
-document.getElementById('todayBtn').onclick=()=>{if(view==='day'||view==='week'||view==='todo'||view==='stat'||view==='ins'||view==='map')return goDay(todayKey);viewY=now.getFullYear();viewM=now.getMonth();navTo()};
-// tab Kalender = 1 tab, isinya Bulanan / Mingguan / Upload Harian (diinget pilihan terakhirnya)
-document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{let v=b.dataset.v;if(v==='cal'){let c='cal';try{c=localStorage.getItem('sp-timeline-calsub')||'cal'}catch(e){}v=['cal','week','day'].includes(c)?c:'cal'}setView(v)});
-document.querySelectorAll('#calSub button').forEach(b=>b.onclick=()=>{try{localStorage.setItem('sp-timeline-calsub',b.dataset.v)}catch(e){}setView(b.dataset.v)});
+document.getElementById('prev').onclick=()=>{if(view==='day')return shiftDay(-1);if(view==='week')return shiftWeek(-1);if(view==='todo')return shiftTodo(-1);if(view==='stat'||view==='ins')return shiftStat(-1);viewM--;if(viewM<0){viewM=11;viewY--}navTo()};
+document.getElementById('next').onclick=()=>{if(view==='day')return shiftDay(1);if(view==='week')return shiftWeek(1);if(view==='todo')return shiftTodo(1);if(view==='stat'||view==='ins')return shiftStat(1);viewM++;if(viewM>11){viewM=0;viewY++}navTo()};
+document.getElementById('todayBtn').onclick=()=>{if(view==='day'||view==='week'||view==='todo'||view==='stat'||view==='ins')return goDay(todayKey);viewY=now.getFullYear();viewM=now.getMonth();navTo()};
+// 4 menu utama (Kalender · Ide · Tim · Data), isinya sub-menu; tiap menu inget sub-menu terakhirnya
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{const g=b.dataset.g,L=NAVG[g];let v=L[0][0];
+  try{v=localStorage.getItem(g==='cal'?'sp-timeline-calsub':'sp-timeline-g-'+g)||v}catch(e){}
+  if(!L.some(x=>x[0]===v))v=L[0][0];if(v===view&&g===grpOf(view))return;setView(v);scrollTo(0,0)});
+document.getElementById('calSub').onclick=e=>{const b=e.target.closest('button[data-v]');if(!b)return;const v=b.dataset.v,g=grpOf(v);
+  try{localStorage.setItem(g==='cal'?'sp-timeline-calsub':'sp-timeline-g-'+g,v)}catch(e){}setView(v)};
+{const f=document.createElement('button');f.id='fab';f.className='fab';f.setAttribute('aria-label','Tambah konten');f.textContent='+';
+  f.onclick=()=>openForm(null,view==='cal'?(viewY===now.getFullYear()&&viewM===now.getMonth()?todayKey:key(viewY,viewM,1)):(dayK||todayKey));document.body.appendChild(f)}
 // refresh garis "sekarang" tiap menit di menu Upload Harian
 setInterval(()=>{if(view==='day'&&!back.classList.contains('show'))render()},60000);
 addEventListener('resize',()=>{clearTimeout(window.__rz);window.__rz=setTimeout(render,150)});
