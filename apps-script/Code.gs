@@ -191,10 +191,18 @@ function readBankUsed_() {
 
 // ===================== IDE KONTEN SMO (DASHBOARD KULTURAMA, diisi agent riset) =====================
 // dibaca semua kolomnya; dari web cuma kolom Status & kolom Brief (minta brief) yang diubah
-const SMO_TAB = 'Ide Konten SMO';
+const SMO_TAB = 'Ide Konten SP'; // dulu 'Ide Konten SMO' (diganti nama Nov 2026)
+const SMO_TAB_ALT = ['Ide Konten SP', 'Ide Konten SMO'];
+const SMO_SHEET_ID = 2044770584; // ID tab-nya tetap walau namanya diganti
 const SMO_COLS = { date: 'Tanggal', title: 'Judul', angle: 'Angle/POV', trigger: 'Pemicu', research: 'Bahan Riset', flow: 'Alur Isi',
   hook: 'Hook', format: 'Format', urgency: 'Urgensi', sources: 'Sumber', status: 'Status', brief: 'Brief' };
-function smoSheet_() { const sh = kkBook_().getSheetByName(SMO_TAB); if (!sh) throw new Error('Tab "' + SMO_TAB + '" nggak ketemu'); return sh; }
+function smoSheet_() {
+  const book = kkBook_();
+  for (let i = 0; i < SMO_TAB_ALT.length; i++) { const sh = book.getSheetByName(SMO_TAB_ALT[i]); if (sh) return sh; }
+  const byId = book.getSheets().filter(function (x) { return x.getSheetId() === SMO_SHEET_ID; })[0];
+  if (byId) return byId;
+  throw new Error('Tab "' + SMO_TAB + '" nggak ketemu');
+}
 function smoCols_(sh) {
   const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0].map(function (h) { return String(h).trim().toLowerCase(); }), c = {};
   Object.keys(SMO_COLS).forEach(function (k) { const i = head.indexOf(SMO_COLS[k].toLowerCase()); if (i >= 0) c[k] = i; });

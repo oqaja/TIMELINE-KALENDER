@@ -1216,7 +1216,7 @@ async function loadSmo(force){
 }
 function renderSmo(){
   document.getElementById('monthLbl').textContent='Ide SMO';
-  document.getElementById('filters').innerHTML=`<span class="status" id="status">Saran konten dari agent riset · tab Ide Konten SMO</span>`;
+  document.getElementById('filters').innerHTML=`<span class="status" id="status">Saran konten dari agent riset · tab Ide Konten SP</span>`;
   const v=document.getElementById('smoView');
   if(!SMO.rows)v.innerHTML='<div class="dv-empty">Narik ide dari Sheet…</div>';
   loadSmo().then(r=>{if(view==='smo')drawSmo(r)}).catch(e=>{if(view==='smo')v.innerHTML=`<div class="dv-empty">⚠ ${esc(e.message||e)}</div>`});
@@ -1275,7 +1275,7 @@ function drawSmo(all){
       <input class="isearch" id="smoQ" placeholder="Cari ide…" value="${esc(F.q)}" style="margin:0;max-width:220px">
     </div>
     ${Object.keys(groups).map(d=>`<div class="dv-sec">${d?fmtDate(d):'Tanpa tanggal'} · ${groups[d].length} ide</div><div class="smo-g">${groups[d].map(card).join('')}</div>`).join('')
-      ||`<div class="dv-empty">${all.length?'Nggak ada ide di filter ini.':'Belum ada ide di tab Ide Konten SMO.'}</div>`}`;
+      ||`<div class="dv-empty">${all.length?'Nggak ada ide di filter ini.':'Belum ada ide di tab Ide Konten SP.'}</div>`}`;
   const re=()=>drawSmo(all);
   v.querySelector('#smoRe').onclick=()=>{v.querySelector('#smoRe').classList.add('spin');loadSmo(true).then(drawSmo).catch(e=>toast(String(e.message||e)))};
   v.querySelectorAll('.chip-f[data-fk]').forEach(el=>el.onclick=()=>{F[el.dataset.fk]=el.dataset.fv;re()});
