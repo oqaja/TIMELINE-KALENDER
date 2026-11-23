@@ -25,7 +25,7 @@
  *              daftar '<nama>_hapus' = pilihan yang disembunyiin, mis. tim_hapus = orang yang dihapus dari daftar)
  */
 const TZ = 'Asia/Jakarta';
-const SCRIPT_VER = 8; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
+const SCRIPT_VER = 9; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
 const JENIS = { carousel: 'Desain', short: 'Video Pendek', long: 'Video Panjang', story: 'Story' };
 
 // key di kalender  ->  nama header di sheet
@@ -196,7 +196,7 @@ function readBankUsed_() {
 const IDE_TABS = { sp: ['Ide Konten SP', 'Ide Konten SMO'], nsp: ['Ide Konten NSP'] };
 const IDE_SHEET_ID = { sp: 2044770584 }; // ID tab Ide SP tetap walau namanya diganti
 const SMO_COLS = { date: 'Tanggal', title: 'Judul', angle: 'Angle/POV', trigger: 'Pemicu', research: 'Bahan Riset', flow: 'Alur Isi',
-  hook: 'Hook', format: 'Format', urgency: 'Urgensi', sources: 'Sumber', status: 'Status', brief: 'Brief' };
+  hook: 'Hook', format: 'Format', urgency: 'Urgensi', sources: 'Sumber', status: 'Status', brief: 'Brief', rev: 'Revisi' };
 function smoSrc_(src) { return src === 'nsp' ? 'nsp' : 'sp'; }
 function smoSheet_(src) {
   const names = IDE_TABS[smoSrc_(src)], b = kkBook_();
@@ -222,7 +222,7 @@ function smoRead_(from, src) {
     const d = c.date == null ? '' : (date_(raw[i][c.date]) || date_(disp[i][c.date]) || '');
     if (from && d && d < from) continue;
     out.push({ row: i + 2, date: d, title: title, angle: g('angle'), trigger: g('trigger'), research: g('research'), flow: g('flow'),
-      hook: g('hook'), format: g('format'), urgency: g('urgency'), sources: g('sources'), status: g('status'), brief: g('brief') });
+      hook: g('hook'), format: g('format'), urgency: g('urgency'), sources: g('sources'), status: g('status'), brief: g('brief'), rev: g('rev') });
   }
   return out;
 }
@@ -292,6 +292,206 @@ function briefFire_() {
     console.warn('briefFire_ HTTP ' + code + ': ' + r.getContentText().slice(0, 300));
     return 'err';
   } catch (err) { console.warn('briefFire_: ' + err); return 'err'; }
+}
+
+// ===================== BRIEF (Doc "Brief Konten SMO Shoe Police") =====================
+// Brief = 1 Heading 2 (judul) + semua paragraf di bawahnya sampai heading 1/2 berikutnya, di tab sesuai link kolom Brief.
+// Isinya dikirim/diterima sebagai teks: **tebal**, link polos / [teks](url). Edit dari app nulis ulang paragrafnya di Doc.
+const BRIEF_DOC_ID = '108W3MvSjq_1ySIomf8xUeq5x7DrFxFLFymzRlDt_YHY';
+function izinDocs() { Logger.log('Doc brief: ' + DocumentApp.openById(BRIEF_DOC_ID).getName()); }
+function brNorm_(t) { return String(t || '').toLowerCase().replace(/[“”"'‘’`]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
+function briefCell_(ref) {
+  const sh = smoSheet_('sp'), c = smoCols_(sh);
+  if (c.brief == null) throw new Error('brief_none: kolom Brief belum ada');
+  const row = smoFindRow_(sh, c, ref), v = String(sh.getRange(row, c.brief + 1).getDisplayValue()).trim();
+  const m = v.match(/https?:\/\/docs\.google\.com\/document\/d\/([\w-]+)[^\s|]*/);
+  if (!m) throw new Error('brief_none: ide ini belum punya brief (' + (v || 'kolom Brief kosong') + ')');
+  const tab = (m[0].match(/[?&]tab=([\w.]+)/) || [])[1] || '';
+  return { sh: sh, c: c, row: row, val: v, url: m[0], docId: m[1], tabId: tab, title: String(sh.getRange(row, c.title + 1).getDisplayValue()).trim() };
+}
+function briefBody_(docId, tabId) {
+  const doc = DocumentApp.openById(docId);
+  let tab = null;
+  if (tabId && doc.getTab) { try { tab = doc.getTab(tabId); } catch (e) {} }
+  if (tab) return { body: tab.asDocumentTab().getBody(), tabName: tab.getTitle() };
+  return { body: doc.getBody(), tabName: '' };
+}
+function briefHead_(el) {
+  const t = el.getType();
+  if (t !== DocumentApp.ElementType.PARAGRAPH) return '';
+  const h = el.asParagraph().getHeading(), H = DocumentApp.ParagraphHeading;
+  return h === H.HEADING1 ? 'h1' : h === H.HEADING2 ? 'h2' : '';
+}
+// cari heading 2 brief: judul sama persis (abaikan huruf besar/kecil & tanda kutip) → judul mirip
+function briefFind_(body, title) {
+  const n = body.getNumChildren(), want = brNorm_(title), wt = want.split(' ');
+  let best = -1, bestS = 0;
+  for (let i = 0; i < n; i++) {
+    const el = body.getChild(i);
+    if (briefHead_(el) !== 'h2') continue;
+    const h = brNorm_(el.asParagraph().getText());
+    if (!h) continue;
+    if (h === want) return i;
+    const ht = h.split(' '), inter = wt.filter(function (w) { return ht.indexOf(w) >= 0; }).length, sc = inter / Math.max(wt.length, ht.length);
+    if (sc > bestS) { bestS = sc; best = i; }
+  }
+  return bestS >= 0.6 ? best : -1;
+}
+function briefEnd_(body, start) {
+  const n = body.getNumChildren();
+  let i = start + 1;
+  while (i < n && !briefHead_(body.getChild(i))) i++;
+  return i; // indeks pertama SETELAH brief
+}
+function brRunsMd_(txt) { // Text → md (**tebal**, link)
+  const s = txt.getText();
+  if (!s) return '';
+  const idx = txt.getTextAttributeIndices();
+  let out = '';
+  for (let k = 0; k < idx.length; k++) {
+    const a = idx[k], b = k + 1 < idx.length ? idx[k + 1] : s.length, part = s.slice(a, b);
+    if (!part) continue;
+    const url = txt.getLinkUrl(a), bold = txt.isBold(a);
+    if (url && part.trim()) out += (part.trim() === url ? part : '[' + part + '](' + url + ')');
+    else if (bold && part.trim()) { const lead = part.match(/^\s*/)[0], trail = part.match(/\s*$/)[0]; out += lead + '**' + part.trim() + '**' + trail; }
+    else out += part;
+  }
+  return out.replace(/\*\*\*\*/g, '');
+}
+function brElMd_(el) {
+  const T = DocumentApp.ElementType, t = el.getType();
+  if (t === T.PARAGRAPH || t === T.LIST_ITEM) return [brRunsMd_(el.editAsText())];
+  if (t === T.TABLE) { const tb = el.asTable(), o = []; for (let r = 0; r < tb.getNumRows(); r++) { const row = tb.getRow(r), cells = []; for (let c = 0; c < row.getNumCells(); c++) cells.push(row.getCell(c).getText().replace(/\n/g, ' ')); o.push(cells.join(' | ')); } return o; }
+  return [];
+}
+function brHash_(md) { return Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, md, Utilities.Charset.UTF_8).map(function (b) { return ((b + 256) % 256).toString(16).padStart(2, '0'); }).join('').slice(0, 16); }
+function briefLocate_(ref) {
+  const bc = briefCell_(ref), bb = briefBody_(bc.docId, bc.tabId), i = briefFind_(bb.body, bc.title);
+  if (i < 0) throw new Error('brief_notfound: brief "' + bc.title + '" nggak ketemu di tab ' + (bb.tabName || 'Doc') + ' (judulnya mungkin diganti di Doc)');
+  const end = briefEnd_(bb.body, i);
+  let lines = [];
+  for (let k = i + 1; k < end; k++) lines = lines.concat(brElMd_(bb.body.getChild(k)));
+  while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+  while (lines.length && !lines[0].trim()) lines.shift();
+  const md = lines.join('\n');
+  return { bc: bc, body: bb.body, tabName: bb.tabName, at: i, end: end, md: md, hash: brHash_(md), heading: bb.body.getChild(i).asParagraph().getText().trim() };
+}
+function briefRead_(ref) {
+  const L = briefLocate_(ref);
+  return { title: L.heading, tab: L.tabName, md: L.md, hash: L.hash, url: L.bc.url };
+}
+// satu baris md → teks polos + rentang tebal & link
+function brParse_(line) {
+  let text = '';
+  const bold = [], link = [], re = /\*\*([^*]+?)\*\*|\[([^\]]+)\]\((https?:[^)\s]+)\)|(https?:\/\/[^\s)]+)/g;
+  let last = 0, m;
+  while ((m = re.exec(line))) {
+    text += line.slice(last, m.index);
+    const s0 = text.length;
+    if (m[1] != null) { text += m[1]; bold.push([s0, text.length - 1]); }
+    else if (m[2] != null) { text += m[2]; link.push([s0, text.length - 1, m[3]]); }
+    else { text += m[4]; link.push([s0, text.length - 1, m[4]]); }
+    last = re.lastIndex;
+  }
+  text += line.slice(last);
+  return { text: text, bold: bold, link: link };
+}
+function briefSave_(ref, md, base) {
+  md = String(md || '').replace(/\r/g, '');
+  if (!md.trim()) throw new Error('brief_empty: brief nggak boleh kosong');
+  const L = briefLocate_(ref);
+  if (base && base !== L.hash) return { ok: false, error: 'brief_conflict: brief di Doc baru aja berubah', hash: L.hash };
+  const body = L.body;
+  if (L.end >= body.getNumChildren()) body.appendParagraph(''); // Doc wajib diakhiri paragraf
+  for (let k = L.end - 1; k > L.at; k--) body.removeChild(body.getChild(k));
+  const lines = md.split('\n');
+  for (let k = 0; k < lines.length; k++) {
+    const r = brParse_(lines[k]), para = body.insertParagraph(L.at + 1 + k, r.text);
+    para.setHeading(DocumentApp.ParagraphHeading.NORMAL);
+    if (!r.text) continue;
+    const t = para.editAsText();
+    t.setBold(false); t.setLinkUrl(null);
+    r.bold.forEach(function (b) { if (b[1] >= b[0]) t.setBold(b[0], b[1], true); });
+    r.link.forEach(function (b) { if (b[1] >= b[0]) t.setLinkUrl(b[0], b[1], b[2]); });
+  }
+  body.insertParagraph(L.at + 1 + lines.length, ''); // jarak ke brief berikutnya
+  try { pelLog_('SP', 'edit', L.bc.title, brDiff_(L.md, md)); } catch (e) {}
+  let h = '';
+  try { h = briefLocate_(ref).hash; } catch (e) {}
+  return { ok: true, hash: h };
+}
+function brDiff_(a, b) {
+  const A = a.split('\n').map(function (x) { return x.trim(); }).filter(Boolean), B = b.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+  const del = A.filter(function (x) { return B.indexOf(x) < 0; }), add = B.filter(function (x) { return A.indexOf(x) < 0; });
+  const cut = function (arr, mark) { let o = '', n = 0; for (let i = 0; i < arr.length && o.length < 1400; i++) { o += mark + ' ' + arr[i].slice(0, 300) + '\n'; n++; } return o + (arr.length > n ? '(' + (arr.length - n) + ' baris lagi)\n' : ''); };
+  return ('DIHAPUS:\n' + (del.length ? cut(del, '-') : '(nggak ada)\n') + 'DITAMBAH / DIGANTI JADI:\n' + (add.length ? cut(add, '+') : '(nggak ada)\n')).trim();
+}
+// Minta revisi: kolom Brief jadi "revisi · <waktu> | <link> — <Jenis>", catatannya di kolom Revisi, terus colek agent
+function briefRevise_(ref, note) {
+  note = String(note || '').trim();
+  if (!note) throw new Error('brief_note: catatan revisi kosong');
+  const bc = briefCell_(ref), low = bc.val.toLowerCase();
+  if (/^(proses revisi|revisi)/.test(low)) return { ok: false, error: 'brief_busy: revisi sebelumnya belum beres', brief: bc.val };
+  const linkPart = bc.val.slice(bc.val.indexOf('http'));
+  let revCol = bc.c.rev;
+  if (revCol == null) { revCol = bc.sh.getLastColumn(); bc.sh.getRange(1, revCol + 1).setValue('Revisi'); }
+  const now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), v = 'revisi · ' + now + ' | ' + linkPart;
+  const rc = bc.sh.getRange(bc.row, revCol + 1);
+  if (rc.getDataValidation()) rc.clearDataValidations();
+  rc.setValue(note);
+  bc.sh.getRange(bc.row, bc.c.brief + 1).setValue(v);
+  SpreadsheetApp.flush();
+  bumpRev_();
+  try { pelLog_('SP', 'revisi', bc.title, note); } catch (e) {}
+  return { ok: true, brief: v, fired: briefFire_() };
+}
+
+// ===================== PELAJARAN AGENT =====================
+// Tab "Pelajaran Agent" (DASHBOARD): log feedback mentah (edit brief, minta revisi, alasan skip). STATUS baru → dipakai (diisi agent).
+// Tab "Aturan Agent": aturan singkat hasil rangkuman agent. AKTIF ya | dihapus (dihapus dari app = agent nggak boleh bikin lagi).
+const PEL_TAB = 'Pelajaran Agent', PEL_HEAD = ['TANGGAL', 'SUMBER', 'JENIS', 'JUDUL', 'DETAIL', 'STATUS'];
+const ATR_TAB = 'Aturan Agent', ATR_HEAD = ['ID', 'UNTUK', 'ATURAN', 'ALASAN', 'DIBUAT', 'AKTIF'];
+function pelTab_(name, head) {
+  const b = kkBook_();
+  let sh = b.getSheetByName(name);
+  if (!sh) { sh = b.insertSheet(name); sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold'); sh.setFrozenRows(1); }
+  return sh;
+}
+function pelLog_(src, kind, title, detail) {
+  kind = String(kind || '').toLowerCase();
+  if (['edit', 'revisi', 'skip', 'ambil'].indexOf(kind) < 0) throw new Error('jenis feedback nggak dikenal');
+  const sh = pelTab_(PEL_TAB, PEL_HEAD);
+  sh.appendRow([Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), src, kind, String(title || '').slice(0, 200), String(detail || '').slice(0, 3000), 'baru']);
+}
+function pelRead_() {
+  const b = kkBook_(), P = b.getSheetByName(PEL_TAB), A = b.getSheetByName(ATR_TAB), log = [], rules = [];
+  if (P && P.getLastRow() > 1) {
+    const n = P.getLastRow() - 1, from = Math.max(2, P.getLastRow() - 59), v = P.getRange(from, 1, P.getLastRow() - from + 1, 6).getDisplayValues();
+    v.forEach(function (r) { log.push({ at: r[0], src: r[1], kind: r[2], title: r[3], detail: r[4], status: r[5] }); });
+    log.reverse();
+    log.total = n;
+  }
+  if (A && A.getLastRow() > 1) A.getRange(2, 1, A.getLastRow() - 1, 6).getDisplayValues().forEach(function (r, i) {
+    if (String(r[2]).trim()) rules.push({ row: i + 2, id: r[0], untuk: r[1], text: r[2], why: r[3], at: r[4], aktif: String(r[5]).trim().toLowerCase() || 'ya' });
+  });
+  return { log: log, rules: rules, pending: log.filter(function (x) { return x.status === 'baru'; }).length };
+}
+function ruleAdd_(untuk, text) {
+  text = String(text || '').trim();
+  if (!text) throw new Error('aturan kosong');
+  const ok = ['brief', 'riset SP', 'riset NSP', 'semua'];
+  if (ok.indexOf(untuk) < 0) untuk = 'semua';
+  const sh = pelTab_(ATR_TAB, ATR_HEAD), id = 'u' + Date.now().toString(36);
+  sh.appendRow([id, untuk, text.slice(0, 300), 'Ditambah manual dari TIMELINE KALENDER', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), 'ya']);
+  return { ok: true, id: id };
+}
+function ruleDel_(id, text) {
+  const sh = kkBook_().getSheetByName(ATR_TAB);
+  if (!sh || sh.getLastRow() < 2) return;
+  const v = sh.getRange(2, 1, sh.getLastRow() - 1, 3).getDisplayValues();
+  for (let i = 0; i < v.length; i++) {
+    if ((id && String(v[i][0]).trim() === String(id)) || (!id && String(v[i][2]).trim() === String(text || '').trim())) { sh.getRange(i + 2, 6).setValue('dihapus'); return; }
+  }
 }
 
 // ===================== UPLOAD SEKARANG (status Gagal → coba upload lagi) =====================
@@ -674,6 +874,14 @@ function doGet(e) {
     const hit = cacheGet_(key);
     if (hit) { const d = JSON.parse(hit); d.cached = true; d.ms = Date.now() - t0; return out_(d); }
   }
+  if (p.brief === '1') { // isi 1 brief dari Doc (nggak di-cache: bisa diedit kapan aja)
+    try { return out_({ ok: true, ver: SCRIPT_VER, brief: briefRead_({ row: p.row, title: p.title }) }); }
+    catch (err) { return out_({ ok: false, ver: SCRIPT_VER, error: String(err) }); }
+  }
+  if (p.pel === '1') { // pelajaran & aturan agent
+    try { return out_({ ok: true, ver: SCRIPT_VER, pel: pelRead_() }); }
+    catch (err) { return out_({ ok: false, ver: SCRIPT_VER, error: String(err) }); }
+  }
   if (p.smo === '1') { // tab Ide SMO
     const d = { ok: true, ver: SCRIPT_VER };
     try { d.smo = smoRead_(p.from || '', p.src); d.src = smoSrc_(p.src); } catch (err) { d.smo = null; d.smoError = String(err); }
@@ -832,6 +1040,11 @@ function runOp_(op) {
   else if (op.op === 'smoStatus') smoStatus_(op.ref, op.status, op.src);
   else if (op.op === 'smoBrief') return smoBrief_(op.ref, op.action, op.src);
   else if (op.op === 'uploadNow') return uploadNow_(op.ref, op.pf);
+  else if (op.op === 'briefSave') return briefSave_(op.ref, op.md, op.base);
+  else if (op.op === 'briefRevise') return briefRevise_(op.ref, op.note);
+  else if (op.op === 'agentFb') pelLog_(op.src === 'nsp' ? 'NSP' : 'SP', op.kind, op.title, op.detail);
+  else if (op.op === 'ruleAdd') return ruleAdd_(op.untuk, op.text);
+  else if (op.op === 'ruleDel') ruleDel_(op.id, op.text);
   else if (op.op === 'kkAdd') {
     if (op.dedupe) { // dikirim ulang setelah app ditutup: jangan bikin baris dobel kalau ternyata udah masuk
       const sh = kkSheet_(), row = kkFind_(sh, kkCols_(sh), { title: op.item && op.item.title, date: op.item && op.item.date });

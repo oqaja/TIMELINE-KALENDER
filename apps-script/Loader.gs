@@ -9,7 +9,7 @@
  * Kalau GitHub lagi nggak bisa diakses, dipakai salinan terakhir yang tersimpan.
  *
  * Fungsi yang bisa di-Run manual dari editor:
- *   izinSemua      -> SEKALI di awal, buat ngasih izin (Sheet, Drive, internet) + pasang cek update tiap jam
+ *   izinSemua      -> SEKALI di awal, buat ngasih izin (Sheet, Drive, Docs, internet) + pasang cek update tiap jam
  *   updateSekarang -> paksa ambil kode terbaru dari GitHub saat itu juga
  */
 const LOADER_SRC = 'https://raw.githubusercontent.com/oqaja/timeline-kalender/main/apps-script/Code.gs';
@@ -31,8 +31,7 @@ function izinSemua() {
   ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'updateOtomatis') ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('updateOtomatis').timeBased().everyHours(1).create();
   updateSekarang();
-  const izin = app_('izinDrive');
-  if (izin) izin();
+  ['izinDrive', 'izinDocs'].forEach(function (n) { const f = app_(n); if (f) { try { f(); } catch (e) { Logger.log(n + ': ' + e); } } });
 }
 
 function updateSekarang() {
@@ -81,7 +80,7 @@ function app_(name) {
     app__ = new Function(src + '\n;return function (n) { try { return eval(n); } catch (e) { return null; } };')();
   }
   const f = app__(name);
-  if (typeof f !== 'function' && name !== 'izinDrive') throw new Error('loader: fungsi ' + name + ' nggak ada di Code.gs');
+  if (typeof f !== 'function' && name.indexOf('izin') !== 0) throw new Error('loader: fungsi ' + name + ' nggak ada di Code.gs');
   return f;
 }
 
@@ -89,3 +88,7 @@ function app_(name) {
 // Google nentuin izin dari kode yang kelihatan di file ini, dan kode dari GitHub nggak kebaca,
 // jadi fungsi ini wajib ada walau nggak pernah dipanggil.
 function izinDriveTulis_() { DriveApp.createFile('x', 'x').setTrashed(true); }
+
+// Biar Google minta izin Google Docs (baca & edit brief di Doc "Brief Konten SMO"). Sama kayak di atas:
+// wajib ada di file ini walau nggak pernah dipanggil.
+function izinDocsTulis_() { DocumentApp.openById('x').getBody().appendParagraph('x'); }
