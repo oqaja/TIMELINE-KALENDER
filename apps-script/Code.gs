@@ -25,7 +25,7 @@
  *              daftar '<nama>_hapus' = pilihan yang disembunyiin, mis. tim_hapus = orang yang dihapus dari daftar)
  */
 const TZ = 'Asia/Jakarta';
-const SCRIPT_VER = 7; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
+const SCRIPT_VER = 8; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
 const JENIS = { carousel: 'Desain', short: 'Video Pendek', long: 'Video Panjang', story: 'Story' };
 
 // key di kalender  ->  nama header di sheet
@@ -292,6 +292,49 @@ function briefFire_() {
     console.warn('briefFire_ HTTP ' + code + ': ' + r.getContentText().slice(0, 300));
     return 'err';
   } catch (err) { console.warn('briefFire_: ' + err); return 'err'; }
+}
+
+// ===================== UPLOAD SEKARANG (status Gagal → coba upload lagi) =====================
+// Balikin STATUS <platform> ke "Acc", terus colek GitHub Actions di repo automation (ops-pipeline-core)
+// bawa nomor baris + judul. Automation-nya ngeloloskan baris itu walau tanggalnya udah lewat.
+// Isi di Properti skrip: GH_DISPATCH_TOKEN = token GitHub (fine-grained, repo ops-pipeline-core, izin Contents: Read and write)
+//                        GH_DISPATCH_REPO  = oqaja/ops-pipeline-core (boleh kosong, default itu)
+// CATATAN nggak disentuh — itu tempat automation nulis hasil/errornya.
+const UPLOAD_PF = { YT: 'content-acc-yt', TT: 'content-acc-tt', IG: { SP: 'content-acc-ig-sp', NSP: 'content-acc-ig-nsp', FP: 'content-acc-ig-fp' } };
+function uploadNow_(ref, pf) {
+  pf = String(pf || '').toUpperCase();
+  if (!UPLOAD_PF[pf]) throw new Error('upload_now: ' + (pf === 'FB' ? 'Facebook belum diurus automation, upload manual dulu' : 'platform tidak dikenal'));
+  const pr = PropertiesService.getScriptProperties(), tok = pr.getProperty('GH_DISPATCH_TOKEN'), repo = pr.getProperty('GH_DISPATCH_REPO') || 'oqaja/ops-pipeline-core';
+  if (!tok) throw new Error('upload_now: GH_DISPATCH_TOKEN belum diisi di Properti skrip Apps Script');
+  const sh = kkSheet_(), c = kkCols_(sh), row = kkFind_(sh, c, ref);
+  if (row === -2) throw new Error('upload_now: ada lebih dari satu baris "' + ref.title + '" di tanggal ' + ref.date);
+  if (row < 0) throw new Error('upload_now: baris "' + ref.title + '" nggak ketemu, tarik ulang data dulu');
+  if (!c['st' + pf]) throw new Error('upload_now: kolom STATUS ' + pf + ' nggak ada');
+  const v = sh.getRange(row, 1, 1, c._width).getDisplayValues()[0], g = function (k) { return c[k] ? String(v[c[k] - 1]).trim() : ''; };
+  const st = g('st' + pf), title = g('title');
+  if (st.toLowerCase() !== 'gagal') return { ok: false, error: 'upload_now: status ' + pf + ' sekarang "' + (st || 'kosong') + '", bukan Gagal', st: st };
+  if (g('id' + pf)) throw new Error('upload_now: POST ID ' + pf + ' udah keisi (' + g('id' + pf) + '), kosongin dulu kalau mau upload ulang');
+  if (pf !== 'IG' && g('production') !== '✅') throw new Error('upload_now: PRODUCTION belum ✅');
+  let ev = UPLOAD_PF[pf];
+  if (pf === 'IG') { ev = ev[g('akun').toUpperCase()]; if (!ev) throw new Error('upload_now: akun "' + g('akun') + '" nggak punya automation IG'); }
+  sh.getRange(row, c['st' + pf]).setValue('Acc');
+  SpreadsheetApp.flush();
+  bumpRev_();
+  let fired = 'err', info = '';
+  try {
+    const r = UrlFetchApp.fetch('https://api.github.com/repos/' + repo + '/dispatches', { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      headers: { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
+      payload: JSON.stringify({ event_type: ev, client_payload: { row: String(row), title: title, pf: pf, from: 'timeline-kalender' } }) });
+    const code = r.getResponseCode();
+    if (code === 204) fired = 'ok'; else { info = 'HTTP ' + code; console.warn('uploadNow_ ' + info + ': ' + r.getContentText().slice(0, 300)); }
+  } catch (err) { info = String(err).slice(0, 120); console.warn('uploadNow_: ' + err); }
+  if (fired !== 'ok') { // GitHub nggak kesolek → balikin ke Gagal biar tombolnya bisa diklik lagi (tanpa colekan, IG tanggal lewat nggak bakal keambil)
+    sh.getRange(row, c['st' + pf]).setValue('Gagal');
+    SpreadsheetApp.flush();
+    bumpRev_();
+    return { ok: false, error: 'upload_now: gagal nyolek GitHub (' + (info || 'error') + '), cek GH_DISPATCH_TOKEN. Status tetap Gagal.' };
+  }
+  return { ok: true, st: 'Acc', row: row, fired: fired };
 }
 
 // ===================== TO-DO MANUAL (tab TODO) =====================
@@ -788,6 +831,7 @@ function runOp_(op) {
   else if (op.op === 'bankUse') bankUse_(op);
   else if (op.op === 'smoStatus') smoStatus_(op.ref, op.status, op.src);
   else if (op.op === 'smoBrief') return smoBrief_(op.ref, op.action, op.src);
+  else if (op.op === 'uploadNow') return uploadNow_(op.ref, op.pf);
   else if (op.op === 'kkAdd') {
     if (op.dedupe) { // dikirim ulang setelah app ditutup: jangan bikin baris dobel kalau ternyata udah masuk
       const sh = kkSheet_(), row = kkFind_(sh, kkCols_(sh), { title: op.item && op.item.title, date: op.item && op.item.date });

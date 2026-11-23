@@ -212,6 +212,14 @@ body.v-map #prev,body.v-map #next,body.v-map #todayBtn{display:none}
 .uph b{flex:1;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .upm{font-size:12px;color:var(--muted);margin-top:3px}
 .upn{font-size:11.5px;color:#8a1c1c;background:#fdf1f1;border-radius:6px;padding:5px 8px;margin-top:6px;white-space:pre-wrap;word-break:break-word}
+.ugg{border:1.5px solid #f3b5ab;background:#fff8f6;border-radius:12px;padding:10px 12px;margin-top:10px}
+.ugg .ugh{font-weight:800;font-size:13px;color:#a3290f}.ugg .ugs{font-size:11.5px;color:var(--muted);margin-top:2px}
+.ugb{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
+.unow{display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:6px 13px 6px 7px;border-radius:99px;border:1px solid #111;background:#111;color:#fff;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.unow .pf{font-size:10px;padding:3px 6px;border-radius:99px;min-width:26px}.unow:disabled{opacity:.55;cursor:wait}.unow.sm{min-height:32px;font-size:12px;padding:4px 11px 4px 5px}
+.unow.ok{background:#d4edbc;border-color:#d4edbc;color:#11734b}
+.ugx{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}.ugx .pf{font-size:10px;padding:3px 6px;border-radius:99px;min-width:26px}
+.upi .ugb{margin-top:7px}
 #tip{position:fixed;z-index:90;pointer-events:none;background:#111;color:#fff;border-radius:8px;padding:6px 9px;font-size:12px;line-height:1.35;display:none;max-width:240px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
 #tip b{font-size:14px}
 .insf-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -987,6 +995,32 @@ function tipOn(root){let tip=document.getElementById('tip');if(!tip){tip=documen
       tip.style.display='block';const w=tip.offsetWidth;tip.style.left=Math.min(innerWidth-w-8,e.clientX+12)+'px';tip.style.top=(e.clientY+14)+'px'});
     el.addEventListener('pointerleave',()=>{tip.style.display='none'});
   })}
+// ===== UPLOAD SEKARANG: status Gagal → balik ke Acc + colek automation di GitHub (lewat Apps Script) =====
+const UPNOW_PF=['YT','IG','TT']; // FB belum diurus automation
+const gagalPf=it=>it&&it.src==='kk'?PLAT2.map(p=>p[0]).filter(c=>String(it['st'+c]||'').trim()==='Gagal'):[];
+const unowBtn=(c,sm)=>UPNOW_PF.includes(c)?`<button type="button" class="unow${sm?' sm':''}" data-pf="${c}"><i class="pf ${c}">${c}</i>Upload sekarang</button>`:`<span class="ugx"><i class="pf ${c}">${c}</i>upload manual (belum ada automation)</span>`;
+function gagalSec(it){const g=gagalPf(it);if(!g.length)return '';
+  const note=String(it.catatan||'').trim().split('\n').filter(Boolean).slice(-2).join('\n');
+  return `<div class="ugg" id="ugg"><div class="ugh">⚠ Upload gagal di ${g.join(', ')}</div>
+    <div class="ugs">Benerin dulu penyebabnya (file di SIAP UPLOAD, caption di Docs Master, dll), terus klik. Statusnya balik ke Acc dan automation langsung jalan.</div>
+    ${note?`<div class="upn">${esc(note)}</div>`:''}<div class="ugb">${g.map(c=>unowBtn(c)).join('')}</div></div>`}
+async function uploadNow(it,pf,btn,after){
+  if(!API){toast('Belum nyambung ke Sheet');return}
+  if(scriptVer&&scriptVer<8){toast('Script belum versi terbaru — jalanin updateSekarang di Apps Script.');return}
+  if(!PIN){askPin(v=>{savePin(v);uploadNow(it,pf,btn,after)});return}
+  const lbl=btn&&btn.innerHTML;if(btn){btn.disabled=true;btn.innerHTML=`<i class="pf ${pf}">${pf}</i>Ngirim…`}
+  for(let i=0;i<30&&(busy||queue.length);i++)await new Promise(r=>setTimeout(r,500)); // tunggu perubahan lain kesimpen dulu
+  try{
+    const d=await apiPost({op:'uploadNow',ref:refOf(it),pf});
+    it['st'+pf]='Acc';if(synced&&synced.items&&synced.items[it.id])synced.items[it.id]['st'+pf]='Acc';lsSave();
+    if(btn){btn.disabled=false;btn.classList.add('ok');btn.innerHTML=`<i class="pf ${pf}">${pf}</i>Dikirim ✓`}
+    toast(`${pf} · "${it.title}" dikirim ke automation. Status jadi Acc, cek lagi ±3–5 menit.`);
+    if(after)after();
+  }catch(e){const m=String(e.message||e);if(btn){btn.disabled=false;btn.innerHTML=lbl}
+    if(/pin_wrong/.test(m)){savePin('');toast('PIN salah, coba lagi.');return}
+    const um=m.match(/upload_now: (.*)/);toast(um?um[1]:'Gagal: '+m.slice(0,90));
+    if(um&&/bukan Gagal|nggak ketemu/.test(um[1]))pull(false,true)}
+}
 // daftar konten per platform + status (dari kartu Upload per platform)
 function showUploads(L,pf,st,a,z){
   const pfs=pf==='*'?PLAT2.map(p=>p[0]):[pf];
@@ -1002,12 +1036,15 @@ function showUploads(L,pf,st,a,z){
     <div class="upl">${rows.map((x,i)=>{const note=String(x.it.catatan||'').trim();
       return `<div class="upi" data-i="${i}"><div class="uph"><span class="pf ${x.c}">${x.c}</span><b>${esc(x.it.title)}</b><span class="st ${x.st||'none'}">${esc(x.st||'Belum')}</span></div>
         <div class="upm">${[fmtDate(x.it.date).replace(/ \d{4}$/,''),x.jam&&('jam '+x.jam),x.it.akun,(T[x.it.type]||TYPES[0]).name,x.it.brand,x.it.src==='kk'?'':'PREVIEW'].filter(Boolean).map(esc).join(' · ')}</div>
-        ${note&&(st==='Gagal'||st==='')?`<div class="upn">${esc(note.split('\n').slice(-3).join('\n'))}</div>`:''}</div>`}).join('')||'<div class="dv-empty">Nggak ada.</div>'}</div>
+        ${note&&(st==='Gagal'||st==='')?`<div class="upn">${esc(note.split('\n').slice(-3).join('\n'))}</div>`:''}
+        ${x.st==='Gagal'&&x.it.src==='kk'?`<div class="ugb">${unowBtn(x.c,1)}</div>`:''}</div>`}).join('')||'<div class="dv-empty">Nggak ada.</div>'}</div>
     <div class="row"><span class="sp"></span><button class="primary" id="upClose">Tutup</button></div></div>`;
   document.body.appendChild(w);
   const done=()=>w.remove();
   w.querySelector('#upClose').onclick=done;w.onclick=e=>{if(e.target===w)done()};
   w.querySelectorAll('.upi').forEach(el=>el.onclick=()=>{const x=rows[+el.dataset.i];done();openForm(state.items.find(i=>i.id===x.it.id))});
+  w.querySelectorAll('.upi .unow').forEach(b=>b.onclick=e=>{e.stopPropagation();const x=rows[+b.closest('.upi').dataset.i];
+    uploadNow(x.it,x.c,b,()=>{const sp=b.closest('.upi').querySelector('.uph .st');if(sp){sp.className='st Acc';sp.textContent='Acc'}})});
 }
 // ===== INSIGHT (tab INSIGHT di DASHBOARD KULTURAMA, cuma dibaca) =====
 const INS={cache:{},f:{pf:'',ak:'',j:'',br:'',q:'',sort:'v',dir:-1,n:30}};
@@ -1890,7 +1927,7 @@ function openForm(item,k){
     <div class="sec"><h3>Upload</h3><div class="up">
       <span></span><span class="h">Jam up</span><span class="h">Status</span><span class="h pidh">Post ID</span>
       ${PLAT.map(([c,n])=>`<b title="${n}">${c}</b>${sel('jam'+c,'',OPT.jam,true)}${sel('st'+c,'',OPT.status,true)}<input class="pid" data-k="id${c}" value="${esc(cur['id'+c]||'')}" placeholder="Post ID ${c}" autocomplete="off">`).join('')}
-    </div></div>
+    </div>${!isNew?gagalSec(cur):''}</div>
     ${!isNew?briefSec(cur):''}
     ${!isNew&&cur.src==='kk'&&(API||window.__INS)?'<div class="sec" id="insSec"><h3>Insight</h3><div class="insb"><span class="mut">Narik insight…</span></div></div>':''}
     <div class="sec"><h3>Lainnya</h3>
@@ -1911,6 +1948,8 @@ function openForm(item,k){
   if(srcSeg){const paintS=()=>srcSeg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.s===cur.src));
     srcSeg.querySelectorAll('button').forEach(b=>b.onclick=()=>{cur.src=b.dataset.s;paintS();const ev=modal.querySelector('[data-k=eventId]');if(ev)ev.readOnly=cur.src==='kk'});paintS();}
   if(cur.src==='kk'){const ev=modal.querySelector('[data-k=eventId]');if(ev){ev.readOnly=true;ev.title='Diisi otomatis sama sistem KALENDER KONTEN'}}
+  modal.querySelectorAll('#ugg .unow').forEach(b=>b.onclick=()=>{const pf=b.dataset.pf;
+    uploadNow(item,pf,b,()=>{const sl=modal.querySelector(`select[data-k=st${pf}]`);if(sl)sl.value='Acc';cur['st'+pf]='Acc';render()})});
   modal.querySelectorAll('#segChips .cp:not(.add)').forEach(el=>el.onclick=()=>el.classList.toggle('on'));
   modal.querySelector('#segAdd').onclick=()=>mini('Tambah Segmen',v=>{if(!v)return;
     let ex=[...modal.querySelectorAll('#segChips .cp:not(.add)')].find(c=>c.dataset.v.toLowerCase()===v.toLowerCase());
