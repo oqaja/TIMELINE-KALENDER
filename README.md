@@ -70,9 +70,9 @@ Setup sekali:
 - GitHub down → dipakai salinan terakhir (disimpan di Properti skrip `LOADER_SRC_*`; jangan dihapus).
 - Fitur baru yang butuh izin Google jenis baru (Gmail, Calendar, Drive tulis, dll) harus ada pemanggilannya di `Loader.gs` (lihat `izinDriveTulis_`), lalu Run **izinSemua** + Deploy versi baru. Google nentuin izin dari kode yang kelihatan di Apps Script, bukan dari kode yang diambil dari GitHub.
 
-## Tombol "Bikin Brief" (tab Ide SMO)
+## Tombol "Bikin Brief" (tab Ide SP)
 
-Ide yang udah **Masuk bank** (Status `ambil`) punya tombol **📝 Bikin Brief**. Klik → Apps Script nulis `antri · <waktu>` di kolom **L "Brief"** tab *Ide Konten SMO*. Scheduled task **Content Writer Shoe Police** (tiap jam, 07.07–22.07 WIB) cuma ngerjain baris yang `antri`.
+Ide yang udah **Masuk bank** (Status `ambil`) punya tombol **📝 Bikin Brief**. Klik → Apps Script nulis `antri · <waktu>` di kolom **L "Brief"** tab *Ide Konten SP* (dulu *Ide Konten SMO*). Scheduled task **Content Writer Shoe Police** (tiap jam, 07.07–22.07 WIB) cuma ngerjain baris yang `antri`.
 
 Isi kolom Brief & tampilannya di kartu:
 - kosong → 📝 Bikin Brief
@@ -87,3 +87,8 @@ Butuh `SCRIPT_VER` ≥ 6 (Loader update sendiri ±1 jam, atau Run `updateSekaran
 1. claude.ai/code/routines → buka **Content Writer Shoe Police** → ✏ Edit → **Add another trigger** → **API** → **Generate token**. Salin URL `/fire` dan token-nya (token cuma muncul sekali).
 2. Apps Script → ⚙ Setelan project → Properti skrip → tambah `BRIEF_FIRE_URL` (URL tadi) dan `BRIEF_FIRE_TOKEN` (token tadi).
 3. Selesai. Klik Bikin Brief → agent langsung dicolek (jeda min. 2 menit antar colekan). Tanpa 2 properti itu, antrian tetap dikerjain run per jam.
+
+## Tab Ide SP & Ide NSP
+- **Ide SP** baca tab *Ide Konten SP* (nama lama *Ide Konten SMO* masih dikenali Apps Script). Ada tombol Bikin Brief.
+- **Ide NSP** baca tab *Ide Konten NSP* (riset tren NSP + riset material NSP). Bisa Skip / Masukin bank konten, tanpa tombol Bikin Brief.
+- Butuh Apps Script versi 7 (`SCRIPT_VER = 7`); kepakai sendiri ±1 jam setelah push, atau Run `updateSekarang`.

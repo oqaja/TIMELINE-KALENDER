@@ -443,7 +443,7 @@ svg.off .rm-t.sm{font-size:15px}
 <div class="wrap">
   <header>
     <div class="ttl"><h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
-      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="map">Kantor</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button><button data-v="ins">Insight</button><button data-v="smo">Ide SMO</button><a class="tablink" href="invoice.html">Invoice ↗</a></nav></div>
+      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="map">Kantor</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button><button data-v="ins">Insight</button><button data-v="smo">Ide SP</button><button data-v="nsp">Ide NSP</button><a class="tablink" href="invoice.html">Invoice ↗</a></nav></div>
     <div class="nav">
       <span class="subtabs" id="calSub"><button data-v="cal">Bulanan</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button></span>
       <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>
@@ -882,7 +882,7 @@ function goDay(k){dayK=k;const [y,m]=k.split('-').map(Number);
   if(y!==viewY||m-1!==viewM){viewY=y;viewM=m-1;navTo()}else render()}
 function shiftDay(n){const [y,m,d]=(dayK||todayKey).split('-').map(Number);const t=new Date(y,m-1,d+n);goDay(key(t.getFullYear(),t.getMonth(),t.getDate()))}
 function setView(v){view=v;try{localStorage.setItem('sp-timeline-view',v)}catch(e){}
-  if(v==='day'||v==='week'||v==='todo'||v==='stat'||v==='ins'||v==='smo'||v==='map'){goDay(dayK||todayKey)}else render()}
+  if(v==='day'||v==='week'||v==='todo'||v==='stat'||v==='ins'||v==='smo'||v==='nsp'||v==='map'){goDay(dayK||todayKey)}else render()}
 const mondayOf=k=>{const [y,m,d]=k.split('-').map(Number);const t=new Date(y,m-1,d);t.setDate(t.getDate()-((t.getDay()+6)%7));return t};
 function renderWeek(){
   if(!dayK)dayK=todayKey;
@@ -1156,7 +1156,7 @@ function renderBankBar(){
     <div class="sub2">Drag ke tanggal, atau klik buat jadwalin</div>
     ${all.length>6?`<input class="bk-q" id="bkQ" placeholder="Cari…" value="${esc(bankQ)}">`:''}
     <div class="bk-list">${L.map(b=>{const t=TYPES.find(x=>x.id===b.type)||TYPES[0];return `<div class="bk-it" data-id="${esc(b.id)}" title="${esc(b.title)}"><span class="bk-ty" style="background:${t.color}"></span><span class="bk-tt"><b>${esc(b.title)}</b><small>${esc(t.name)}${b.segmen?' · '+esc(b.segmen):''}${b.brand?' · '+esc(b.brand):''}</small></span></div>`}).join('')
-      ||`<div class="none">${all.length?'Nggak ketemu':'Belum ada. Tambah dari tab Ide SMO atau tombol ＋'}</div>`}</div>`;
+      ||`<div class="none">${all.length?'Nggak ketemu':'Belum ada. Tambah dari tab Ide SP / Ide NSP atau tombol ＋'}</div>`}</div>`;
   bb.querySelector('#bkAdd').onclick=()=>openBank(null);
   const qi=bb.querySelector('#bkQ');if(qi)qi.oninput=()=>{bankQ=qi.value;renderBankBar();const n=document.getElementById('bkQ');n.focus();n.setSelectionRange(n.value.length,n.value.length)};
   bb.querySelectorAll('.bk-it').forEach(el=>{
@@ -1197,34 +1197,41 @@ function openBank(b){
   setTimeout(()=>w.querySelector('#bkT').focus(),30);
 }
 
-// ===================== IDE SMO (tab "Ide Konten SMO" dari agent riset) =====================
-const SMO={rows:null,at:0,f:{st:'baru',fmt:'',urg:'',q:''},open:{}};
+// ===================== IDE SP & NSP (tab "Ide Konten SP" / "Ide Konten NSP" dari agent riset) =====================
+// view 'smo' = Ide SP (Shoe Police, ada tombol Bikin Brief) · view 'nsp' = Ide NSP (Nspproject, tanpa brief)
+const IDE_SRC={sp:{lbl:'Ide SP',tab:'Ide Konten SP',view:'smo',brief:true},nsp:{lbl:'Ide NSP',tab:'Ide Konten NSP',view:'nsp',brief:false}};
+const SMOS={};Object.keys(IDE_SRC).forEach(k=>SMOS[k]={src:k,rows:null,at:0,f:{st:'baru',fmt:'',urg:'',q:''},open:{}});
+let SMO=SMOS.sp;
+const ideSrc=()=>view==='nsp'?'nsp':'sp';
 // nilai dropdown Status di Sheet: baru / ambil / skip  (ambil = udah masuk bank konten)
 const smoSt=s=>{s=String(s||'').trim().toLowerCase();return s===''?'baru':s==='bank'?'ambil':s};
 const SMO_ST={baru:'Baru',ambil:'Masuk bank',skip:'Skip'};
 function smoType(fmt){const f=String(fmt||'').toLowerCase();return /carousel|desain|feed/.test(f)?'carousel':/long|panjang/.test(f)?'long':/story/.test(f)?'story':'short'}
 function smoSeg(fmt){const m=String(fmt||'').match(/\(([^)]+)\)/);if(!m)return '';const s=m[1].trim();return opts('segmen').find(x=>x.toLowerCase()===s.toLowerCase())||s}
 async function loadSmo(force){
-  if(SMO.rows&&!force&&Date.now()-SMO.at<60000)return SMO.rows;
+  const S=SMO,src=S.src;
+  if(S.rows&&!force&&Date.now()-S.at<60000)return S.rows;
   let rows;
-  if(window.__SMO)rows=window.__SMO;
+  if(src==='sp'&&window.__SMO)rows=window.__SMO;
   else{if(!API)throw new Error('Belum nyambung ke Sheet');
     const t=new Date();t.setDate(t.getDate()-90);
-    const r=await fetch(API+(API.includes('?')?'&':'?')+'smo=1&from='+key(t.getFullYear(),t.getMonth(),t.getDate()),{cache:'no-store'}),d=await r.json();
-    if(!d.smo)throw new Error(d.smoError||'Gagal narik Ide SMO (script perlu versi terbaru — jalanin updateSekarang)');rows=d.smo}
-  SMO.rows=rows;SMO.at=Date.now();return rows;
+    const r=await fetch(API+(API.includes('?')?'&':'?')+'smo=1&src='+src+'&from='+key(t.getFullYear(),t.getMonth(),t.getDate()),{cache:'no-store'}),d=await r.json();
+    if(src!=='sp'&&(+d.ver||0)<7)throw new Error('Script belum versi terbaru buat '+IDE_SRC[src].lbl+' — jalanin updateSekarang di Apps Script (atau tunggu ±1 jam)');
+    if(!d.smo)throw new Error(d.smoError||'Gagal narik '+IDE_SRC[src].lbl+' (script perlu versi terbaru — jalanin updateSekarang)');rows=d.smo}
+  S.rows=rows;S.at=Date.now();return rows;
 }
 function renderSmo(){
-  document.getElementById('monthLbl').textContent='Ide SMO';
-  document.getElementById('filters').innerHTML=`<span class="status" id="status">Saran konten dari agent riset · tab Ide Konten SP</span>`;
+  SMO=SMOS[ideSrc()];const I=IDE_SRC[SMO.src],vw=view;
+  document.getElementById('monthLbl').textContent=I.lbl;
+  document.getElementById('filters').innerHTML=`<span class="status" id="status">Saran konten dari agent riset · tab ${I.tab}</span>`;
   const v=document.getElementById('smoView');
   if(!SMO.rows)v.innerHTML='<div class="dv-empty">Narik ide dari Sheet…</div>';
-  loadSmo().then(r=>{if(view==='smo')drawSmo(r)}).catch(e=>{if(view==='smo')v.innerHTML=`<div class="dv-empty">⚠ ${esc(e.message||e)}</div>`});
+  loadSmo().then(r=>{if(view===vw)drawSmo(r)}).catch(e=>{if(view===vw)v.innerHTML=`<div class="dv-empty">⚠ ${esc(e.message||e)}</div>`});
 }
 function smoBankText(x){return [x.hook&&'HOOK\n'+x.hook,x.angle&&'ANGLE / POV\n'+x.angle,x.trigger&&'PEMICU\n'+x.trigger,x.flow&&'ALUR ISI\n'+x.flow,x.research&&'BAHAN RISET\n'+x.research,x.sources&&'SUMBER\n'+x.sources.split(/\s*\|\s*/).join('\n'),x.urgency&&'Urgensi: '+x.urgency].filter(Boolean).join('\n\n')}
 function smoSetStatus(x,st){
   x.status=st;
-  if(API){queue.push({op:'smoStatus',ref:{row:x.row,title:x.title},status:st});flush()}
+  if(API){queue.push({op:'smoStatus',src:SMO.src,ref:{row:x.row,title:x.title},status:st});flush()}
 }
 // kolom Brief (L): kosong | antri · … | proses · … | gagal: … | <link brief> — <Jenis>
 function smoBriefSt(b){b=String(b||'').trim();const l=b.toLowerCase();
@@ -1236,11 +1243,11 @@ async function smoBriefReq(x,action,re){
   if(!PIN){askPin(v=>{savePin(v);smoBriefReq(x,action,re)});return}
   for(let i=0;i<30&&(busy||queue.length);i++)await new Promise(r=>setTimeout(r,500)); // tunggu status "ambil" kesimpen dulu
   const prev=x.brief;x.brief=action==='cancel'?'':'antri · …';x._briefBusy=true;re();
-  try{const d=await apiPost({op:'smoBrief',ref:{row:x.row,title:x.title},action});x.brief=d.brief||'';x._briefBusy=false;re();
+  try{const d=await apiPost({op:'smoBrief',src:'sp',ref:{row:x.row,title:x.title},action});x.brief=d.brief||'';x._briefBusy=false;re();
     toast(action==='cancel'?'Permintaan brief dibatalin':d.fired==='ok'?`Agent dicolek — brief "${x.title}" lagi dikerjain (±10–20 menit)`:d.fired==='soon'?`"${x.title}" masuk antrian — agent baru aja dicolek, ikut dikerjain dalam beberapa menit`:`"${x.title}" masuk antrian brief — dikerjain agent di run berikutnya (maks ±1 jam)`)}
   catch(e){x._briefBusy=false;const m=String(e.message||e);
     if(/pin_wrong/.test(m)){savePin('');x.brief=prev;re();toast('PIN salah, coba lagi.');return}
-    const bm=m.match(/brief_(?:busy|status): (.*)/);x.brief=prev;re();toast(bm?bm[1]:'Gagal minta brief: '+m.slice(0,90));if(bm)loadSmo(true).then(r=>{if(view==='smo')drawSmo(r)}).catch(()=>{})}
+    const bm=m.match(/brief_(?:busy|status): (.*)/);x.brief=prev;re();toast(bm?bm[1]:'Gagal minta brief: '+m.slice(0,90));if(bm){const vw=view;loadSmo(true).then(r=>{if(view===vw)drawSmo(r)}).catch(()=>{})}}
 }
 function smoBriefUi(x){const b=smoBriefSt(x.brief);
   if(b.k==='ok')return `<a class="brf ok" href="${esc(b.url)}" target="_blank" rel="noopener">📄 Lihat brief${b.jenis?' · '+esc(b.jenis):''} ↗</a>`;
@@ -1250,7 +1257,7 @@ function smoBriefUi(x){const b=smoBriefSt(x.brief);
   if(b.k==='other')return `<span class="brf" title="${esc(b.t)}">${esc(b.t.slice(0,40))}</span>`;
   return `<button class="brief" data-a="brief">📝 Bikin Brief</button>`}
 function drawSmo(all){
-  const v=document.getElementById('smoView'),F=SMO.f;
+  const v=document.getElementById('smoView'),F=SMO.f,I=IDE_SRC[SMO.src];
   const uniq=k=>[...new Set(all.map(x=>x[k]).filter(Boolean))];
   const cnt=s=>all.filter(x=>smoSt(x.status)===s).length;
   const q=F.q.trim().toLowerCase();
@@ -1266,8 +1273,8 @@ function drawSmo(all){
       ${op?`<div class="smo-d">${[['Angle / POV',x.angle],['Pemicu',x.trigger],['Alur isi',x.flow],['Bahan riset',x.research]].filter(y=>y[1]).map(([h,tx])=>`<div><h5>${h}</h5><p>${esc(tx)}</p></div>`).join('')}
         ${src.length?`<div><h5>Sumber</h5><ol class="smo-src">${src.map(u=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\/(www\.)?/,'').slice(0,70))}</a></li>`).join('')}</ol></div>`:''}</div>`:''}
       <div class="smo-a"><button class="lnk" data-a="open">${op?'Tutup detail':'Lihat detail'}</button><span class="sp"></span>
-        ${st==='baru'?`<button data-a="skip">Skip</button><button class="primary" data-a="bank">＋ Masukin bank konten</button>`:st==='ambil'?`${smoBriefSt(x.brief).k==='none'?'<button data-a="reset">Balikin ke Baru</button>':''}${smoBriefUi(x)}`:`<button data-a="reset">Balikin ke Baru</button>`}</div></div>`};
-  v.innerHTML=`<div class="dv-top"><h2>Ide Konten SMO<small>Saran konten dari agent riset · masukin ke bank konten biar bisa dipakai kapan aja</small></h2><button id="smoRe" title="Tarik ulang">⟳</button></div>
+        ${st==='baru'?`<button data-a="skip">Skip</button><button class="primary" data-a="bank">＋ Masukin bank konten</button>`:st==='ambil'?(I.brief?`${smoBriefSt(x.brief).k==='none'?'<button data-a="reset">Balikin ke Baru</button>':''}${smoBriefUi(x)}`:'<button data-a="reset">Balikin ke Baru</button>'):`<button data-a="reset">Balikin ke Baru</button>`}</div></div>`};
+  v.innerHTML=`<div class="dv-top"><h2>${I.tab}<small>Saran konten dari agent riset · masukin ke bank konten biar bisa dipakai kapan aja</small></h2><button id="smoRe" title="Tarik ulang">⟳</button></div>
     <div class="insf-bar">
       <span class="grp">${chip('st','baru',`Baru <b>${cnt('baru')}</b>`)}${chip('st','ambil',`Masuk bank <b>${cnt('ambil')}</b>`)}${chip('st','skip',`Skip <b>${cnt('skip')}</b>`)}${chip('st','','Semua')}</span>
       <select data-fk="fmt"><option value="">Semua format</option>${uniq('format').map(f=>`<option${F.fmt===f?' selected':''}>${esc(f)}</option>`).join('')}</select>
@@ -1275,7 +1282,7 @@ function drawSmo(all){
       <input class="isearch" id="smoQ" placeholder="Cari ide…" value="${esc(F.q)}" style="margin:0;max-width:220px">
     </div>
     ${Object.keys(groups).map(d=>`<div class="dv-sec">${d?fmtDate(d):'Tanpa tanggal'} · ${groups[d].length} ide</div><div class="smo-g">${groups[d].map(card).join('')}</div>`).join('')
-      ||`<div class="dv-empty">${all.length?'Nggak ada ide di filter ini.':'Belum ada ide di tab Ide Konten SP.'}</div>`}`;
+      ||`<div class="dv-empty">${all.length?'Nggak ada ide di filter ini.':'Belum ada ide di tab '+I.tab+'.'}</div>`}`;
   const re=()=>drawSmo(all);
   v.querySelector('#smoRe').onclick=()=>{v.querySelector('#smoRe').classList.add('spin');loadSmo(true).then(drawSmo).catch(e=>toast(String(e.message||e)))};
   v.querySelectorAll('.chip-f[data-fk]').forEach(el=>el.onclick=()=>{F[el.dataset.fk]=el.dataset.fv;re()});
@@ -1286,10 +1293,10 @@ function drawSmo(all){
     el.querySelector('.smo-h').onclick=()=>{SMO.open[k]=!SMO.open[k];re()};
     el.querySelectorAll('[data-a]').forEach(bt=>bt.onclick=e=>{e.stopPropagation();const a=bt.dataset.a;
       if(a==='open'){SMO.open[k]=!SMO.open[k];re();return}
-      if(a==='brief'){smoBriefReq(x,'req',re);return}
+      if(a==='brief'){if(I.brief)smoBriefReq(x,'req',re);return}
       if(a==='briefCancel'){smoBriefReq(x,'cancel',re);return}
-      if(API&&scriptVer&&scriptVer<5){toast('Script belum versi terbaru — jalanin updateSekarang di Apps Script.');return}
-      if(a==='bank'){const t=smoType(x.format),b={id:newId(),title:x.title,type:t,segmen:smoSeg(x.format),akun:'',brand:'',catatan:smoBankText(x),from:'Ide SMO '+(x.date?fmtDate(x.date).replace(/^\w+, /,''):'')};
+      if(API&&scriptVer&&scriptVer<(SMO.src==='sp'?5:7)){toast('Script belum versi terbaru — jalanin updateSekarang di Apps Script.');return}
+      if(a==='bank'){const t=smoType(x.format),b={id:newId(),title:x.title,type:t,segmen:smoSeg(x.format),akun:'',brand:'',catatan:smoBankText(x),from:I.lbl+' '+(x.date?fmtDate(x.date).replace(/^\w+, /,''):'')};
         if(!state.bank)state.bank=[];state.bank.unshift(b);bankSave(b);smoSetStatus(x,'ambil');re();
         toast(`"${x.title}" masuk bank konten`,null,{label:'Buka',fn:()=>{const y=(state.bank||[]).find(z=>z.id===b.id);if(y)openBank(y)}});return}
       if(a==='skip'){smoSetStatus(x,'skip');re();toast('Ide di-skip',()=>{smoSetStatus(x,'baru');re()});return}
@@ -1686,10 +1693,10 @@ function render(){
   document.body.classList.toggle('v-todo',view==='todo');
   document.body.classList.toggle('v-stat',view==='stat');
   document.body.classList.toggle('v-ins',view==='ins');
-  document.body.classList.toggle('v-smo',view==='smo');
+  document.body.classList.toggle('v-smo',view==='smo'||view==='nsp');
   document.body.classList.toggle('v-map',view==='map');
   document.getElementById('mapView').hidden=view!=='map';
-  document.getElementById('smoView').hidden=view!=='smo';
+  document.getElementById('smoView').hidden=!(view==='smo'||view==='nsp');
   document.getElementById('statView').hidden=view!=='stat';
   document.getElementById('insView').hidden=view!=='ins';
   document.getElementById('todoView').hidden=view!=='todo';
@@ -1703,7 +1710,7 @@ function render(){
   if(view==='todo')return renderTodo();
   if(view==='stat')return renderStat();
   if(view==='ins')return renderIns();
-  if(view==='smo')return renderSmo();
+  if(view==='smo'||view==='nsp')return renderSmo();
   if(view!=='map'&&MAP.sheet)closeSheet();
   if(view==='map')return renderMap();
   document.getElementById('monthLbl').textContent=`${BULAN[viewM]} ${viewY}`;
@@ -2004,7 +2011,7 @@ function cleanBody(){
 <div class="wrap">
   <header>
     <div class="ttl"><h1>Timeline Produksi Konten<small>Shoe Police · klik tanggal buat nambah / edit konten</small></h1>
-      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="map">Kantor</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button><button data-v="ins">Insight</button><button data-v="smo">Ide SMO</button><a class="tablink" href="invoice.html">Invoice ↗</a></nav></div>
+      <nav class="tabs" id="tabs"><button data-v="cal">Kalender</button><button data-v="map">Kantor</button><button data-v="todo">To-do</button><button data-v="stat">Ringkasan</button><button data-v="ins">Insight</button><button data-v="smo">Ide SP</button><button data-v="nsp">Ide NSP</button><a class="tablink" href="invoice.html">Invoice ↗</a></nav></div>
     <div class="nav">
       <span class="subtabs" id="calSub"><button data-v="cal">Bulanan</button><button data-v="week">Mingguan</button><button data-v="day">Upload Harian</button></span>
       <button class="icon" id="prev" aria-label="Bulan sebelumnya">‹</button>

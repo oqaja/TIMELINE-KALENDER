@@ -25,7 +25,7 @@
  *              daftar '<nama>_hapus' = pilihan yang disembunyiin, mis. tim_hapus = orang yang dihapus dari daftar)
  */
 const TZ = 'Asia/Jakarta';
-const SCRIPT_VER = 6; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
+const SCRIPT_VER = 7; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
 const JENIS = { carousel: 'Desain', short: 'Video Pendek', long: 'Video Panjang', story: 'Story' };
 
 // key di kalender  ->  nama header di sheet
@@ -189,28 +189,30 @@ function readBankUsed_() {
   return out;
 }
 
-// ===================== IDE KONTEN SMO (DASHBOARD KULTURAMA, diisi agent riset) =====================
-// dibaca semua kolomnya; dari web cuma kolom Status & kolom Brief (minta brief) yang diubah
-const SMO_TAB = 'Ide Konten SP'; // dulu 'Ide Konten SMO' (diganti nama Nov 2026)
-const SMO_TAB_ALT = ['Ide Konten SP', 'Ide Konten SMO'];
-const SMO_SHEET_ID = 2044770584; // ID tab-nya tetap walau namanya diganti
+// ===================== IDE KONTEN SP & NSP (DASHBOARD KULTURAMA, diisi agent riset) =====================
+// dibaca semua kolomnya; dari web cuma kolom Status & kolom Brief (minta brief, khusus SP) yang diubah
+// src 'sp'  -> tab "Ide Konten SP" (dulu "Ide Konten SMO"; nama lama masih dikenali)
+// src 'nsp' -> tab "Ide Konten NSP"
+const IDE_TABS = { sp: ['Ide Konten SP', 'Ide Konten SMO'], nsp: ['Ide Konten NSP'] };
+const IDE_SHEET_ID = { sp: 2044770584 }; // ID tab Ide SP tetap walau namanya diganti
 const SMO_COLS = { date: 'Tanggal', title: 'Judul', angle: 'Angle/POV', trigger: 'Pemicu', research: 'Bahan Riset', flow: 'Alur Isi',
   hook: 'Hook', format: 'Format', urgency: 'Urgensi', sources: 'Sumber', status: 'Status', brief: 'Brief' };
-function smoSheet_() {
-  const book = kkBook_();
-  for (let i = 0; i < SMO_TAB_ALT.length; i++) { const sh = book.getSheetByName(SMO_TAB_ALT[i]); if (sh) return sh; }
-  const byId = book.getSheets().filter(function (x) { return x.getSheetId() === SMO_SHEET_ID; })[0];
-  if (byId) return byId;
-  throw new Error('Tab "' + SMO_TAB + '" nggak ketemu');
+function smoSrc_(src) { return src === 'nsp' ? 'nsp' : 'sp'; }
+function smoSheet_(src) {
+  const names = IDE_TABS[smoSrc_(src)], b = kkBook_();
+  for (let i = 0; i < names.length; i++) { const sh = b.getSheetByName(names[i]); if (sh) return sh; }
+  const id = IDE_SHEET_ID[smoSrc_(src)];
+  if (id != null) { const byId = b.getSheets().filter(function (x) { return x.getSheetId() === id; })[0]; if (byId) return byId; }
+  throw new Error('Tab "' + names[0] + '" nggak ketemu');
 }
 function smoCols_(sh) {
   const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0].map(function (h) { return String(h).trim().toLowerCase(); }), c = {};
   Object.keys(SMO_COLS).forEach(function (k) { const i = head.indexOf(SMO_COLS[k].toLowerCase()); if (i >= 0) c[k] = i; });
-  if (c.title == null) throw new Error('Kolom Judul nggak ketemu di ' + SMO_TAB);
+  if (c.title == null) throw new Error('Kolom Judul nggak ketemu di ' + sh.getName());
   return c;
 }
-function smoRead_(from) {
-  const sh = smoSheet_(), last = sh.getLastRow();
+function smoRead_(from, src) {
+  const sh = smoSheet_(src), last = sh.getLastRow();
   if (last < 2) return [];
   const c = smoCols_(sh), w = sh.getLastColumn(), rng = sh.getRange(2, 1, last - 1, w), raw = rng.getValues(), disp = rng.getDisplayValues(), out = [];
   for (let i = 0; i < raw.length; i++) {
@@ -224,16 +226,16 @@ function smoRead_(from) {
   }
   return out;
 }
-function smoStatus_(ref, status) {
-  const sh = smoSheet_(), c = smoCols_(sh);
-  if (c.status == null) throw new Error('Kolom Status nggak ada di ' + SMO_TAB);
+function smoStatus_(ref, status, src) {
+  const sh = smoSheet_(src), c = smoCols_(sh);
+  if (c.status == null) throw new Error('Kolom Status nggak ada di ' + sh.getName());
   let row = Number(ref && ref.row) || 0;
   const titleAt = function (r) { return r >= 2 && r <= sh.getLastRow() ? String(sh.getRange(r, c.title + 1).getDisplayValue()).trim() : ''; };
   if (titleAt(row) !== String(ref.title || '').trim()) { // baris geser → cari pakai judul
     const t = sh.getRange(2, c.title + 1, Math.max(1, sh.getLastRow() - 1), 1).getDisplayValues();
     row = 0;
     for (let i = 0; i < t.length; i++) if (String(t[i][0]).trim() === String(ref.title || '').trim()) { row = i + 2; break; }
-    if (!row) throw new Error('notfound: ide "' + ref.title + '" nggak ketemu di ' + SMO_TAB);
+    if (!row) throw new Error('notfound: ide "' + ref.title + '" nggak ketemu di ' + sh.getName());
   }
   sh.getRange(row, c.status + 1).setValue(status || '');
 }
@@ -244,15 +246,16 @@ function smoFindRow_(sh, c, ref) {
   if (titleAt(row) === String(ref.title || '').trim()) return row;
   const t = sh.getRange(2, c.title + 1, Math.max(1, sh.getLastRow() - 1), 1).getDisplayValues();
   for (let i = 0; i < t.length; i++) if (String(t[i][0]).trim() === String(ref.title || '').trim()) return i + 2;
-  throw new Error('notfound: ide "' + ref.title + '" nggak ketemu di ' + SMO_TAB);
+  throw new Error('notfound: ide "' + ref.title + '" nggak ketemu di ' + sh.getName());
 }
 // Tombol "Bikin Brief": nulis "antri · <waktu>" di kolom Brief (L). Agent Content Writer cuma ngerjain baris "antri".
 // Isi kolom Brief: kosong | antri · … | proses · … | gagal: … | <link brief> — <Jenis>
-function smoBrief_(ref, action) {
-  const sh = smoSheet_(), c = smoCols_(sh);
+function smoBrief_(ref, action, src) {
+  if (smoSrc_(src) !== 'sp') return { ok: false, error: 'brief_status: Bikin Brief cuma buat Ide SP' };
+  const sh = smoSheet_('sp'), c = smoCols_(sh);
   if (c.brief == null) { // kolom Brief belum ada → pakai kolom L
     const L = 12, h = String(sh.getRange(1, L).getDisplayValue()).trim();
-    if (h && h.toLowerCase() !== 'brief') throw new Error('Kolom L di ' + SMO_TAB + ' udah dipakai "' + h + '", bukan Brief');
+    if (h && h.toLowerCase() !== 'brief') throw new Error('Kolom L di ' + sh.getName() + ' udah dipakai "' + h + '", bukan Brief');
     sh.getRange(1, L).setValue('Brief');
     c.brief = L - 1;
   }
@@ -623,14 +626,14 @@ function doGet(e) {
   const t0 = Date.now(), p = (e && e.parameter) || {};
   if (p.update === '1' && typeof updateSekarang === 'function') { try { updateSekarang(); } catch (err) {} }
   const useCache = !p.cek && !p.nocache && p.update !== '1';
-  const key = (p.smo === '1' ? 's|' : p.ins === '1' ? 'i|' : 'g|') + dataRev_() + '|' + (p.from || '') + '|' + (p.to || '');
+  const key = (p.smo === '1' ? 's' + smoSrc_(p.src) + '|' : p.ins === '1' ? 'i|' : 'g|') + dataRev_() + '|' + (p.from || '') + '|' + (p.to || '');
   if (useCache) {
     const hit = cacheGet_(key);
     if (hit) { const d = JSON.parse(hit); d.cached = true; d.ms = Date.now() - t0; return out_(d); }
   }
   if (p.smo === '1') { // tab Ide SMO
     const d = { ok: true, ver: SCRIPT_VER };
-    try { d.smo = smoRead_(p.from || ''); } catch (err) { d.smo = null; d.smoError = String(err); }
+    try { d.smo = smoRead_(p.from || '', p.src); d.src = smoSrc_(p.src); } catch (err) { d.smo = null; d.smoError = String(err); }
     if (useCache && d.smo) { try { cachePut_(key, JSON.stringify(d), READ_TTL); } catch (err) {} }
     d.cached = false; d.ms = Date.now() - t0;
     return out_(d);
@@ -783,8 +786,8 @@ function runOp_(op) {
   else if (op.op === 'bankUpsert') bankUpsert_(op.bank);
   else if (op.op === 'bankDelete') bankDelete_(op.id);
   else if (op.op === 'bankUse') bankUse_(op);
-  else if (op.op === 'smoStatus') smoStatus_(op.ref, op.status);
-  else if (op.op === 'smoBrief') return smoBrief_(op.ref, op.action);
+  else if (op.op === 'smoStatus') smoStatus_(op.ref, op.status, op.src);
+  else if (op.op === 'smoBrief') return smoBrief_(op.ref, op.action, op.src);
   else if (op.op === 'kkAdd') {
     if (op.dedupe) { // dikirim ulang setelah app ditutup: jangan bikin baris dobel kalau ternyata udah masuk
       const sh = kkSheet_(), row = kkFind_(sh, kkCols_(sh), { title: op.item && op.item.title, date: op.item && op.item.date });
