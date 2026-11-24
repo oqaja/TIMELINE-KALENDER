@@ -535,6 +535,73 @@ function ruleDel_(id, text) {
   }
 }
 
+// ===================== BRAND DEAL (tab SOW BRAND DEAL: 1 baris = 1 deal) =====================
+const SOW_TAB = 'SOW BRAND DEAL';
+const SOW_MAP = { bulan: 'BULAN', brand: 'BRAND', artikel: 'ARTIKEL', jml: 'JUMLAH SEPATU', barang: 'STATUS BARANG',
+  car: 'CAROUSEL', stCar: 'STATUS CAROUSEL', vp: 'VIDEO PENDEK', stVp: 'STATUS VIDEO PENDEK', vpj: 'VIDEO PANJANG', stVpj: 'STATUS VIDEO PANJANG',
+  aff: 'AFFILIATE', stAff: 'STATUS AFFILIATE', ket: 'KETERANGAN', id: 'ID' };
+function sowSheet_() { const sh = kkBook_().getSheetByName(SOW_TAB); if (!sh) throw new Error('sow_tab: tab "' + SOW_TAB + '" nggak ketemu'); return sh; }
+function sowCols_(sh) {
+  const h = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0].map(function (x) { return String(x).trim().toUpperCase(); }), c = {};
+  Object.keys(SOW_MAP).forEach(function (k) { const i = h.indexOf(SOW_MAP[k]); if (i >= 0) c[k] = i; });
+  if (c.id == null || c.brand == null) throw new Error('sow_head: header ID / BRAND nggak ada di tab ' + SOW_TAB);
+  c._w = h.length; return c;
+}
+function sowMonth_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, TZ, 'yyyy-MM');
+  const t = String(v || '').trim(), m = t.match(/^(\d{4})-(\d{1,2})/);
+  if (m) return m[1] + '-' + ('0' + m[2]).slice(-2);
+  const B = ['januari', 'februari', 'maret', 'april', 'mei', 'juni', 'juli', 'agustus', 'september', 'oktober', 'november', 'desember'], w = t.toLowerCase().split(/\s+/);
+  const bi = B.findIndex(function (b) { return w[0] && b.indexOf(w[0].slice(0, 3)) === 0; });
+  return bi >= 0 && /^\d{4}$/.test(w[1] || '') ? w[1] + '-' + ('0' + (bi + 1)).slice(-2) : '';
+}
+function sowRead_() {
+  const sh = sowSheet_(), c = sowCols_(sh), n = sh.getLastRow() - 1;
+  if (n < 1) return [];
+  const raw = sh.getRange(2, 1, n, c._w).getValues(), disp = sh.getRange(2, 1, n, c._w).getDisplayValues(), out = [];
+  for (let i = 0; i < n; i++) {
+    const g = function (k) { return c[k] == null ? '' : String(disp[i][c[k]]).trim(); };
+    if (!g('brand') && !g('id')) continue;
+    const o = { row: i + 2 };
+    Object.keys(SOW_MAP).forEach(function (k) { o[k] = g(k); });
+    o.bulan = c.bulan == null ? '' : sowMonth_(raw[i][c.bulan]);
+    out.push(o);
+  }
+  return out;
+}
+function sowRow_(sh, c, id) {
+  const n = sh.getLastRow() - 1; if (n < 1 || !id) return -1;
+  const v = sh.getRange(2, c.id + 1, n, 1).getDisplayValues();
+  for (let i = 0; i < n; i++) if (String(v[i][0]).trim() === String(id)) return i + 2;
+  return -1;
+}
+function sowVal_(k, v) {
+  v = v == null ? '' : String(v).trim();
+  if (k === 'bulan') { const m = sowMonth_(v); return m ? new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)) - 1, 1) : ''; }
+  if (['jml', 'car', 'vp', 'vpj', 'aff'].indexOf(k) >= 0) return v === '' ? '' : (isNaN(Number(v)) ? v : Number(v));
+  return v;
+}
+function sowAdd_(rec) {
+  rec = rec || {};
+  if (!String(rec.brand || '').trim()) throw new Error('sow_brand: brand wajib diisi');
+  const sh = sowSheet_(), c = sowCols_(sh), id = String(rec.id || ('sow' + Date.now().toString(36)));
+  if (sowRow_(sh, c, id) > 0) return { ok: true, id: id, dup: true };
+  const row = new Array(c._w).fill('');
+  Object.keys(SOW_MAP).forEach(function (k) { if (c[k] != null && k !== 'id') row[c[k]] = sowVal_(k, rec[k]); });
+  row[c.id] = id;
+  sh.appendRow(row);
+  return { ok: true, id: id };
+}
+function sowUpdate_(id, patch) {
+  const sh = sowSheet_(), c = sowCols_(sh), r = sowRow_(sh, c, id);
+  if (r < 0) throw new Error('sow_notfound: deal ' + id + ' nggak ketemu (mungkin dihapus di Sheet)');
+  Object.keys(patch || {}).forEach(function (k) { if (c[k] != null && k !== 'id') sh.getRange(r, c[k] + 1).setValue(sowVal_(k, patch[k])); });
+}
+function sowDelete_(id) {
+  const sh = sowSheet_(), c = sowCols_(sh), r = sowRow_(sh, c, id);
+  if (r > 0) sh.deleteRow(r);
+}
+
 // ===================== UPLOAD SEKARANG (status Gagal → coba upload lagi) =====================
 // Balikin STATUS <platform> ke "Acc", terus colek GitHub Actions di repo automation (ops-pipeline-core)
 // bawa nomor baris + judul. Automation-nya ngeloloskan baris itu walau tanggalnya udah lewat.
@@ -930,6 +997,14 @@ function doGet(e) {
     d.cached = false; d.ms = Date.now() - t0;
     return out_(d);
   }
+  if (p.sow === '1') { // tab Brand Deal (SOW BRAND DEAL)
+    const k2 = 'w|' + dataRev_();
+    if (useCache) { const hit = cacheGet_(k2); if (hit) { const d = JSON.parse(hit); d.cached = true; return out_(d); } }
+    const d = { ok: true, ver: SCRIPT_VER };
+    try { d.sow = sowRead_(); } catch (err) { d.sow = null; d.sowError = String(err); }
+    if (useCache && d.sow) { try { cachePut_(k2, JSON.stringify(d), READ_TTL); } catch (err) {} }
+    return out_(d);
+  }
   if (p.ins === '1') { // tab Insight: cuma data INSIGHT, terpisah biar tarikan kalender tetap ringan
     const d = { ok: true, ver: SCRIPT_VER };
     try { d.ins = insightRead_(p.from || '', p.to || ''); } catch (err) { d.ins = null; d.insError = String(err); }
@@ -1079,6 +1154,9 @@ function runOp_(op) {
   else if (op.op === 'bankDelete') bankDelete_(op.id);
   else if (op.op === 'bankUse') bankUse_(op);
   else if (op.op === 'smoStatus') smoStatus_(op.ref, op.status, op.src);
+  else if (op.op === 'sowAdd') return sowAdd_(op.rec);
+  else if (op.op === 'sowUpdate') sowUpdate_(op.id, op.patch);
+  else if (op.op === 'sowDelete') sowDelete_(op.id);
   else if (op.op === 'smoBrief') return smoBrief_(op.ref, op.action, op.src);
   else if (op.op === 'smoEdit') return smoEdit_(op.ref, op.fields, op.src);
   else if (op.op === 'uploadNow') return uploadNow_(op.ref, op.pf);

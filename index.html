@@ -151,9 +151,32 @@ header.top{display:flex;align-items:center;gap:14px;margin-bottom:10px}
 .nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .dnav{display:flex;align-items:center;gap:6px;margin-left:auto}
 .nav .subtabs:empty{display:none}
-body.v-smo .dnav{display:none}
+body.v-smo .dnav,body.v-deal .dnav{display:none}
+body.v-deal .main{display:none}
 .bar .status{font-size:11.5px}
 .fab{display:none}
+.dl-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}.dl-tiles>div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.dl-tiles b{display:block;font:800 22px/1.1 var(--head)}.dl-tiles b small{font-size:13px;color:var(--muted)}.dl-tiles span{font-size:12px;color:var(--muted)}.dl-tiles .warn{border-color:#f3b5ab;background:#fff8f6}.dl-tiles .warn b{color:#a3290f}
+.dl-f{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.dl-f input{flex:1;min-width:180px;font:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--card)}
+.sow-m{display:flex;gap:6px;flex-wrap:wrap}.sow-m .chip-f.on,.dl-f .chip-f.on{background:#111;color:#fff;border-color:#111}
+.dl-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.dl{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}.dl.ok{background:#f6fbf2;border-color:#cfe6bd}
+.dl-h{display:flex;gap:8px;align-items:flex-start}.dl-t{flex:1;min-width:0}.dl-t b{font:800 16px/1.2 var(--head);display:block}.dl-t span{font-size:13px;color:#555;display:block;margin-top:2px}
+.dl-e{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:5px 12px;font:inherit;font-size:12.5px;cursor:pointer;min-height:34px}
+.dl-m{display:flex;flex-wrap:wrap;gap:5px}.dl-m span{font-size:11.5px;font-weight:700;border-radius:99px;padding:3px 9px;background:#f1f0ea}
+.dl-b.b-diterima{background:#e9f6df;color:#11734b}.dl-b.b-belum-sampai,.dl-b.b-nunggu-konfirmasi{background:#ffe7e1;color:#a3290f}.dl-b.b-pending{background:#eee;color:#555}.dl-k{background:#eef3ff!important;color:#1d4ea3}
+.dl-s{display:flex;flex-wrap:wrap;gap:6px}.dl-none{font-size:12.5px;color:var(--muted)}
+.sw{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:5px 9px;font:inherit;font-size:12.5px;cursor:pointer;min-height:36px}
+.sw b{font-weight:800}.sw i{width:auto;height:auto;min-width:0;display:inline-block;line-height:1.35;white-space:nowrap;font-style:normal;font-size:11px;font-weight:800;border-radius:6px;padding:2px 6px;background:#eee;color:#666}
+.sw.s-selesai i{background:#d4edbc;color:#11734b}.sw.s-kurang i{background:#ffe1cc;color:#a3400f}.sw.s-pending i{background:#e5e5e5;color:#444}.sw.s-selesai{border-color:#cfe6bd}
+.dl-p{height:5px;background:#eee;border-radius:99px;overflow:hidden}.dl-p i{display:block;height:100%;background:#2fa84f;border-radius:99px}
+.dl-n{margin:0;font-size:12.5px;color:#555;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dlm{max-width:560px}.dlm h3{margin:0 0 12px;font-family:var(--head)}.dlm h4{margin:14px 0 6px;font-size:12px;text-transform:uppercase;color:var(--muted);letter-spacing:.03em}
+.dlm label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:#555}.dlm input,.dlm select,.dlm textarea{font:inherit;font-size:16px;font-weight:500;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;color:var(--ink)}
+.dlm-g{display:grid;grid-template-columns:1fr 1fr;gap:10px}.dlm .w2{grid-column:1/-1}.dlm>label.w2{margin-top:10px}
+.dlm-s{display:grid;gap:6px}.dlm-s>div{display:grid;grid-template-columns:minmax(0,1fr) 70px 120px;gap:6px;align-items:center}.dlm-s span{font-size:13.5px;font-weight:700}
+.dlm .row{display:flex;gap:8px;align-items:center;margin-top:14px}.dlm .row .sp{flex:1}.dlm .lnk.danger{color:#c0392b;border:0;background:none;text-decoration:underline;cursor:pointer;font:inherit;font-size:13px}
+@media(max-width:700px){.dl-tiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.dl-tiles>div{padding:8px}.dl-tiles b{font-size:18px}.dl-tiles span{font-size:10.5px;line-height:1.25;display:block}.dl-g{grid-template-columns:1fr}.sow-m{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.sow-m>*{flex:none}}
 .dvact{display:flex;align-items:center;gap:6px;margin-left:auto}.dvact .pelb{margin-left:0}
 @media(max-width:700px){
   body{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
@@ -472,7 +495,7 @@ svg.off .rm-t.sm{font-size:15px}
 <div class="wrap">
   <header class="top">
     <div class="brand"><b>SP</b><span>Timeline<em>Konten</em></span></div>
-    <nav class="tabs" id="tabs"><button data-g="cal"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Kalender</span></button><button data-g="ide"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1.1 1.3 1.1 2.2h5c0-.9.5-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg><span>Ide</span></button><button data-g="tim"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg><span>To-do</span></button><button data-g="data"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg><span>Data</span></button><a class="tablink" href="invoice.html"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span>Invoice</span></a></nav>
+    <nav class="tabs" id="tabs"><button data-g="cal"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Kalender</span></button><button data-g="ide"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1.1 1.3 1.1 2.2h5c0-.9.5-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg><span>Ide</span></button><button data-g="tim"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg><span>To-do</span></button><button data-g="data"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg><span>Data</span></button><button data-g="deal"><svg viewBox="0 0 24 24"><rect x="3.5" y="7" width="17" height="12.5" rx="2.5"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3.5 12.5h17"/></svg><span>Deal</span></button><a class="tablink" href="invoice.html"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span>Invoice</span></a></nav>
     <div class="acts"><button class="icon" id="syncBtn" title="Tarik data terbaru dari Sheet">⟳<em id="syncDot"></em></button><button class="icon" id="sheetBtn" title="Sambungan Google Sheet">⚙</button></div>
   </header>
   <div class="nav">
@@ -490,6 +513,7 @@ svg.off .rm-t.sm{font-size:15px}
   <section class="statview" id="statView" hidden></section>
   <section class="statview" id="insView" hidden></section>
   <section class="statview" id="smoView" hidden></section>
+  <section class="statview" id="dealView" hidden></section>
 </div>
 
 <div class="back" id="back">
@@ -805,7 +829,7 @@ function navTo(){setRange();render();const mf=`${viewY}-${String(viewM+1).padSta
 setRange();
 const hidden=new Set();let hidePv=false;
 let view='cal';try{view=localStorage.getItem('sp-timeline-view')||'cal'}catch(e){}
-if(!['cal','week','day','todo','stat','ins','smo','nsp','fp'].includes(view))view=view==='map'?'todo':'cal';
+if(!['deal','cal','week','day','todo','stat','ins','smo','nsp','fp'].includes(view))view=view==='map'?'todo':'cal';
 let dayK=null; // tanggal di menu Upload Harian (default: hari ini)
 
 const pad=n=>String(n).padStart(2,'0');
@@ -1667,7 +1691,101 @@ function renderTodo(){
   tv.querySelectorAll('.td-prog span[data-w]').forEach(sp=>sp.onclick=()=>{tdWho=tdWho===sp.dataset.w?'':sp.dataset.w;tdSave();render()});
   const ds=tv.querySelector('#tdDateSel');if(ds)ds.onchange=e=>{if(e.target.value)goDay(e.target.value)};
 }
-const NAVG={cal:[['cal','Bulanan'],['week','Mingguan'],['day','Harian']],ide:[['smo','Ide SP'],['nsp','Ide NSP'],['fp','Ide FP']],tim:[['todo','To-do']],data:[['stat','Ringkasan'],['ins','Insight']]};
+// ===================== BRAND DEAL (tab SOW BRAND DEAL) =====================
+const SOW={list:null,err:'',loading:false,m:'',f:'open',q:''};
+const SOW_F=[['car','stCar','Carousel'],['vp','stVp','Video Pendek'],['vpj','stVpj','Video Panjang'],['aff','stAff','Affiliate']];
+const SOW_ST=['','Kurang','Selesai','Pending'],SOW_BARANG=['Diterima','Belum sampai','Pending','Nunggu konfirmasi','Tanpa barang'];
+const sowNum=v=>{const n=parseInt(v,10);return isNaN(n)?0:n};
+const sowTot=d=>SOW_F.reduce((a,[k,s])=>{const n=sowNum(d[k]);if(n){a.t+=n;if(d[s]==='Selesai')a.d+=n}return a},{t:0,d:0});
+const sowDone=d=>{const r=sowTot(d);return r.t>0&&r.d===r.t};
+const sowMLbl=m=>{if(!m)return 'Tanpa bulan';const [y,mo]=m.split('-').map(Number);return BULAN[mo-1]+' '+y};
+async function loadSow(force){
+  if(SOW.loading)return;SOW.loading=true;SOW.err='';
+  try{
+    if(window.__SOW){await new Promise(r=>setTimeout(r,250));SOW.list=SOW.list&&!force?SOW.list:JSON.parse(JSON.stringify(window.__SOW))}
+    else{if(!API)throw new Error('Belum nyambung ke Sheet — klik ⚙');
+      const r=await fetch(API+(API.includes('?')?'&':'?')+'sow=1'+(force?'&nocache=1':''),{cache:'no-store'}),d=await r.json();
+      if(d.ver)scriptVer=d.ver;if(!d.sow)throw new Error(d.sowError?String(d.sowError).replace(/^Error:\s*/,'').replace(/^sow_\w+:\s*/,''):(scriptVer&&scriptVer<11?'Script belum versi terbaru — jalanin updateSekarang di Apps Script':'Gagal narik data Brand Deal'));
+      SOW.list=d.sow}
+    if(!SOW.m){const cur=todayKey.slice(0,7);SOW.m=SOW.list.some(d=>d.bulan===cur)?cur:'all'}
+  }catch(e){SOW.err=String(e.message||e)}
+  SOW.loading=false;if(view==='deal')renderDeal()}
+function sowSave(op,d){
+  if(window.__SOW)return true;
+  if(!API){toast('Belum nyambung ke Sheet');return false}
+  if(scriptVer&&scriptVer<11){toast('Script belum versi terbaru — jalanin updateSekarang di Apps Script.');return false}
+  queue.push(op);flush();return true}
+function sowSetSt(d,sk){const i=SOW_ST.indexOf(d[sk]||''),nv=SOW_ST[(i+1)%SOW_ST.length];
+  if(!sowSave({op:'sowUpdate',id:d.id,patch:{[sk]:nv}},d))return;d[sk]=nv;renderDeal()}
+function renderDeal(){
+  document.getElementById('filters').innerHTML=`<span class="status" id="status">${API||window.__SOW?'Data dari tab SOW BRAND DEAL':'Belum nyambung ke Sheet — klik ⚙'}</span>`;
+  const v=document.getElementById('dealView');
+  if(!SOW.list){v.innerHTML=`<div class="dv-empty">${SOW.err?esc(SOW.err)+' <button class="lnk" id="sowRe">Coba lagi</button>':'Narik data Brand Deal…'}</div>`;
+    const rb=v.querySelector('#sowRe');if(rb)rb.onclick=()=>{SOW.err='';renderDeal();loadSow(true)};if(!SOW.err)loadSow();return}
+  const L=SOW.list,months=[...new Set(L.map(d=>d.bulan))].sort().reverse();
+  const inM=L.filter(d=>SOW.m==='all'||d.bulan===SOW.m);
+  const q=SOW.q.trim().toLowerCase();
+  const shown=inM.filter(d=>(SOW.f==='all'||(SOW.f==='done'?sowDone(d):!sowDone(d)))&&(!q||(d.brand+' '+d.artikel+' '+d.ket).toLowerCase().includes(q)));
+  const T=inM.reduce((a,d)=>{const r=sowTot(d);a.t+=r.t;a.d+=r.d;return a},{t:0,d:0});
+  const nOpen=inM.filter(d=>!sowDone(d)).length,nBarang=inM.filter(d=>d.barang&&d.barang!=='Diterima'&&d.barang!=='Tanpa barang').length;
+  const kk=d=>{if(!d.bulan)return 0;const b=String(d.brand).toLowerCase().replace(/\s*\(.*?\)\s*/g,'').trim();
+    return state.items.filter(i=>i.src==='kk'&&i.date.startsWith(d.bulan)&&String(i.brand||'').toLowerCase().split(/\s*,\s*/).some(x=>x&&(x===b||x.startsWith(b)||b.startsWith(x)))).length};
+  const card=d=>{const r=sowTot(d),pc=r.t?Math.round(r.d/r.t*100):0,n=kk(d);
+    return `<article class="dl${sowDone(d)?' ok':''}" data-id="${esc(d.id)}">
+      <div class="dl-h"><div class="dl-t"><b>${esc(d.brand)}</b>${d.artikel?`<span>${esc(d.artikel)}</span>`:''}</div>
+        <button class="dl-e" data-a="edit" aria-label="Edit deal">Edit</button></div>
+      <div class="dl-m">${SOW.m==='all'?`<span class="dl-mo">${esc(sowMLbl(d.bulan))}</span>`:''}${d.barang?`<span class="dl-b b-${esc(d.barang.toLowerCase().replace(/\s+/g,'-'))}">${esc(d.barang)}${d.jml&&d.jml!=='0'?' · '+esc(d.jml)+' psg':''}</span>`:(d.jml?`<span class="dl-b">${esc(d.jml)} psg</span>`:'')}${n?`<span class="dl-k">📅 ${n} konten di kalender</span>`:''}</div>
+      <div class="dl-s">${SOW_F.filter(([k])=>sowNum(d[k])).map(([k,sk,lb])=>`<button class="sw s-${(d[sk]||'belum').toLowerCase()}" data-st="${sk}" title="Klik buat ganti status"><span>${lb}</span><b>${sowNum(d[k])}</b><i>${esc(d[sk]||'Belum')}</i></button>`).join('')||'<span class="dl-none">Belum ada SOW</span>'}</div>
+      ${r.t?`<div class="dl-p"><i style="width:${pc}%"></i></div>`:''}
+      ${d.ket?`<p class="dl-n">${esc(d.ket)}</p>`:''}
+    </article>`};
+  v.innerHTML=`<div class="dv-top"><h2>Brand Deal<small>Scope of work per brand · tap status buat ganti (Belum → Kurang → Selesai → Pending)</small></h2>
+      <span class="dvact"><button class="primary" id="sowAdd">+ Deal</button><button id="sowRe" title="Tarik ulang">⟳</button></span></div>
+    <div class="chips sow-m"><span class="chip-f${SOW.m==='all'?' on':''}" data-m="all">Semua bulan</span>${months.map(m=>`<span class="chip-f${SOW.m===m?' on':''}" data-m="${esc(m)}">${esc(sowMLbl(m))}</span>`).join('')}</div>
+    <div class="dl-tiles"><div><b>${inM.length}</b><span>deal</span></div><div><b>${T.d}<small>/${T.t}</small></b><span>konten SOW selesai</span></div><div><b>${nOpen}</b><span>deal belum beres</span></div><div class="${nBarang?'warn':''}"><b>${nBarang}</b><span>barang belum diterima</span></div></div>
+    <div class="dl-f"><span class="chips">${[['open','Belum beres'],['done','Beres'],['all','Semua']].map(([k,l])=>`<span class="chip-f${SOW.f===k?' on':''}" data-f="${k}">${l}</span>`).join('')}</span><input id="sowQ" type="search" placeholder="Cari brand / artikel…" value="${esc(SOW.q)}"></div>
+    <div class="dl-g">${shown.map(card).join('')||`<div class="dv-empty">${inM.length?'Nggak ada deal yang cocok sama filter ini.':'Belum ada deal di bulan ini.'}</div>`}</div>`;
+  v.querySelectorAll('[data-m]').forEach(c=>c.onclick=()=>{SOW.m=c.dataset.m;renderDeal()});
+  v.querySelectorAll('[data-f]').forEach(c=>c.onclick=()=>{SOW.f=c.dataset.f;renderDeal()});
+  const qi=v.querySelector('#sowQ');qi.oninput=()=>{SOW.q=qi.value;clearTimeout(SOW.qt);SOW.qt=setTimeout(()=>{renderDeal();const n=document.getElementById('sowQ');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},250)};
+  v.querySelector('#sowRe').onclick=()=>{SOW.list=null;renderDeal();loadSow(true)};
+  v.querySelector('#sowAdd').onclick=()=>openDeal(null);
+  v.querySelectorAll('.dl').forEach(el=>{const d=L.find(x=>x.id===el.dataset.id);
+    el.querySelector('[data-a=edit]').onclick=()=>openDeal(d);
+    el.querySelectorAll('.sw').forEach(b=>b.onclick=()=>sowSetSt(d,b.dataset.st))});
+}
+function openDeal(d){
+  const isNew=!d,cur=d?{...d}:{bulan:SOW.m&&SOW.m!=='all'?SOW.m:todayKey.slice(0,7),brand:'',artikel:'',jml:'',barang:'',car:'',stCar:'',vp:'',stVp:'',vpj:'',stVpj:'',aff:'',stAff:'',ket:''};
+  const months=[...new Set([...(SOW.list||[]).map(x=>x.bulan),todayKey.slice(0,7),cur.bulan])].filter(Boolean).sort().reverse();
+  const nextM=(()=>{const [y,m]=todayKey.slice(0,7).split('-').map(Number);return m===12?`${y+1}-01`:`${y}-${pad(m+1)}`})();if(!months.includes(nextM))months.unshift(nextM);
+  const sel=(k,opts,lbl)=>`<select data-k="${k}">${opts.map(o=>`<option value="${esc(o)}"${(cur[k]||'')===o?' selected':''}>${esc(o||lbl||'—')}</option>`).join('')}</select>`;
+  const w=document.createElement('div');w.className='back show';w.style.zIndex=60;
+  w.innerHTML=`<div class="modal dlm"><h3>${isNew?'Deal baru':'Edit deal'}</h3>
+    <div class="dlm-g">
+      <label>Bulan${sel('bulan',months.map(m=>m),'')}</label>
+      <label>Brand<input data-k="brand" value="${esc(cur.brand)}" list="dlBrands" placeholder="mis. Ardiles"></label>
+      <label class="w2">Artikel<input data-k="artikel" value="${esc(cur.artikel)}" placeholder="mis. Evolve 2.0"></label>
+      <label>Jumlah sepatu<input data-k="jml" inputmode="numeric" value="${esc(cur.jml)}"></label>
+      <label>Status barang${sel('barang',['',...SOW_BARANG],'—')}</label>
+    </div>
+    <h4>Scope of work</h4>
+    <div class="dlm-s">${SOW_F.map(([k,sk,lb])=>`<div><span>${lb}</span><input data-k="${k}" inputmode="numeric" value="${esc(cur[k])}" placeholder="0">${sel(sk,SOW_ST,'Belum')}</div>`).join('')}</div>
+    <label class="w2">Keterangan<textarea data-k="ket" rows="3">${esc(cur.ket)}</textarea></label>
+    <datalist id="dlBrands">${[...new Set([...brands(),...(SOW.list||[]).map(x=>x.brand)])].map(b=>`<option value="${esc(b)}">`).join('')}</datalist>
+    <div class="row">${isNew?'':'<button class="lnk danger" id="dlDel">Hapus deal</button>'}<span class="sp"></span><button id="dlX">Batal</button><button class="primary" id="dlS">Simpan</button></div></div>`;
+  document.body.appendChild(w);
+  w.querySelectorAll('select[data-k]').forEach(s=>{if(s.dataset.k==='bulan')[...s.options].forEach(o=>o.textContent=sowMLbl(o.value))});
+  const close=()=>w.remove();w.onclick=e=>{if(e.target===w)close()};w.querySelector('#dlX').onclick=close;
+  w.querySelector('#dlS').onclick=()=>{const rec={};w.querySelectorAll('[data-k]').forEach(i=>rec[i.dataset.k]=i.value.trim());
+    if(!rec.brand){toast('Brand wajib diisi');return}
+    if(isNew){rec.id='sow'+Date.now().toString(36);if(!sowSave({op:'sowAdd',rec},rec))return;SOW.list.push({...rec,row:0})}
+    else{const patch={};Object.keys(rec).forEach(k=>{if((d[k]||'')!==rec[k])patch[k]=rec[k]});if(!Object.keys(patch).length){close();return}
+      if(!sowSave({op:'sowUpdate',id:d.id,patch},d))return;Object.assign(d,patch)}
+    if(SOW.m!=='all'&&rec.bulan!==SOW.m)SOW.m=rec.bulan;close();renderDeal();toast(isNew?'Deal ditambah':'Deal disimpan')};
+  const del=w.querySelector('#dlDel');if(del)del.onclick=()=>{if(!del.dataset.sure){del.dataset.sure=1;del.textContent='Yakin hapus? Klik lagi';return}
+    if(!sowSave({op:'sowDelete',id:d.id},d))return;SOW.list=SOW.list.filter(x=>x!==d);close();renderDeal();toast('Deal dihapus')};
+}
+const NAVG={cal:[['cal','Bulanan'],['week','Mingguan'],['day','Harian']],ide:[['smo','Ide SP'],['nsp','Ide NSP'],['fp','Ide FP']],tim:[['todo','To-do']],data:[['stat','Ringkasan'],['ins','Insight']],deal:[['deal','Brand Deal']]};
 const grpOf=v=>Object.keys(NAVG).find(g=>NAVG[g].some(x=>x[0]===v))||'cal';
 // status sambungan Sheet → titik kecil di tombol ⟳ (teks lengkapnya di tooltip)
 function syncDot(){const d=document.getElementById('syncDot'),s=statusEl(),t=s?s.textContent:'';if(!d)return;
@@ -1682,6 +1800,8 @@ function render(){
   document.body.classList.toggle('v-smo',IDE_VIEWS.includes(view));
   document.getElementById('smoView').hidden=!IDE_VIEWS.includes(view);
   document.getElementById('statView').hidden=view!=='stat';
+  document.getElementById('dealView').hidden=view!=='deal';
+  document.body.classList.toggle('v-deal',view==='deal');
   document.getElementById('insView').hidden=view!=='ins';
   document.getElementById('todoView').hidden=view!=='todo';
   document.getElementById('dayView').hidden=view!=='day';
@@ -1697,6 +1817,7 @@ function render(){
   if(view==='stat')return renderStat();
   if(view==='ins')return renderIns();
   if(IDE_VIEWS.includes(view))return renderSmo();
+  if(view==='deal')return renderDeal();
   document.getElementById('monthLbl').textContent=`${BULAN[viewM]} ${viewY}`;
   renderFilters();
   const g=document.getElementById('grid');
@@ -1997,7 +2118,7 @@ function cleanBody(){
 <div class="wrap">
   <header class="top">
     <div class="brand"><b>SP</b><span>Timeline<em>Konten</em></span></div>
-    <nav class="tabs" id="tabs"><button data-g="cal"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Kalender</span></button><button data-g="ide"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1.1 1.3 1.1 2.2h5c0-.9.5-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg><span>Ide</span></button><button data-g="tim"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg><span>To-do</span></button><button data-g="data"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg><span>Data</span></button><a class="tablink" href="invoice.html"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span>Invoice</span></a></nav>
+    <nav class="tabs" id="tabs"><button data-g="cal"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Kalender</span></button><button data-g="ide"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1.1 1.3 1.1 2.2h5c0-.9.5-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg><span>Ide</span></button><button data-g="tim"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 12.2l2.4 2.4 4.8-5"/></svg><span>To-do</span></button><button data-g="data"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg><span>Data</span></button><button data-g="deal"><svg viewBox="0 0 24 24"><rect x="3.5" y="7" width="17" height="12.5" rx="2.5"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3.5 12.5h17"/></svg><span>Deal</span></button><a class="tablink" href="invoice.html"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span>Invoice</span></a></nav>
     <div class="acts"><button class="icon" id="syncBtn" title="Tarik data terbaru dari Sheet">⟳<em id="syncDot"></em></button><button class="icon" id="sheetBtn" title="Sambungan Google Sheet">⚙</button></div>
   </header>
   <div class="nav">
@@ -2015,6 +2136,7 @@ function cleanBody(){
   <section class="statview" id="statView" hidden></section>
   <section class="statview" id="insView" hidden></section>
   <section class="statview" id="smoView" hidden></section>
+  <section class="statview" id="dealView" hidden></section>
 </div>
 
 <div class="back" id="back">
