@@ -1705,7 +1705,7 @@ async function loadSow(force){
     if(window.__SOW){await new Promise(r=>setTimeout(r,250));SOW.list=SOW.list&&!force?SOW.list:JSON.parse(JSON.stringify(window.__SOW))}
     else{if(!API)throw new Error('Belum nyambung ke Sheet — klik ⚙');
       const r=await fetch(API+(API.includes('?')?'&':'?')+'sow=1'+(force?'&nocache=1':''),{cache:'no-store'}),d=await r.json();
-      if(d.ver)scriptVer=d.ver;if(!d.sow)throw new Error(d.sowError?String(d.sowError).replace(/^Error:\s*/,'').replace(/^sow_\w+:\s*/,''):(scriptVer&&scriptVer<11?'Script belum versi terbaru — jalanin updateSekarang di Apps Script':'Gagal narik data Brand Deal'));
+      if(d.ver)scriptVer=d.ver;if(!d.sow)throw new Error(d.sowError?String(d.sowError).replace(/^Error:\s*/,'').replace(/^sow_\w+:\s*/,''):(scriptVer&&scriptVer<12?'Script belum versi terbaru — jalanin updateSekarang di Apps Script':'Gagal narik data Brand Deal'));
       SOW.list=d.sow}
     if(!SOW.m){const cur=todayKey.slice(0,7);SOW.m=SOW.list.some(d=>d.bulan===cur)?cur:'all'}
   }catch(e){SOW.err=String(e.message||e)}
@@ -1713,7 +1713,7 @@ async function loadSow(force){
 function sowSave(op,d){
   if(window.__SOW)return true;
   if(!API){toast('Belum nyambung ke Sheet');return false}
-  if(scriptVer&&scriptVer<11){toast('Script belum versi terbaru — jalanin updateSekarang di Apps Script.');return false}
+  if(scriptVer&&scriptVer<12){toast('Script belum versi terbaru — jalanin updateSekarang di Apps Script.');return false}
   queue.push(op);flush();return true}
 function sowSetSt(d,sk){const i=SOW_ST.indexOf(d[sk]||''),nv=SOW_ST[(i+1)%SOW_ST.length];
   if(!sowSave({op:'sowUpdate',id:d.id,patch:{[sk]:nv}},d))return;d[sk]=nv;renderDeal()}

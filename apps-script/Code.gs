@@ -25,7 +25,7 @@
  *              daftar '<nama>_hapus' = pilihan yang disembunyiin, mis. tim_hapus = orang yang dihapus dari daftar)
  */
 const TZ = 'Asia/Jakarta';
-const SCRIPT_VER = 11; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
+const SCRIPT_VER = 12; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
 const JENIS = { carousel: 'Desain', short: 'Video Pendek', long: 'Video Panjang', story: 'Story' };
 
 // key di kalender  ->  nama header di sheet
