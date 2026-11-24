@@ -25,7 +25,7 @@
  *              daftar '<nama>_hapus' = pilihan yang disembunyiin, mis. tim_hapus = orang yang dihapus dari daftar)
  */
 const TZ = 'Asia/Jakarta';
-const SCRIPT_VER = 10; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
+const SCRIPT_VER = 11; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
 const JENIS = { carousel: 'Desain', short: 'Video Pendek', long: 'Video Panjang', story: 'Story' };
 
 // key di kalender  ->  nama header di sheet
@@ -251,6 +251,38 @@ function smoFindRow_(sh, c, ref) {
   for (let i = 0; i < t.length; i++) if (String(t[i][0]).trim() === String(ref.title || '').trim()) return i + 2;
   throw new Error('notfound: ide "' + ref.title + '" nggak ketemu di ' + sh.getName());
 }
+// Edit ide (koreksi arah konten) dari web: cuma buat sumber yang punya Content Writer (SP & FP).
+// Judul cuma boleh diganti selama brief belum ada (brief dicocokkan ke Doc pakai judul).
+// Perubahan dicatet di Pelajaran Agent (JENIS "ide") biar agent riset belajar arah yang dimau.
+const SMO_EDITABLE = ['title', 'angle', 'hook', 'flow', 'format', 'research'];
+const SMO_LBL = { title: 'Judul', angle: 'Angle/POV', hook: 'Hook', flow: 'Alur Isi', format: 'Format', research: 'Bahan Riset' };
+function smoEdit_(ref, fields, src) {
+  src = smoSrc_(src);
+  if (BRIEF_SRC.indexOf(src) < 0) return { ok: false, error: 'edit_src: edit ide belum bisa buat sumber ini' };
+  const sh = smoSheet_(src), c = smoCols_(sh), row = smoFindRow_(sh, c, ref), w = sh.getLastColumn();
+  const cur = sh.getRange(row, 1, 1, w).getDisplayValues()[0], get = function (k) { return c[k] == null ? '' : String(cur[c[k]] || ''); };
+  const briefNow = String(get('brief')).trim(), changed = [];
+  fields = fields || {};
+  SMO_EDITABLE.forEach(function (k) {
+    if (fields[k] == null || c[k] == null) return;
+    const nv = String(fields[k]).replace(/\r/g, '').trim(), ov = get(k).trim();
+    if (nv === ov) return;
+    if (k === 'title') {
+      if (!nv) throw new Error('edit_title: judul nggak boleh kosong');
+      if (briefNow) throw new Error('edit_title: judul nggak bisa diganti karena brief-nya udah ada/diminta');
+    }
+    const cell = sh.getRange(row, c[k] + 1);
+    if (cell.getDataValidation()) cell.clearDataValidations();
+    cell.setValue(nv);
+    changed.push({ k: k, o: ov, n: nv });
+  });
+  if (!changed.length) return { ok: true, changed: 0 };
+  SpreadsheetApp.flush();
+  const title = changed.filter(function (x) { return x.k === 'title'; }).map(function (x) { return x.n; })[0] || get('title');
+  const detail = changed.map(function (x) { return SMO_LBL[x.k] + ':\n- ' + (x.o || '(kosong)').slice(0, 400) + '\n+ ' + x.n.slice(0, 400); }).join('\n');
+  try { pelLog_(PEL_SRC[src], 'ide', title, detail); } catch (e) {}
+  return { ok: true, changed: changed.length, title: title, summary: changed.map(function (x) { return SMO_LBL[x.k]; }).join(', ') };
+}
 // Tombol "Bikin Brief": nulis "antri · <waktu>" di kolom Brief (L). Agent Content Writer cuma ngerjain baris "antri".
 // Isi kolom Brief: kosong | antri · … | proses · … | gagal: … | <link brief> — <Jenis>
 function smoBrief_(ref, action, src) {
@@ -468,7 +500,7 @@ function pelTab_(name, head) {
 }
 function pelLog_(src, kind, title, detail) {
   kind = String(kind || '').toLowerCase();
-  if (['edit', 'revisi', 'skip', 'ambil'].indexOf(kind) < 0) throw new Error('jenis feedback nggak dikenal');
+  if (['edit', 'revisi', 'skip', 'ambil', 'ide'].indexOf(kind) < 0) throw new Error('jenis feedback nggak dikenal');
   const sh = pelTab_(PEL_TAB, PEL_HEAD);
   sh.appendRow([Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm'), src, kind, String(title || '').slice(0, 200), String(detail || '').slice(0, 3000), 'baru']);
 }
@@ -1048,6 +1080,7 @@ function runOp_(op) {
   else if (op.op === 'bankUse') bankUse_(op);
   else if (op.op === 'smoStatus') smoStatus_(op.ref, op.status, op.src);
   else if (op.op === 'smoBrief') return smoBrief_(op.ref, op.action, op.src);
+  else if (op.op === 'smoEdit') return smoEdit_(op.ref, op.fields, op.src);
   else if (op.op === 'uploadNow') return uploadNow_(op.ref, op.pf);
   else if (op.op === 'briefSave') return briefSave_(op.ref, op.md, op.base, op.src);
   else if (op.op === 'briefRevise') return briefRevise_(op.ref, op.note, op.src);
