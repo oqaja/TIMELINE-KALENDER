@@ -25,7 +25,7 @@
  *              daftar '<nama>_hapus' = pilihan yang disembunyiin, mis. tim_hapus = orang yang dihapus dari daftar)
  */
 const TZ = 'Asia/Jakarta';
-const SCRIPT_VER = 9; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
+const SCRIPT_VER = 10; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
 const JENIS = { carousel: 'Desain', short: 'Video Pendek', long: 'Video Panjang', story: 'Story' };
 
 // key di kalender  ->  nama header di sheet
@@ -189,15 +189,18 @@ function readBankUsed_() {
   return out;
 }
 
-// ===================== IDE KONTEN SP & NSP (DASHBOARD KULTURAMA, diisi agent riset) =====================
-// dibaca semua kolomnya; dari web cuma kolom Status & kolom Brief (minta brief, khusus SP) yang diubah
+// ===================== IDE KONTEN SP, NSP & FP (DASHBOARD KULTURAMA, diisi agent riset) =====================
+// dibaca semua kolomnya; dari web cuma kolom Status & kolom Brief (minta brief, SP & FP) yang diubah
 // src 'sp'  -> tab "Ide Konten SP" (dulu "Ide Konten SMO"; nama lama masih dikenali)
 // src 'nsp' -> tab "Ide Konten NSP"
-const IDE_TABS = { sp: ['Ide Konten SP', 'Ide Konten SMO'], nsp: ['Ide Konten NSP'] };
-const IDE_SHEET_ID = { sp: 2044770584 }; // ID tab Ide SP tetap walau namanya diganti
+// src 'fp'  -> tab "Ide Konten FP" (femme_police; punya agent Content Writer FP & Doc brief sendiri)
+const IDE_TABS = { sp: ['Ide Konten SP', 'Ide Konten SMO'], nsp: ['Ide Konten NSP'], fp: ['Ide Konten FP'] };
+const IDE_SHEET_ID = { sp: 2044770584, fp: 276736585 }; // ID tab tetap walau namanya diganti
+const BRIEF_SRC = ['sp', 'fp']; // sumber ide yang punya agent Content Writer
+const PEL_SRC = { sp: 'SP', nsp: 'NSP', fp: 'FP' }; // label SUMBER di tab Pelajaran Agent
 const SMO_COLS = { date: 'Tanggal', title: 'Judul', angle: 'Angle/POV', trigger: 'Pemicu', research: 'Bahan Riset', flow: 'Alur Isi',
   hook: 'Hook', format: 'Format', urgency: 'Urgensi', sources: 'Sumber', status: 'Status', brief: 'Brief', rev: 'Revisi' };
-function smoSrc_(src) { return src === 'nsp' ? 'nsp' : 'sp'; }
+function smoSrc_(src) { return src === 'nsp' || src === 'fp' ? src : 'sp'; }
 function smoSheet_(src) {
   const names = IDE_TABS[smoSrc_(src)], b = kkBook_();
   for (let i = 0; i < names.length; i++) { const sh = b.getSheetByName(names[i]); if (sh) return sh; }
@@ -251,8 +254,9 @@ function smoFindRow_(sh, c, ref) {
 // Tombol "Bikin Brief": nulis "antri · <waktu>" di kolom Brief (L). Agent Content Writer cuma ngerjain baris "antri".
 // Isi kolom Brief: kosong | antri · … | proses · … | gagal: … | <link brief> — <Jenis>
 function smoBrief_(ref, action, src) {
-  if (smoSrc_(src) !== 'sp') return { ok: false, error: 'brief_status: Bikin Brief cuma buat Ide SP' };
-  const sh = smoSheet_('sp'), c = smoCols_(sh);
+  src = smoSrc_(src);
+  if (BRIEF_SRC.indexOf(src) < 0) return { ok: false, error: 'brief_status: Bikin Brief cuma buat Ide SP & Ide FP' };
+  const sh = smoSheet_(src), c = smoCols_(sh);
   if (c.brief == null) { // kolom Brief belum ada → pakai kolom L
     const L = 12, h = String(sh.getRange(1, L).getDisplayValue()).trim();
     if (h && h.toLowerCase() !== 'brief') throw new Error('Kolom L di ' + sh.getName() + ' udah dipakai "' + h + '", bukan Brief');
@@ -273,22 +277,24 @@ function smoBrief_(ref, action, src) {
   const v = 'antri · ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
   cell.setValue(v);
   SpreadsheetApp.flush();
-  return { ok: true, brief: v, fired: briefFire_() };
+  return { ok: true, brief: v, fired: briefFire_(src) };
 }
 // Colek agent Content Writer biar langsung jalan (API trigger routine Claude).
 // Isi di Properti skrip: BRIEF_FIRE_URL (URL /fire dari claude.ai/code/routines) + BRIEF_FIRE_TOKEN (sk-ant-oat01-…).
+// Agent FP: BRIEF_FIRE_URL_FP (+ BRIEF_FIRE_TOKEN_FP; kalau kosong pakai BRIEF_FIRE_TOKEN).
 // Kosong → nggak nyolek, antrian tetap dikerjain run per jam. Jeda min. 2 menit antar colekan biar agent nggak jalan dobel.
-function briefFire_() {
-  const pr = PropertiesService.getScriptProperties(), url = pr.getProperty('BRIEF_FIRE_URL'), tok = pr.getProperty('BRIEF_FIRE_TOKEN');
+function briefFire_(src) {
+  const fp = smoSrc_(src) === 'fp', pr = PropertiesService.getScriptProperties();
+  const url = pr.getProperty(fp ? 'BRIEF_FIRE_URL_FP' : 'BRIEF_FIRE_URL'), tok = (fp && pr.getProperty('BRIEF_FIRE_TOKEN_FP')) || pr.getProperty('BRIEF_FIRE_TOKEN');
   if (!url || !tok) return 'off';
-  const cache = CacheService.getScriptCache();
-  if (cache.get('brief_fired')) return 'soon'; // baru dicolek, run itu bakal ngambil antrian ini juga / run berikutnya
+  const cache = CacheService.getScriptCache(), ck = fp ? 'brief_fired_fp' : 'brief_fired';
+  if (cache.get(ck)) return 'soon'; // baru dicolek, run itu bakal ngambil antrian ini juga / run berikutnya
   try {
     const r = UrlFetchApp.fetch(url, { method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       headers: { Authorization: 'Bearer ' + tok, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'experimental-cc-routine-2026-04-01' },
       payload: JSON.stringify({ text: 'Dipicu tombol Bikin Brief di TIMELINE KALENDER.' }) });
     const code = r.getResponseCode();
-    if (code >= 200 && code < 300) { cache.put('brief_fired', '1', 120); return 'ok'; }
+    if (code >= 200 && code < 300) { cache.put(ck, '1', 120); return 'ok'; }
     console.warn('briefFire_ HTTP ' + code + ': ' + r.getContentText().slice(0, 300));
     return 'err';
   } catch (err) { console.warn('briefFire_: ' + err); return 'err'; }
@@ -298,16 +304,19 @@ function briefFire_() {
 // Brief = 1 Heading 2 (judul) + semua paragraf di bawahnya sampai heading 1/2 berikutnya, di tab sesuai link kolom Brief.
 // Isinya dikirim/diterima sebagai teks: **tebal**, link polos / [teks](url). Edit dari app nulis ulang paragrafnya di Doc.
 const BRIEF_DOC_ID = '108W3MvSjq_1ySIomf8xUeq5x7DrFxFLFymzRlDt_YHY';
-function izinDocs() { Logger.log('Doc brief: ' + DocumentApp.openById(BRIEF_DOC_ID).getName()); }
+const BRIEF_DOC_FP_ID = '1PTcngtRnlN-UBSZEkTukWPnwbO58hiP4JkdVvDpuJBI'; // "Brief Konten FP femme_police" (ID Doc diambil dari link di kolom Brief)
+function izinDocs() { Logger.log('Doc brief: ' + DocumentApp.openById(BRIEF_DOC_ID).getName() + ' · ' + DocumentApp.openById(BRIEF_DOC_FP_ID).getName()); }
 function brNorm_(t) { return String(t || '').toLowerCase().replace(/[“”"'‘’`]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
-function briefCell_(ref) {
-  const sh = smoSheet_('sp'), c = smoCols_(sh);
+function briefCell_(ref, src) {
+  src = smoSrc_(src);
+  if (BRIEF_SRC.indexOf(src) < 0) throw new Error('brief_none: sumber ide ini nggak punya brief');
+  const sh = smoSheet_(src), c = smoCols_(sh);
   if (c.brief == null) throw new Error('brief_none: kolom Brief belum ada');
   const row = smoFindRow_(sh, c, ref), v = String(sh.getRange(row, c.brief + 1).getDisplayValue()).trim();
   const m = v.match(/https?:\/\/docs\.google\.com\/document\/d\/([\w-]+)[^\s|]*/);
   if (!m) throw new Error('brief_none: ide ini belum punya brief (' + (v || 'kolom Brief kosong') + ')');
   const tab = (m[0].match(/[?&]tab=([\w.]+)/) || [])[1] || '';
-  return { sh: sh, c: c, row: row, val: v, url: m[0], docId: m[1], tabId: tab, title: String(sh.getRange(row, c.title + 1).getDisplayValue()).trim() };
+  return { src: src, sh: sh, c: c, row: row, val: v, url: m[0], docId: m[1], tabId: tab, title: String(sh.getRange(row, c.title + 1).getDisplayValue()).trim() };
 }
 function briefBody_(docId, tabId) {
   const doc = DocumentApp.openById(docId);
@@ -365,8 +374,8 @@ function brElMd_(el) {
   return [];
 }
 function brHash_(md) { return Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, md, Utilities.Charset.UTF_8).map(function (b) { return ((b + 256) % 256).toString(16).padStart(2, '0'); }).join('').slice(0, 16); }
-function briefLocate_(ref) {
-  const bc = briefCell_(ref), bb = briefBody_(bc.docId, bc.tabId), i = briefFind_(bb.body, bc.title);
+function briefLocate_(ref, src) {
+  const bc = briefCell_(ref, src), bb = briefBody_(bc.docId, bc.tabId), i = briefFind_(bb.body, bc.title);
   if (i < 0) throw new Error('brief_notfound: brief "' + bc.title + '" nggak ketemu di tab ' + (bb.tabName || 'Doc') + ' (judulnya mungkin diganti di Doc)');
   const end = briefEnd_(bb.body, i);
   let lines = [];
@@ -376,8 +385,8 @@ function briefLocate_(ref) {
   const md = lines.join('\n');
   return { bc: bc, body: bb.body, tabName: bb.tabName, at: i, end: end, md: md, hash: brHash_(md), heading: bb.body.getChild(i).asParagraph().getText().trim() };
 }
-function briefRead_(ref) {
-  const L = briefLocate_(ref);
+function briefRead_(ref, src) {
+  const L = briefLocate_(ref, src);
   return { title: L.heading, tab: L.tabName, md: L.md, hash: L.hash, url: L.bc.url };
 }
 // satu baris md → teks polos + rentang tebal & link
@@ -396,10 +405,10 @@ function brParse_(line) {
   text += line.slice(last);
   return { text: text, bold: bold, link: link };
 }
-function briefSave_(ref, md, base) {
+function briefSave_(ref, md, base, src) {
   md = String(md || '').replace(/\r/g, '');
   if (!md.trim()) throw new Error('brief_empty: brief nggak boleh kosong');
-  const L = briefLocate_(ref);
+  const L = briefLocate_(ref, src);
   if (base && base !== L.hash) return { ok: false, error: 'brief_conflict: brief di Doc baru aja berubah', hash: L.hash };
   const body = L.body;
   if (L.end >= body.getNumChildren()) body.appendParagraph(''); // Doc wajib diakhiri paragraf
@@ -415,9 +424,9 @@ function briefSave_(ref, md, base) {
     r.link.forEach(function (b) { if (b[1] >= b[0]) t.setLinkUrl(b[0], b[1], b[2]); });
   }
   body.insertParagraph(L.at + 1 + lines.length, ''); // jarak ke brief berikutnya
-  try { pelLog_('SP', 'edit', L.bc.title, brDiff_(L.md, md)); } catch (e) {}
+  try { pelLog_(PEL_SRC[L.bc.src], 'edit', L.bc.title, brDiff_(L.md, md)); } catch (e) {}
   let h = '';
-  try { h = briefLocate_(ref).hash; } catch (e) {}
+  try { h = briefLocate_(ref, src).hash; } catch (e) {}
   return { ok: true, hash: h };
 }
 function brDiff_(a, b) {
@@ -427,10 +436,10 @@ function brDiff_(a, b) {
   return ('DIHAPUS:\n' + (del.length ? cut(del, '-') : '(nggak ada)\n') + 'DITAMBAH / DIGANTI JADI:\n' + (add.length ? cut(add, '+') : '(nggak ada)\n')).trim();
 }
 // Minta revisi: kolom Brief jadi "revisi · <waktu> | <link> — <Jenis>", catatannya di kolom Revisi, terus colek agent
-function briefRevise_(ref, note) {
+function briefRevise_(ref, note, src) {
   note = String(note || '').trim();
   if (!note) throw new Error('brief_note: catatan revisi kosong');
-  const bc = briefCell_(ref), low = bc.val.toLowerCase();
+  const bc = briefCell_(ref, src), low = bc.val.toLowerCase();
   if (/^(proses revisi|revisi)/.test(low)) return { ok: false, error: 'brief_busy: revisi sebelumnya belum beres', brief: bc.val };
   const linkPart = bc.val.slice(bc.val.indexOf('http'));
   let revCol = bc.c.rev;
@@ -442,8 +451,8 @@ function briefRevise_(ref, note) {
   bc.sh.getRange(bc.row, bc.c.brief + 1).setValue(v);
   SpreadsheetApp.flush();
   bumpRev_();
-  try { pelLog_('SP', 'revisi', bc.title, note); } catch (e) {}
-  return { ok: true, brief: v, fired: briefFire_() };
+  try { pelLog_(PEL_SRC[bc.src], 'revisi', bc.title, note); } catch (e) {}
+  return { ok: true, brief: v, fired: briefFire_(bc.src) };
 }
 
 // ===================== PELAJARAN AGENT =====================
@@ -479,7 +488,7 @@ function pelRead_() {
 function ruleAdd_(untuk, text) {
   text = String(text || '').trim();
   if (!text) throw new Error('aturan kosong');
-  const ok = ['brief', 'riset SP', 'riset NSP', 'semua'];
+  const ok = ['brief', 'riset SP', 'riset NSP', 'brief FP', 'riset FP', 'semua'];
   if (ok.indexOf(untuk) < 0) untuk = 'semua';
   const sh = pelTab_(ATR_TAB, ATR_HEAD), id = 'u' + Date.now().toString(36);
   sh.appendRow([id, untuk, text.slice(0, 300), 'Ditambah manual dari TIMELINE KALENDER', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), 'ya']);
@@ -875,7 +884,7 @@ function doGet(e) {
     if (hit) { const d = JSON.parse(hit); d.cached = true; d.ms = Date.now() - t0; return out_(d); }
   }
   if (p.brief === '1') { // isi 1 brief dari Doc (nggak di-cache: bisa diedit kapan aja)
-    try { return out_({ ok: true, ver: SCRIPT_VER, brief: briefRead_({ row: p.row, title: p.title }) }); }
+    try { return out_({ ok: true, ver: SCRIPT_VER, brief: briefRead_({ row: p.row, title: p.title }, p.src) }); }
     catch (err) { return out_({ ok: false, ver: SCRIPT_VER, error: String(err) }); }
   }
   if (p.pel === '1') { // pelajaran & aturan agent
@@ -1040,9 +1049,9 @@ function runOp_(op) {
   else if (op.op === 'smoStatus') smoStatus_(op.ref, op.status, op.src);
   else if (op.op === 'smoBrief') return smoBrief_(op.ref, op.action, op.src);
   else if (op.op === 'uploadNow') return uploadNow_(op.ref, op.pf);
-  else if (op.op === 'briefSave') return briefSave_(op.ref, op.md, op.base);
-  else if (op.op === 'briefRevise') return briefRevise_(op.ref, op.note);
-  else if (op.op === 'agentFb') pelLog_(op.src === 'nsp' ? 'NSP' : 'SP', op.kind, op.title, op.detail);
+  else if (op.op === 'briefSave') return briefSave_(op.ref, op.md, op.base, op.src);
+  else if (op.op === 'briefRevise') return briefRevise_(op.ref, op.note, op.src);
+  else if (op.op === 'agentFb') pelLog_(PEL_SRC[smoSrc_(op.src)], op.kind, op.title, op.detail);
   else if (op.op === 'ruleAdd') return ruleAdd_(op.untuk, op.text);
   else if (op.op === 'ruleDel') ruleDel_(op.id, op.text);
   else if (op.op === 'kkAdd') {
