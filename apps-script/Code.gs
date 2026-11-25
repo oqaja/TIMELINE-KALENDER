@@ -25,7 +25,7 @@
  *              daftar '<nama>_hapus' = pilihan yang disembunyiin, mis. tim_hapus = orang yang dihapus dari daftar)
  */
 const TZ = 'Asia/Jakarta';
-const SCRIPT_VER = 12; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
+const SCRIPT_VER = 13; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
 const JENIS = { carousel: 'Desain', short: 'Video Pendek', long: 'Video Panjang', story: 'Story' };
 
 // key di kalender  ->  nama header di sheet
@@ -267,6 +267,7 @@ function smoEdit_(ref, fields, src) {
     if (fields[k] == null || c[k] == null) return;
     const nv = String(fields[k]).replace(/\r/g, '').trim(), ov = get(k).trim();
     if (nv === ov) return;
+    if (k === 'format' && /^(proses|revisi)/i.test(briefNow)) throw new Error('edit_format: format nggak bisa diganti pas brief lagi dibikin/direvisi');
     if (k === 'title') {
       if (!nv) throw new Error('edit_title: judul nggak boleh kosong');
       if (briefNow) throw new Error('edit_title: judul nggak bisa diganti karena brief-nya udah ada/diminta');
@@ -305,7 +306,10 @@ function smoBrief_(ref, action, src) {
   }
   const st = c.status == null ? '' : String(sh.getRange(row, c.status + 1).getDisplayValue()).trim().toLowerCase();
   if (st !== 'ambil' && st !== 'bank') return { ok: false, error: 'brief_status: ide ini belum "ambil"', brief: cur };
-  if (cur && low.indexOf('gagal') !== 0) return { ok: true, brief: cur }; // udah antri / proses / jadi → biarin
+  if (action === 'redo') { // bikin ulang (mis. format diganti): brief lama tetap di Doc, kolom Brief balik jadi antrian
+    if (!/https?:\/\//.test(cur) || /^(antri|proses|revisi)/.test(low)) return { ok: false, error: 'brief_busy: brief lagi diproses, tunggu beres dulu', brief: cur };
+    // koreksi format-nya udah dicatet smoEdit_ (JENIS "ide"), jadi di sini nggak dicatet lagi
+  } else if (cur && low.indexOf('gagal') !== 0) return { ok: true, brief: cur }; // udah antri / proses / jadi → biarin
   const v = 'antri · ' + Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm');
   cell.setValue(v);
   SpreadsheetApp.flush();

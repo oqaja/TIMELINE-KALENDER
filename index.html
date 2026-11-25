@@ -1327,14 +1327,14 @@ async function smoBriefReq(x,action,re){
   for(let i=0;i<30&&(busy||queue.length);i++)await new Promise(r=>setTimeout(r,500)); // tunggu status "ambil" kesimpen dulu
   const prev=x.brief;x.brief=action==='cancel'?'':'antri · …';x._briefBusy=true;re();
   try{const d=await apiPost({op:'smoBrief',src,ref:{row:x.row,title:x.title},action});x.brief=d.brief||'';x._briefBusy=false;re();
-    toast(action==='cancel'?'Permintaan brief dibatalin':d.fired==='ok'?`Agent dicolek — brief "${x.title}" lagi dikerjain (±10–20 menit)`:d.fired==='soon'?`"${x.title}" masuk antrian — agent baru aja dicolek, ikut dikerjain dalam beberapa menit`:`"${x.title}" masuk antrian brief — dikerjain agent di run berikutnya (maks ±1 jam)`)}
+    toast(action==='cancel'?'Permintaan brief dibatalin':action==='redo'?(d.fired==='ok'?`Agent dicolek — brief ${JENIS_OF[smoType(x.format)]} lagi dibikin (±10–20 menit)`:`Brief ${JENIS_OF[smoType(x.format)]} masuk antrian (maks ±1 jam)`):d.fired==='ok'?`Agent dicolek — brief "${x.title}" lagi dikerjain (±10–20 menit)`:d.fired==='soon'?`"${x.title}" masuk antrian — agent baru aja dicolek, ikut dikerjain dalam beberapa menit`:`"${x.title}" masuk antrian brief — dikerjain agent di run berikutnya (maks ±1 jam)`)}
   catch(e){x._briefBusy=false;const m=String(e.message||e);
     if(/pin_wrong/.test(m)){savePin('');x.brief=prev;re();toast('PIN salah, coba lagi.');return}
     const bm=m.match(/brief_(?:busy|status): (.*)/);x.brief=prev;re();toast(bm?bm[1]:'Gagal minta brief: '+m.slice(0,90));if(bm){const vw=view;loadSmo(true).then(r=>{if(view===vw)drawSmo(r)}).catch(()=>{})}}
 }
 function smoBriefUi(x){const b=smoBriefSt(x.brief);
   const view=`<button class="brf ok" data-a="briefView">📄 Lihat brief${b.jenis?' · '+esc(b.jenis):''}</button>`;
-  if(b.k==='ok')return view;
+  if(b.k==='ok')return view+(briefMismatch(x)?`<button class="brief" data-a="briefRedo" title="Format ide udah diganti, brief-nya masih ${esc(b.jenis)}">🔁 Bikin ulang jadi ${esc(JENIS_OF[smoType(x.format)])}</button>`:'');
   if(b.k==='rq')return `<span class="brf q" title="${esc(b.t)}">🔁 Revisi antri</span>${view}`;
   if(b.k==='rp')return `<span class="brf p" title="${esc(b.t)}">✍️ Lagi direvisi…</span>${view}`;
   if(b.k==='q')return `<span class="brf q" title="${esc(b.t)}">⏳ Antri brief</span>${x._briefBusy?'':'<button class="lnk" data-a="briefCancel">Batal</button>'}`;
@@ -1342,29 +1342,44 @@ function smoBriefUi(x){const b=smoBriefSt(x.brief);
   if(b.k==='err')return `<span class="brf err" title="${esc(b.t)}">⚠ Brief gagal</span><button class="brief" data-a="brief">Coba lagi</button>`;
   if(b.k==='other')return `<span class="brf" title="${esc(b.t)}">${esc(b.t.slice(0,40))}</span>`;
   return `<button class="brief" data-a="brief">📝 Bikin Brief</button>`}
+// Format ide: pilihan dasar per sumber; akhiran ("· aku–kamu", "(Segmen)") dipertahanin
+const JENIS_OF={carousel:'Desain',short:'Video Pendek',long:'Video Panjang',story:'Story'};
+const FMT_OPTS={sp:['Carousel','Shorts','Long-form','Story'],fp:['Carousel','Reels','Long-form','Story']};
+function fmtSplit(f){f=String(f||'').trim();const m=f.match(/^(.*?)(\s*(?:·|\().*)$/);return m?[m[1].trim(),m[2]]:[f,'']}
+function briefMismatch(x){const b=smoBriefSt(x.brief);return b.k==='ok'&&b.jenis&&b.jenis.toLowerCase()!==JENIS_OF[smoType(x.format)].toLowerCase()}
 // ===== EDIT IDE: koreksi arah konten (SP & FP). Judul kekunci kalau brief udah ada/diminta =====
-const IDE_EDIT=[['title','Judul','input'],['angle','Angle / POV','ta3'],['hook','Hook','ta2'],['flow','Alur isi','ta6'],['format','Format','input'],['research','Bahan riset','ta5']];
+const IDE_EDIT=[['title','Judul','input'],['angle','Angle / POV','ta3'],['hook','Hook','ta2'],['flow','Alur isi','ta6'],['format','Format','fmt'],['research','Bahan riset','ta5']];
 function openIdeEdit(x,re){
   const src=SMO.src,I=IDE_SRC[src],b=smoBriefSt(x.brief),lockT=b.k!=='none'&&b.k!=='err',canRev=b.k==='ok';
   if(!API&&!window.__SMO){toast('Belum nyambung ke Sheet');return}
   if(API&&scriptVer&&scriptVer<11){toast('Script belum versi terbaru — jalanin updateSekarang di Apps Script.');return}
   const w=document.createElement('div');w.className='back show';w.style.zIndex=60;
+  const lockF=b.k==='p'||b.k==='rq'||b.k==='rp',[fBase,fSuf]=fmtSplit(x.format),fOpts=[...new Set([...(FMT_OPTS[src]||FMT_OPTS.sp),...(fBase?[fBase]:[])])];
   const fld=([k,l,t])=>{const v=esc(x[k]||''),dis=k==='title'&&lockT;
+    if(t==='fmt')return `<label>${l}${lockF?' <small class="mut">(kekunci — brief lagi dibikin/direvisi)</small>':''}</label><div style="display:flex;gap:8px;align-items:center"><select id="ieFmt"${lockF?' disabled':''} style="flex:0 0 auto">${fOpts.map(o=>`<option${o===fBase?' selected':''}>${esc(o)}</option>`).join('')}</select>${fSuf?`<small class="mut">${esc(fSuf.trim())}</small>`:''}<input type="hidden" data-k="format" value="${v}"${lockF?' disabled':''}></div>`;
     return `<label>${l}${dis?` <small class="mut">(kekunci — brief udah ${b.k==='ok'?'ada':'diminta'})</small>`:''}</label>`+(t==='input'?`<input data-k="${k}" value="${v}" autocomplete="off"${dis?' disabled':''}>`:`<textarea data-k="${k}" rows="${t.slice(2)}">${v}</textarea>`)};
   w.innerHTML=`<div class="modal" style="max-width:620px"><h2>Edit ide</h2>
     <div class="sub">${esc(I.tab)} · koreksi arah konten sebelum/sesudah brief. Perubahan disimpen ke Sheet dan dicatet buat pelajaran agent riset.</div>
     ${IDE_EDIT.map(fld).join('')}
-    ${canRev?`<label class="chk" style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-weight:600"><input type="checkbox" id="ieRev" checked style="width:auto;margin-top:3px"> <span>Sekalian minta agent revisi brief sesuai koreksi ini<br><small class="mut" style="font-weight:400">Brief yang udah jadi nggak berubah sendiri. Centang ini biar Content Writer nulis ulang brief-nya.</small></span></label>`
+    ${canRev?`<label class="chk" id="ieRedoL" hidden style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-weight:600"><input type="checkbox" id="ieRedo" checked style="width:auto;margin-top:3px"> <span>Sekalian bikin ulang brief jadi <b id="ieRedoJ"></b><br><small class="mut" style="font-weight:400">Format beda = brief baru di tab Doc yang sesuai. Brief ${esc(b.jenis||'lama')} tetap ada di Doc, tapi tombol Lihat brief pindah ke yang baru.</small></span></label>`:''}
+    ${canRev?`<label class="chk" id="ieRevL" style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-weight:600"><input type="checkbox" id="ieRev" checked style="width:auto;margin-top:3px"> <span>Sekalian minta agent revisi brief sesuai koreksi ini<br><small class="mut" style="font-weight:400">Brief yang udah jadi nggak berubah sendiri. Centang ini biar Content Writer nulis ulang brief-nya.</small></span></label>`
       :b.k==='q'||b.k==='p'?`<div class="sub" style="margin-top:10px">Brief lagi ${b.k==='q'?'ngantri':'dibikin'}. Kalau agent belum mulai, koreksi ini ikut kepake; kalau udah jadi, minta revisi dari tombol Lihat brief.</div>`:''}
     <div class="err" id="ieErr"></div>
     <div class="row"><span class="sp"></span><button id="ieNo">Batal</button><button class="primary" id="ieOk">Simpan</button></div></div>`;
   document.body.appendChild(w);
   const done=()=>w.remove();w.querySelector('#ieNo').onclick=done;w.onclick=e=>{if(e.target===w)done()};
+  const fs=w.querySelector('#ieFmt'),fh=w.querySelector('input[data-k="format"]');
+  const fmtSync=()=>{if(!fs||fs.disabled)return;fh.value=fs.value+fSuf;if(!canRev)return;
+    const nj=JENIS_OF[smoType(fh.value)],diff=b.jenis&&nj.toLowerCase()!==b.jenis.toLowerCase();
+    w.querySelector('#ieRedoL').hidden=!diff;w.querySelector('#ieRedoL').style.display=diff?'flex':'none';w.querySelector('#ieRedoJ').textContent=nj;
+    w.querySelector('#ieRevL').style.display=diff?'none':'flex'};
+  if(fs){fs.onchange=fmtSync;fmtSync()}
   const save=async()=>{
     const f={},chg=[];w.querySelectorAll('[data-k]').forEach(el=>{if(el.disabled)return;const k=el.dataset.k,v=el.value.replace(/\r/g,'').trim();if(v!==String(x[k]||'').trim()){f[k]=v;chg.push(k)}});
     if(!chg.length){done();return}
     if(f.title===''){w.querySelector('#ieErr').textContent='Judul nggak boleh kosong.';return}
-    const rev=canRev&&(w.querySelector('#ieRev')||{}).checked;
+    const redoOn=canRev&&w.querySelector('#ieRedoL').style.display==='flex',redo=redoOn&&w.querySelector('#ieRedo').checked,rev=canRev&&!redoOn&&(w.querySelector('#ieRev')||{}).checked;
+    if(f.format!=null&&API&&scriptVer&&scriptVer<13){w.querySelector('#ieErr').textContent='Script belum versi terbaru — jalanin updateSekarang di Apps Script.';return}
     if(!PIN&&!window.__SMO){askPin(v=>{savePin(v);save()});return}
     const btn=w.querySelector('#ieOk');btn.disabled=true;btn.textContent='Nyimpen…';
     for(let i=0;i<30&&(busy||queue.length);i++)await new Promise(r=>setTimeout(r,500));
@@ -1373,8 +1388,11 @@ function openIdeEdit(x,re){
       if(!window.__SMO)await apiPost({op:'smoEdit',src,ref:{row:x.row,title:x.title},fields:f});
       Object.assign(x,f);
       const bk=(state.bank||[]).find(z=>z.title===oldTitle&&String(z.from||'').startsWith(I.lbl));
-      if(bk){bk.title=x.title;bk.catatan=smoBankText(x);bankSave(bk)}
-      let msg='Ide ke-update';
+      if(bk){bk.title=x.title;bk.catatan=smoBankText(x);if(f.format!=null)bk.type=smoType(x.format);bankSave(bk)}
+      let msg='Ide ke-update'+(bk&&f.format!=null?' · jenis di bank konten ikut diganti':'');
+      if(redo){try{const d=await apiPost({op:'smoBrief',src,ref:{row:x.row,title:x.title},action:'redo'});x.brief=d.brief||x.brief;
+          msg=d.fired==='ok'?`Format diganti · agent dicolek buat bikin brief ${JENIS_OF[smoType(x.format)]}`:`Format diganti · brief ${JENIS_OF[smoType(x.format)]} masuk antrian (maks ±1 jam)`}
+        catch(e){msg='Format diganti, tapi gagal minta brief ulang: '+String(e.message||e).replace(/^Error:\s*/,'').replace(/^brief_\w+:\s*/,'').slice(0,70)}}
       if(rev){const lbl=Object.fromEntries(IDE_EDIT.map(e=>[e[0],e[1]]));
         const note='Arah ide dikoreksi, sesuaikan brief: '+chg.map(k=>lbl[k]+' jadi "'+String(f[k]).replace(/\s+/g,' ').slice(0,300)+'"').join('; ');
         try{const d=await apiPost({op:'briefRevise',src,ref:{row:x.row,title:x.title},note});x.brief=d.brief||x.brief;x.rev=note;
@@ -1556,6 +1574,8 @@ function drawSmo(all){
       if(a==='open'){SMO.open[k]=!SMO.open[k];re();return}
       if(a==='brief'){if(I.brief)smoBriefReq(x,'req',re);return}
       if(a==='briefCancel'){smoBriefReq(x,'cancel',re);return}
+      if(a==='briefRedo'){if(API&&scriptVer&&scriptVer<13){toast('Script belum versi terbaru — jalanin updateSekarang di Apps Script.');return}
+        if(confirm(`Bikin ulang brief "${x.title}" jadi ${JENIS_OF[smoType(x.format)]}? Brief ${smoBriefSt(x.brief).jenis} yang lama tetap ada di Doc.`))smoBriefReq(x,'redo',re);return}
       if(a==='briefView'){x._src=SMO.src;openBrief(x,re);return}
       if(a==='edit'){if(I.brief)openIdeEdit(x,re);return}
       if(API&&scriptVer&&scriptVer<I.ver){toast('Script belum versi terbaru — jalanin updateSekarang di Apps Script.');return}
