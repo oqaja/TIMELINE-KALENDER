@@ -290,6 +290,8 @@ body.v-day .main,body.v-week .main,body.v-todo .main,body.v-stat .main,body.v-in
 .smo-a{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.smo-a .sp{flex:1}.smo-a button{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 .smo-a button.brf.ok{border:0;cursor:pointer}
 .pelb{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:7px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-left:auto;min-height:38px}
+.smo-done{font-size:12.5px;font-weight:800;color:#11734b;background:#e9f6df;border-radius:99px;padding:5px 10px;align-self:center}
+.smo-c.st-selesai{background:#f6fbf2}.smo-c.st-selesai .smo-st{background:#2fa84f;color:#fff}
 .skw{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#f7f6f1;border-radius:10px;padding:8px 10px}.skw span{font-size:12px;font-weight:700;width:100%}.skw span i{font-weight:500;color:var(--muted)}
 .skw button{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 11px;font:inherit;font-size:12.5px;cursor:pointer;min-height:34px}.skw.done{font-size:12.5px;font-weight:700;color:#11734b;background:#e9f6df}
 .bvlast{background:#f1f0ea;border-radius:10px;padding:8px 11px;font-size:13px;margin-bottom:10px}.bvlast b{display:block;font-size:11px;text-transform:uppercase;color:var(--muted)}.bvlast.err{background:#ffe7e1;color:#a3290f}
@@ -1285,7 +1287,7 @@ let SMO=SMOS.sp;
 const ideSrc=()=>view==='nsp'?'nsp':view==='fp'?'fp':'sp';
 // nilai dropdown Status di Sheet: baru / ambil / skip  (ambil = udah masuk bank konten)
 const smoSt=s=>{s=String(s||'').trim().toLowerCase();return s===''?'baru':s==='bank'?'ambil':s};
-const SMO_ST={baru:'Baru',ambil:'Masuk bank',skip:'Skip'};
+const SMO_ST={baru:'Baru',ambil:'Masuk bank',selesai:'Selesai',skip:'Skip'};
 function smoType(fmt){const f=String(fmt||'').toLowerCase();return /carousel|desain|feed/.test(f)?'carousel':/long|panjang/.test(f)?'long':/story/.test(f)?'story':'short'}
 function smoSeg(fmt){const m=String(fmt||'').match(/\(([^)]+)\)/);if(!m)return '';const s=m[1].trim();return opts('segmen').find(x=>x.toLowerCase()===s.toLowerCase())||s}
 async function loadSmo(force){
@@ -1533,17 +1535,22 @@ function openBrief(x,re){
   document.body.appendChild(w);w.onclick=e=>{if(e.target===w)close()};paint();
   loadBrief(x).then(b=>{B=b;paint()}).catch(e=>{const l=w.querySelector('#bvL');if(l)l.innerHTML=`${esc(String(e.message||e))}<br><br>${smoBriefSt(x.brief).url?`<a href="${esc(smoBriefSt(x.brief).url)}" target="_blank" rel="noopener">Buka di Google Docs ↗</a>`:''}`});
 }
+// ide "Masuk bank" yang kontennya udah dijadwalin (keluar dari bank / ada di KALENDER KONTEN) → tampil sebagai "Selesai"
+function smoUsedSet(){const S=new Set();(state.bankUsed||[]).forEach(u=>{[u.title,u.cTitle].forEach(t=>{const n=brNorm(t);if(n)S.add(n)})});
+  state.items.forEach(i=>{if(i.src==='kk'){const n=brNorm(i.title);if(n)S.add(n)}});return S}
 function drawSmo(all){
   const v=document.getElementById('smoView'),F=SMO.f,I=IDE_SRC[SMO.src];
+  const USED=smoUsedSet(),inBank=x=>(state.bank||[]).some(b=>brNorm(b.title)===brNorm(x.title));
+  const vst=x=>{const s=smoSt(x.status);return s==='ambil'&&!inBank(x)&&USED.has(brNorm(x.title))?'selesai':s};
   const uniq=k=>[...new Set(all.map(x=>x[k]).filter(Boolean))];
-  const cnt=s=>all.filter(x=>smoSt(x.status)===s).length;
+  const cnt=s=>all.filter(x=>vst(x)===s).length;
   const q=F.q.trim().toLowerCase();
-  const L=all.filter(x=>(!F.st||smoSt(x.status)===F.st)&&(!F.fmt||x.format===F.fmt)&&(!F.urg||x.urgency===F.urg)&&(!q||(x.title+' '+x.hook+' '+x.angle).toLowerCase().includes(q)));
+  const L=all.filter(x=>(!F.st||vst(x)===F.st)&&(!F.fmt||x.format===F.fmt)&&(!F.urg||x.urgency===F.urg)&&(!q||(x.title+' '+x.hook+' '+x.angle).toLowerCase().includes(q)));
   const URGO={'hari ini':0,'minggu ini':1,'evergreen':2};
   L.sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(URGO[String(a.urgency).toLowerCase()]??3)-(URGO[String(b.urgency).toLowerCase()]??3));
   const groups={};L.forEach(x=>{(groups[x.date||'']=groups[x.date||'']||[]).push(x)});
   const chip=(k,val,lbl)=>`<span class="chip-f${F[k]===val?' on':''}" data-fk="${k}" data-fv="${esc(val)}">${lbl}</span>`;
-  const card=x=>{const st=smoSt(x.status),t=TYPES.find(y=>y.id===smoType(x.format)),op=SMO.open[x.row+'|'+x.title],src=String(x.sources||'').split(/\s*\|\s*/).filter(Boolean);
+  const card=x=>{const st=vst(x),t=TYPES.find(y=>y.id===smoType(x.format)),op=SMO.open[x.row+'|'+x.title],src=String(x.sources||'').split(/\s*\|\s*/).filter(Boolean);
     return `<div class="smo-c st-${esc(st)}${op?' open':''}" data-r="${x.row}">
       <div class="smo-h"><div class="smo-tags"><span class="smo-fmt"><i style="background:${t.color}"></i>${esc(x.format||'-')}</span>${x.urgency?`<span class="smo-urg u-${esc(String(x.urgency).toLowerCase().replace(/\s+/g,''))}">${esc(x.urgency)}</span>`:''}${st!=='baru'?`<span class="smo-st">${esc(SMO_ST[st]||x.status)}</span>`:''}</div>
         <b class="smo-t">${esc(x.title)}</b>${x.hook?`<div class="smo-hook">“${esc(x.hook)}”</div>`:''}</div>
@@ -1551,10 +1558,10 @@ function drawSmo(all){
         ${src.length?`<div><h5>Sumber</h5><ol class="smo-src">${src.map(u=>`<li><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\/(www\.)?/,'').slice(0,70))}</a></li>`).join('')}</ol></div>`:''}</div>`:''}
       ${st==='skip'&&SMO.why&&SMO.why[x.row+'|'+x.title]?(SMO.why[x.row+'|'+x.title]==='done'?'<div class="skw done">✓ Dicatet buat pelajaran agent</div>':`<div class="skw"><span>Kenapa di-skip? <i>(opsional, biar agent belajar)</i></span>${SKIP_WHY.map(r=>`<button data-a="why" data-w="${esc(r)}">${esc(r)}</button>`).join('')}</div>`):''}
       <div class="smo-a"><button class="lnk" data-a="open">${op?'Tutup detail':'Lihat detail'}</button><span class="sp"></span>
-        ${st==='baru'?`${I.brief?'<button data-a="edit" title="Koreksi arah konten">✏️ Edit</button>':''}<button data-a="skip">Skip</button><button class="primary" data-a="bank">＋ Masukin bank konten</button>`:st==='ambil'?(I.brief?`${smoBriefSt(x.brief).k==='none'?'<button data-a="reset">Balikin ke Baru</button>':''}<button data-a="edit" title="Koreksi arah konten">✏️ Edit ide</button>${smoBriefUi(x)}`:'<button data-a="reset">Balikin ke Baru</button>'):`<button data-a="reset">Balikin ke Baru</button>`}</div></div>`};
+        ${st==='baru'?`${I.brief?'<button data-a="edit" title="Koreksi arah konten">✏️ Edit</button>':''}<button data-a="skip">Skip</button><button class="primary" data-a="bank">＋ Masukin bank konten</button>`:st==='selesai'?`<span class="smo-done">✓ Udah dijadwalin</span><button data-a="cal">📅 Buka konten</button>${I.brief&&smoBriefSt(x.brief).k!=='none'?smoBriefUi(x):''}`:st==='ambil'?(I.brief?`${smoBriefSt(x.brief).k==='none'?'<button data-a="reset">Balikin ke Baru</button>':''}<button data-a="skip" title="Nggak jadi dipakai — keluarin dari bank konten">Skip</button><button data-a="edit" title="Koreksi arah konten">✏️ Edit ide</button>${smoBriefUi(x)}`:'<button data-a="skip" title="Nggak jadi dipakai — keluarin dari bank konten">Skip</button><button data-a="reset">Balikin ke Baru</button>'):`<button data-a="reset">Balikin ke Baru</button>`}</div></div>`};
   v.innerHTML=`<div class="dv-top"><h2>${I.tab}<small>Saran konten dari agent riset · masukin ke bank konten biar bisa dipakai kapan aja</small></h2><span class="dvact"><button id="smoPel" class="pelb" title="Aturan & feedback yang dipelajari agent">🧠 Pelajaran agent</button><button id="smoRe" title="Tarik ulang">⟳</button></span></div>
     <div class="insf-bar">
-      <span class="grp">${chip('st','baru',`Baru <b>${cnt('baru')}</b>`)}${chip('st','ambil',`Masuk bank <b>${cnt('ambil')}</b>`)}${chip('st','skip',`Skip <b>${cnt('skip')}</b>`)}${chip('st','','Semua')}</span>
+      <span class="grp">${chip('st','baru',`Baru <b>${cnt('baru')}</b>`)}${chip('st','ambil',`Masuk bank <b>${cnt('ambil')}</b>`)}${chip('st','selesai',`Selesai <b>${cnt('selesai')}</b>`)}${chip('st','skip',`Skip <b>${cnt('skip')}</b>`)}${chip('st','','Semua')}</span>
       <select data-fk="fmt"><option value="">Semua format</option>${uniq('format').map(f=>`<option${F.fmt===f?' selected':''}>${esc(f)}</option>`).join('')}</select>
       <select data-fk="urg"><option value="">Semua urgensi</option>${uniq('urgency').map(f=>`<option${F.urg===f?' selected':''}>${esc(f)}</option>`).join('')}</select>
       <input class="isearch" id="smoQ" placeholder="Cari ide…" value="${esc(F.q)}" style="margin:0;max-width:220px">
@@ -1583,7 +1590,12 @@ function drawSmo(all){
         if(!state.bank)state.bank=[];state.bank.unshift(b);bankSave(b);smoSetStatus(x,'ambil');re();
         toast(`"${x.title}" masuk bank konten`,null,{label:'Buka',fn:()=>{const y=(state.bank||[]).find(z=>z.id===b.id);if(y)openBank(y)}});return}
       if(a==='why'){SMO.why[k]='done';agentFb(SMO.src,'skip',x.title,bt.dataset.w);re();return}
-      if(a==='skip'){SMO.why={[k]:true};smoSetStatus(x,'skip');re();toast('Ide di-skip',()=>{smoSetStatus(x,'baru');re()});return}
+      if(a==='cal'){const n=brNorm(x.title),it=state.items.filter(i=>i.src==='kk'&&brNorm(i.title)===n).sort((p,q)=>p.date.localeCompare(q.date))[0];
+        if(it){openForm(it);return}const u=(state.bankUsed||[]).find(z=>brNorm(z.title)===n||brNorm(z.cTitle)===n);
+        if(u&&u.date){goDay(u.date);setView('day');return}toast('Kontennya nggak ketemu di kalender (mungkin judulnya diganti)');return}
+      if(a==='skip'){const prev=smoSt(x.status),bk=prev==='ambil'?(state.bank||[]).find(b=>brNorm(b.title)===brNorm(x.title)):null;
+        if(bk)bankDel(bk,true);SMO.why={[k]:true};smoSetStatus(x,'skip');re();
+        toast(bk?'Ide di-skip & keluar dari bank konten':'Ide di-skip',()=>{if(bk){if(!state.bank)state.bank=[];state.bank.unshift(bk);bankSave(bk)}smoSetStatus(x,prev);re()});return}
       if(a==='reset'){smoSetStatus(x,'baru');re();return}
     });
   });
