@@ -25,7 +25,7 @@
  *              daftar '<nama>_hapus' = pilihan yang disembunyiin, mis. tim_hapus = orang yang dihapus dari daftar)
  */
 const TZ = 'Asia/Jakarta';
-const SCRIPT_VER = 13; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
+const SCRIPT_VER = 14; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
 const JENIS = { carousel: 'Desain', short: 'Video Pendek', long: 'Video Panjang', story: 'Story' };
 
 // key di kalender  ->  nama header di sheet
@@ -1118,6 +1118,12 @@ function doPost(e) {
   const t0 = Date.now();
   let op0 = {};
   try { op0 = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (err) {}
+  if (/^mkt/.test(String(op0.op || ''))) { // tab Marketing: dikunci PIN khusus (MKT_PIN), bukan PIN edit
+    const lk = LockService.getScriptLock();
+    try { mktPinCheck_(op0.mpin); lk.waitLock(25000); return out_(mktOp_(op0)); }
+    catch (err) { return out_({ ok: false, error: String(err) }); }
+    finally { try { lk.releaseLock(); } catch (e) {} }
+  }
   try { pinCheck_(op0.pin); } catch (err) { return out_({ ok: false, error: String(err) }); }
   if (op0.op === 'checkPin') return out_({ ok: true });
   if (op0.op === 'invoiceSave') { try { return out_(invoiceSave_(op0)); } catch (err) { return out_({ ok: false, error: String(err) }); } }
@@ -1226,7 +1232,124 @@ function invoiceSave_(op) {
   const old = folder.getFilesByName(name);
   while (old.hasNext()) old.next().setTrashed(true);
   const f = folder.createFile(Utilities.newBlob(bytes, 'application/pdf', name));
-  return { ok: true, fileId: f.getId(), url: f.getUrl(), name: f.getName() };
+  let logged = false;
+  if (op.meta) { try { mktInvLog_(op.meta, f.getUrl()); logged = true; } catch (err) { console.warn('mktInvLog_: ' + err); } }
+  return { ok: true, fileId: f.getId(), url: f.getUrl(), name: f.getName(), logged: logged };
+}
+// ===================== MARKETING (omset, DP/lunas, termin) =====================
+// Tab INVOICE   : NO INVOICE | TANGGAL | BRAND | PERUSAHAAN | PIC | DESKRIPSI | SUBTOTAL | DISKON | TOTAL | TERMIN | JATUH TEMPO | CATATAN | FILE | ID | DIBUAT
+// Tab PEMBAYARAN: ID | INVOICE ID | TANGGAL | NOMINAL | KETERANGAN | DICATAT
+// Dua tab ini di sheet TIMELINE KALENDER (bukan DASHBOARD). Invoice yang disimpan ke Drive otomatis kecatet.
+// Dibaca/diubah cuma lewat PIN khusus: Properti skrip MKT_PIN (beda dari EDIT_PIN).
+const MKT_INV = 'INVOICE', MKT_PAY = 'PEMBAYARAN';
+const MKT_INV_H = ['NO INVOICE', 'TANGGAL', 'BRAND', 'PERUSAHAAN', 'PIC', 'DESKRIPSI', 'SUBTOTAL', 'DISKON', 'TOTAL', 'TERMIN', 'JATUH TEMPO', 'CATATAN', 'FILE', 'ID', 'DIBUAT'];
+const MKT_PAY_H = ['ID', 'INVOICE ID', 'TANGGAL', 'NOMINAL', 'KETERANGAN', 'DICATAT'];
+const MKT_INV_K = ['no', 'date', 'brand', 'company', 'pic', 'desc', 'sub', 'disc', 'total', 'termin', 'due', 'note', 'file', 'id', 'created'];
+const MKT_PAY_K = ['id', 'inv', 'date', 'amount', 'note', 'created'];
+function mktPinCheck_(pin) {
+  const want = PropertiesService.getScriptProperties().getProperty('MKT_PIN');
+  if (!want) throw new Error('mkt_not_set: PIN Marketing belum diatur — isi MKT_PIN di Properti skrip Apps Script');
+  const cache = CacheService.getScriptCache(), fails = Number(cache.get('mkt_fails') || 0);
+  if (fails >= 8) throw new Error('mkt_locked: kebanyakan salah PIN Marketing, coba lagi 15 menit lagi');
+  if (String(pin || '') !== String(want)) { cache.put('mkt_fails', String(fails + 1), 900); throw new Error('mkt_wrong: PIN Marketing salah'); }
+}
+function mktTab_(name, head) {
+  let s = sh_(name);
+  if (!s) {
+    s = SpreadsheetApp.getActive().insertSheet(name);
+    s.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold').setBackground('#111111').setFontColor('#ffffff');
+    s.setFrozenRows(1);
+  }
+  return s;
+}
+function mktNum_(v) { if (typeof v === 'number') return v; const n = Number(String(v || '').replace(/[^\d-]/g, '')); return isNaN(n) ? 0 : n; }
+function mktDate_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, TZ, 'yyyy-MM-dd');
+  const m = String(v || '').match(/(\d{4})-(\d{2})-(\d{2})/); return m ? m[0] : String(v || '').trim();
+}
+function mktRows_(name, head, keys) {
+  const s = mktTab_(name, head), n = s.getLastRow() - 1;
+  if (n < 1) return [];
+  const v = s.getRange(2, 1, n, head.length).getValues(), out = [];
+  v.forEach(function (r, i) {
+    if (!String(r[keys.indexOf('id')]).trim()) return;
+    const o = { row: i + 2 };
+    keys.forEach(function (k, j) { o[k] = (k === 'date' || k === 'due' || k === 'created') ? mktDate_(r[j]) : (['sub', 'disc', 'total', 'amount'].indexOf(k) >= 0 ? mktNum_(r[j]) : String(r[j]).trim()); });
+    out.push(o);
+  });
+  return out;
+}
+function mktFind_(name, head, keys, field, val) {
+  const s = mktTab_(name, head), n = s.getLastRow() - 1;
+  if (n < 1 || !val) return -1;
+  const col = keys.indexOf(field) + 1, v = s.getRange(2, col, n, 1).getDisplayValues();
+  for (let i = 0; i < n; i++) if (String(v[i][0]).trim() === String(val)) return i + 2;
+  return -1;
+}
+function mktWrite_(name, head, keys, row, rec) {
+  const s = mktTab_(name, head);
+  const vals = keys.map(function (k) {
+    const v = rec[k];
+    if (v == null) return '';
+    if (['sub', 'disc', 'total', 'amount'].indexOf(k) >= 0) return v === '' ? '' : mktNum_(v);
+    if ((k === 'date' || k === 'due') && /^\d{4}-\d{2}-\d{2}$/.test(String(v))) { const p = String(v).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+    return String(v);
+  });
+  if (row > 0) {
+    const cur = s.getRange(row, 1, 1, keys.length).getValues()[0];
+    keys.forEach(function (k, j) { if (rec[k] == null) vals[j] = cur[j]; });
+    s.getRange(row, 1, 1, keys.length).setValues([vals]);
+  } else s.appendRow(vals);
+}
+// dipanggil dari invoiceSave_: invoice yang sama (no. invoice sama) di-update, pembayarannya nggak hilang
+function mktInvLog_(m, url) {
+  const no = String(m.no || '').trim();
+  if (!no) return;
+  const row = mktFind_(MKT_INV, MKT_INV_H, MKT_INV_K, 'no', no);
+  const rec = { no: no, date: m.date, brand: m.brand, company: m.company, pic: m.pic, desc: String(m.desc || '').slice(0, 1500), sub: m.sub, disc: m.disc, total: m.total, file: url };
+  if (row < 0) { rec.id = 'inv' + Date.now().toString(36); rec.created = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'); }
+  mktWrite_(MKT_INV, MKT_INV_H, MKT_INV_K, row, rec);
+}
+function mktOp_(op) {
+  const now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
+  switch (op.op) {
+    case 'mktRead':
+      return { ok: true, ver: SCRIPT_VER, inv: mktRows_(MKT_INV, MKT_INV_H, MKT_INV_K), pay: mktRows_(MKT_PAY, MKT_PAY_H, MKT_PAY_K) };
+    case 'mktInvSave': {
+      const r = op.rec || {};
+      let row = r.id ? mktFind_(MKT_INV, MKT_INV_H, MKT_INV_K, 'id', r.id) : -1;
+      if (row < 0 && !String(r.brand || r.company || '').trim()) throw new Error('mkt_brand: brand / perusahaan wajib diisi');
+      if ((row < 0 || r.total != null) && !(mktNum_(r.total) > 0)) throw new Error('mkt_total: total tagihan wajib diisi');
+      const rec = {};
+      ['no', 'date', 'brand', 'company', 'pic', 'desc', 'sub', 'disc', 'total', 'termin', 'due', 'note'].forEach(function (k) { if (r[k] != null) rec[k] = r[k]; });
+      if (row < 0) { rec.id = r.id || ('inv' + Date.now().toString(36)); rec.created = now; if (rec.sub == null || rec.sub === '') rec.sub = rec.total; }
+      mktWrite_(MKT_INV, MKT_INV_H, MKT_INV_K, row, rec);
+      return { ok: true, id: rec.id || r.id };
+    }
+    case 'mktInvDelete': {
+      const row = mktFind_(MKT_INV, MKT_INV_H, MKT_INV_K, 'id', op.id);
+      if (row > 0) mktTab_(MKT_INV, MKT_INV_H).deleteRow(row);
+      const ps = mktTab_(MKT_PAY, MKT_PAY_H), n = ps.getLastRow() - 1;
+      if (n > 0) { const v = ps.getRange(2, 2, n, 1).getDisplayValues(); for (let i = n - 1; i >= 0; i--) if (String(v[i][0]).trim() === String(op.id)) ps.deleteRow(i + 2); }
+      return { ok: true };
+    }
+    case 'mktPayAdd': {
+      const p = op.rec || {};
+      if (mktFind_(MKT_INV, MKT_INV_H, MKT_INV_K, 'id', p.inv) < 0) throw new Error('mkt_inv: invoice-nya nggak ketemu');
+      if (!(mktNum_(p.amount) > 0)) throw new Error('mkt_amount: nominal pembayaran wajib diisi');
+      const id = p.id || ('pay' + Date.now().toString(36));
+      if (mktFind_(MKT_PAY, MKT_PAY_H, MKT_PAY_K, 'id', id) > 0) return { ok: true, id: id, dup: true };
+      mktWrite_(MKT_PAY, MKT_PAY_H, MKT_PAY_K, -1, { id: id, inv: p.inv, date: p.date || now, amount: p.amount, note: p.note || '', created: now });
+      return { ok: true, id: id };
+    }
+    case 'mktPayDelete': {
+      const row = mktFind_(MKT_PAY, MKT_PAY_H, MKT_PAY_K, 'id', op.id);
+      if (row > 0) mktTab_(MKT_PAY, MKT_PAY_H).deleteRow(row);
+      return { ok: true };
+    }
+    case 'mktCheck': return { ok: true, ver: SCRIPT_VER };
+  }
+  throw new Error('mkt_op: perintah nggak dikenal');
 }
 // Jalankan SEKALI dari editor (pilih fungsi ini > Run) buat ngasih izin akses Drive
 function izinDrive() { Logger.log('Folder invoice: ' + invoiceFolder_().getName()); }

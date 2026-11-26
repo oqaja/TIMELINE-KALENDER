@@ -151,10 +151,41 @@ header.top{display:flex;align-items:center;gap:14px;margin-bottom:10px}
 .nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .dnav{display:flex;align-items:center;gap:6px;margin-left:auto}
 .nav .subtabs:empty{display:none}
-body.v-smo .dnav,body.v-deal .dnav{display:none}
-body.v-deal .main{display:none}
+body.v-smo .dnav,body.v-deal .dnav,body.v-mkt .dnav{display:none}
+body.v-deal .main,body.v-mkt .main{display:none}
 .bar .status{font-size:11.5px}
 .fab{display:none}
+.mk-lock{max-width:380px;margin:40px auto;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 22px}.mk-ic{font-size:34px}.mk-lock h2{margin:6px 0 4px;font-family:var(--head)}.mk-lock p{font-size:14px;color:#555;margin:0 0 14px}
+.mk-lock form{display:flex;gap:8px}.mk-lock input{flex:1;font:inherit;font-size:18px;letter-spacing:4px;text-align:center;border:1px solid var(--line);border-radius:12px;padding:10px}.mk-lock button{background:#111;color:#fff;border:0;border-radius:12px;padding:0 18px;font:inherit;font-weight:800;cursor:pointer}
+.mk-lock small{display:block;margin-top:12px;color:var(--muted);font-size:12px}.mk-err{margin-top:10px;background:#ffe7e1;color:#a3290f;border-radius:10px;padding:8px;font-size:13px}
+.mk-mon{display:flex;align-items:center;gap:8px;margin:10px 0}.mk-mon b{font:800 17px var(--head);min-width:150px;text-align:center}
+.mk-tiles{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:8px}.mk-tiles>div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
+.mk-tiles span{font-size:12px;color:var(--muted);font-weight:700}.mk-tiles b{display:block;font:800 20px/1.2 var(--head);margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mk-tiles small{font-size:11.5px;color:var(--muted)}
+.mk-tiles .big{background:#111;color:#fff;border-color:#111}.mk-tiles .big span,.mk-tiles .big small{color:#bbb}.mk-tiles .big b{font-size:26px;color:#ffc131}
+b.g{color:#11734b}b.r{color:#c0392b}
+.mk-row{display:grid;grid-template-columns:1.6fr 1fr;gap:8px;margin:8px 0 12px}.mk-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}.mk-card h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;color:var(--muted);letter-spacing:.03em}
+.mk-bars{display:flex;gap:8px;align-items:flex-end;height:150px}.mk-b{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;height:100%}.mk-bc{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center}
+.mk-bc i{display:flex;align-items:flex-end;width:70%;max-width:46px;background:#e2dfd6;border-radius:6px 6px 2px 2px;min-height:2px;overflow:hidden}.mk-bc em{display:block;width:100%;background:#2fa84f}
+.mk-b b{font-size:11px;font-weight:800}.mk-b span{font-size:11px;color:var(--muted)}.mk-b.on span{color:#111;font-weight:800}.mk-b.on .mk-bc i{outline:2px solid #111;outline-offset:1px}
+.mk-lg{display:flex;gap:12px;font-size:11.5px;color:var(--muted);margin-top:6px}.mk-lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}.mk-lg .o{background:#e2dfd6}.mk-lg .p{background:#2fa84f}
+.mk-pi{font:800 24px var(--head);color:#c0392b}.mk-card p{font-size:12px;color:var(--muted);margin:2px 0 8px}
+.mk-due{display:grid;grid-template-columns:1fr auto;gap:0 8px;padding:6px 0;border-top:1px dashed var(--line);cursor:pointer;font-size:13px}.mk-due small{grid-column:1/-1;font-size:11.5px;color:var(--muted)}.late{color:#c0392b!important;font-weight:700}
+.mk-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.mk-it{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;cursor:pointer}.mk-it:hover{border-color:#bbb}
+.mk-h{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.mk-h b{font:800 16px var(--head)}.mk-no{width:100%;font-size:12px;color:var(--muted)}
+.mk-st{font-size:11px;font-weight:800;border-radius:99px;padding:3px 9px}.mk-st.s-b{background:#ffe7e1;color:#a3290f}.mk-st.s-d{background:#fff1c9;color:#8a5a00}.mk-st.s-l{background:#d4edbc;color:#11734b}
+.mk-n{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.mk-n span{display:block;font-size:11px;color:var(--muted);font-weight:700}.mk-n b{font-size:13.5px;white-space:nowrap}.mk-n.big b{font:800 16px var(--head)}
+.mk-t{font-size:12.5px;color:#444}
+.mkm{max-width:520px}.mk-desc{white-space:pre-line;font-size:13px;background:#f7f6f1;border-radius:10px;padding:8px 10px;margin:10px 0}
+.mk-meta{display:grid;gap:4px;font-size:13.5px;margin:8px 0}.mk-meta span{display:inline-block;min-width:90px;color:var(--muted);font-size:12px;font-weight:700}
+.mk-h4{margin:14px 0 6px;font-size:12px;text-transform:uppercase;color:var(--muted);letter-spacing:.03em}
+.mk-pay{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}.mk-pay>div{flex:1}.mk-pay small{display:block;font-size:12px;color:var(--muted)}
+.mk-pn{font-size:11px;font-weight:800;background:#eef3ff;color:#1d4ea3;border-radius:8px;padding:3px 8px;min-width:64px;text-align:center}
+.mk-pay .lnk{border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:12.5px}
+.mk-pf{display:grid;gap:8px;margin-top:10px;background:#f7f6f1;border-radius:12px;padding:10px}.mk-q{display:flex;flex-wrap:wrap;gap:6px}.mk-pr{display:grid;grid-template-columns:1fr 150px;gap:6px}
+.mk-pf input{font:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;min-width:0}.mk-pf .primary{background:#111;color:#fff;border:0;border-radius:99px;padding:10px;font:inherit;font-weight:800;cursor:pointer}
+.mk-done{margin-top:10px;text-align:center;font-weight:800;color:#11734b;background:#e9f6df;border-radius:12px;padding:10px}.mkm .lnk.danger{color:#c0392b;border:0;background:none;text-decoration:underline;cursor:pointer;font:inherit;font-size:13px}
+@media(max-width:700px){.mk-tiles{grid-template-columns:1fr 1fr}.mk-tiles .big{grid-column:1/-1}.mk-row{grid-template-columns:1fr}.mk-list{grid-template-columns:1fr}.mk-pr{grid-template-columns:1fr}.mk-mon b{min-width:0;flex:1}}
 .dl-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}.dl-tiles>div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
 .dl-tiles b{display:block;font:800 22px/1.1 var(--head)}.dl-tiles b small{font-size:13px;color:var(--muted)}.dl-tiles span{font-size:12px;color:var(--muted)}.dl-tiles .warn{border-color:#f3b5ab;background:#fff8f6}.dl-tiles .warn b{color:#a3290f}
 .dl-f{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.dl-f input{flex:1;min-width:180px;font:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--card)}
@@ -516,6 +547,7 @@ svg.off .rm-t.sm{font-size:15px}
   <section class="statview" id="insView" hidden></section>
   <section class="statview" id="smoView" hidden></section>
   <section class="statview" id="dealView" hidden></section>
+  <section class="statview" id="mktView" hidden></section>
 </div>
 
 <div class="back" id="back">
@@ -831,7 +863,7 @@ function navTo(){setRange();render();const mf=`${viewY}-${String(viewM+1).padSta
 setRange();
 const hidden=new Set();let hidePv=false;
 let view='cal';try{view=localStorage.getItem('sp-timeline-view')||'cal'}catch(e){}
-if(!['deal','cal','week','day','todo','stat','ins','smo','nsp','fp'].includes(view))view=view==='map'?'todo':'cal';
+if(!['mkt','deal','cal','week','day','todo','stat','ins','smo','nsp','fp'].includes(view))view=view==='map'?'todo':'cal';
 let dayK=null; // tanggal di menu Upload Harian (default: hari ini)
 
 const pad=n=>String(n).padStart(2,'0');
@@ -1817,7 +1849,125 @@ function openDeal(d){
   const del=w.querySelector('#dlDel');if(del)del.onclick=()=>{if(!del.dataset.sure){del.dataset.sure=1;del.textContent='Yakin hapus? Klik lagi';return}
     if(!sowSave({op:'sowDelete',id:d.id},d))return;SOW.list=SOW.list.filter(x=>x!==d);close();renderDeal();toast('Deal dihapus')};
 }
-const NAVG={cal:[['cal','Bulanan'],['week','Mingguan'],['day','Harian']],ide:[['smo','Ide SP'],['nsp','Ide NSP'],['fp','Ide FP']],tim:[['todo','To-do']],data:[['stat','Ringkasan'],['ins','Insight']],deal:[['deal','Brand Deal']]};
+// ===================== MARKETING (dikunci PIN khusus; data cuma dikirim server kalau PIN Marketing bener) =====================
+const MKT={pin:'',data:null,err:'',loading:false,m:'',f:'all',q:''};
+try{MKT.pin=sessionStorage.getItem('sp-mkt-pin')||''}catch(e){}
+const rpx=n=>'Rp'+Math.round(+n||0).toLocaleString('id-ID');
+const rpShort=n=>{n=+n||0;return n>=1e9?(n/1e9).toFixed(1).replace('.0','')+' M':n>=1e6?(n/1e6).toFixed(1).replace('.0','')+' jt':n>=1e3?Math.round(n/1e3)+' rb':String(Math.round(n))};
+const mktMon=d=>String(d||'').slice(0,7);
+async function mktCall(op){
+  if(window.__MKT)return window.__MKT(op);
+  if(!API)throw new Error('Belum nyambung ke Sheet — klik ⚙');
+  let r;try{r=await fetch(API,{method:'POST',body:JSON.stringify({...op,mpin:MKT.pin})})}catch(e){throw new Error('Nggak nyambung ke Google (cek internet)')}
+  const tx=await r.text();let d;try{d=JSON.parse(tx)}catch(e){throw new Error('Apps Script error (HTTP '+r.status+')')}
+  if(!d.ok){const m=String(d.error||'gagal').replace(/^Error:\s*/,'');if(/mkt_wrong|mkt_locked/.test(m)){MKT.pin='';try{sessionStorage.removeItem('sp-mkt-pin')}catch(e){}MKT.data=null}
+    if(/doPost|perintah nggak dikenal|pin_/.test(m)&&!/mkt_/.test(m))throw new Error('Script belum versi terbaru — jalanin updateSekarang di Apps Script');throw new Error(m.replace(/^mkt_\w+:\s*/,''))}
+  return d}
+async function loadMkt(){if(MKT.loading)return;MKT.loading=true;MKT.err='';
+  try{const d=await mktCall({op:'mktRead'});MKT.data={inv:d.inv||[],pay:d.pay||[]};if(!MKT.m)MKT.m=todayKey.slice(0,7)}catch(e){MKT.err=String(e.message||e)}
+  MKT.loading=false;if(view==='mkt')renderMkt()}
+function mktCalc(){const D=MKT.data,paid={};D.pay.forEach(p=>{paid[p.inv]=(paid[p.inv]||0)+(+p.amount||0)});
+  return D.inv.map(i=>{const pd=paid[i.id]||0,tot=+i.total||0,rest=Math.max(0,tot-pd);
+    return {...i,paid:pd,rest,st:pd<=0?'belum':pd>=tot?'lunas':'dp',pays:D.pay.filter(p=>p.inv===i.id).sort((a,b)=>a.date.localeCompare(b.date))}})}
+function renderMkt(){
+  document.getElementById('filters').innerHTML='';
+  const v=document.getElementById('mktView');
+  if(!MKT.pin){v.innerHTML=`<div class="mk-lock"><div class="mk-ic">🔒</div><h2>Marketing</h2><p>Omset, status DP/lunas, dan pembayaran. Masukin PIN Marketing buat buka.</p>
+      <form id="mkF"><input id="mkP" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN Marketing"><button class="primary">Buka</button></form>
+      ${MKT.err?`<div class="mk-err">${esc(MKT.err)}</div>`:''}<small>PIN-nya beda dari PIN edit. Cuma kesimpen di tab browser ini sampai ditutup.</small></div>`;
+    v.querySelector('#mkF').onsubmit=e=>{e.preventDefault();const p=v.querySelector('#mkP').value.trim();if(!p)return;MKT.pin=p;MKT.data=null;
+      try{sessionStorage.setItem('sp-mkt-pin',p)}catch(_){}renderMkt()};setTimeout(()=>{const i=v.querySelector('#mkP');if(i)i.focus()},50);return}
+  if(!MKT.data){v.innerHTML=`<div class="dv-empty">${MKT.err?esc(MKT.err)+' <button class="lnk" id="mkRe">Coba lagi</button>':'Narik data Marketing…'}</div>`;
+    const b=v.querySelector('#mkRe');if(b)b.onclick=()=>{MKT.err='';renderMkt();loadMkt()};if(!MKT.err&&!MKT.loading)loadMkt();if(!MKT.pin)renderMkt();return}
+  const all=mktCalc(),M=MKT.m;
+  const months=[...new Set([todayKey.slice(0,7),...all.map(i=>mktMon(i.date))])].filter(Boolean).sort();
+  const inM=all.filter(i=>M==='all'||mktMon(i.date)===M);
+  const S=inM.reduce((a,i)=>{a.tot+=+i.total||0;a.paid+=i.paid;a.rest+=i.rest;a[i.st]++;return a},{tot:0,paid:0,rest:0,belum:0,dp:0,lunas:0});
+  const cashIn=MKT.data.pay.filter(p=>M==='all'||mktMon(p.date)===M).reduce((a,p)=>a+(+p.amount||0),0);
+  const allRest=all.reduce((a,i)=>a+i.rest,0);
+  const last6=months.slice(-6),bars=last6.map(m=>{const l=all.filter(i=>mktMon(i.date)===m);return {m,tot:l.reduce((a,i)=>a+(+i.total||0),0),paid:l.reduce((a,i)=>a+i.paid,0)}}),mx=Math.max(1,...bars.map(b=>b.tot));
+  const q=MKT.q.trim().toLowerCase();
+  const shown=inM.filter(i=>(MKT.f==='all'||i.st===MKT.f)&&(!q||(i.no+' '+i.brand+' '+i.company+' '+i.desc).toLowerCase().includes(q))).sort((a,b)=>(a.st==='lunas')-(b.st==='lunas')||b.date.localeCompare(a.date));
+  const ST={belum:['Belum bayar','b'],dp:['DP','d'],lunas:['Lunas','l']};
+  v.innerHTML=`<div class="dv-top"><h2>Marketing<small>Omset dari invoice · status pembayaran & termin</small></h2>
+      <span class="dvact"><button class="primary" id="mkAdd">+ Tagihan</button><button id="mkRe" title="Tarik ulang">⟳</button><button id="mkLock" title="Kunci lagi">🔒</button></span></div>
+    <div class="mk-mon"><button class="icon" id="mkPrev" aria-label="Bulan sebelumnya">‹</button><b>${M==='all'?'Semua bulan':sowMLbl(M)}</b><button class="icon" id="mkNext" aria-label="Bulan berikutnya">›</button><span class="chip-f${M==='all'?' on':''}" id="mkAll">Semua</span></div>
+    <div class="mk-tiles">
+      <div class="big"><span>Omset ${M==='all'?'total':'bulan ini'}</span><b>${rpx(S.tot)}</b><small>${inM.length} invoice</small></div>
+      <div><span>Udah dibayar</span><b class="g">${rpx(S.paid)}</b><small>${S.tot?Math.round(S.paid/S.tot*100):0}% dari omset</small></div>
+      <div><span>Kurang</span><b class="r">${rpx(S.rest)}</b><small>${S.belum} belum bayar · ${S.dp} DP</small></div>
+      <div><span>Uang masuk ${M==='all'?'':'bulan ini'}</span><b>${rpx(cashIn)}</b><small>semua pembayaran bertanggal ${M==='all'?'':'di bulan ini'}</small></div></div>
+    <div class="mk-row">
+      <div class="mk-card"><h4>Omset 6 bulan</h4><div class="mk-bars">${bars.map(b=>`<div class="mk-b${b.m===M?' on':''}" data-m="${b.m}" title="${esc(sowMLbl(b.m))}: omset ${rpx(b.tot)} · dibayar ${rpx(b.paid)}"><div class="mk-bc"><i style="height:${b.tot/mx*100}%"><em style="height:${b.tot?b.paid/b.tot*100:0}%"></em></i></div><b>${rpShort(b.tot)}</b><span>${BULAN[+b.m.slice(5)-1].slice(0,3)}</span></div>`).join('')}</div>
+        <div class="mk-lg"><span><i class="o"></i>Omset</span><span><i class="p"></i>Udah dibayar</span></div></div>
+      <div class="mk-card"><h4>Total piutang</h4><b class="mk-pi">${rpx(allRest)}</b><p>Sisa tagihan dari semua invoice yang belum lunas, semua bulan.</p>
+        ${all.filter(i=>i.rest>0).sort((a,b)=>(a.due||'9').localeCompare(b.due||'9')).slice(0,4).map(i=>`<div class="mk-due" data-id="${esc(i.id)}"><span>${esc(i.brand||i.company)}</span><b>${rpx(i.rest)}</b>${i.due?`<small class="${i.due<todayKey?'late':''}">${i.due<todayKey?'telat · ':''}${esc(fmtDate(i.due).replace(/^\w+, /,''))}</small>`:''}</div>`).join('')}</div></div>
+    <div class="dl-f"><span class="chips">${[['all','Semua'],['belum','Belum bayar'],['dp','DP'],['lunas','Lunas']].map(([k,l])=>`<span class="chip-f${MKT.f===k?' on':''}" data-f="${k}">${l}</span>`).join('')}</span><input id="mkQ" type="search" placeholder="Cari brand / no. invoice…" value="${esc(MKT.q)}"></div>
+    <div class="mk-list">${shown.map(i=>`<div class="mk-it" data-id="${esc(i.id)}">
+        <div class="mk-h"><span class="mk-st s-${ST[i.st][1]}">${ST[i.st][0]}</span><b>${esc(i.brand||i.company||'-')}</b><span class="mk-no">${esc(i.no||'tanpa no.')} · ${esc(fmtDate(i.date).replace(/^\w+, /,''))}</span></div>
+        <div class="mk-n"><div><span>Total</span><b>${rpx(i.total)}</b></div><div><span>Dibayar</span><b class="g">${rpx(i.paid)}</b></div><div><span>Kurang</span><b class="${i.rest?'r':''}">${rpx(i.rest)}</b></div></div>
+        <div class="dl-p"><i style="width:${i.total?Math.min(100,i.paid/i.total*100):0}%"></i></div>
+        ${i.termin||i.due?`<div class="mk-t">${i.termin?'💳 '+esc(i.termin):''}${i.due?` <span class="${i.rest&&i.due<todayKey?'late':''}">· jatuh tempo ${esc(fmtDate(i.due).replace(/^\w+, /,''))}</span>`:''}</div>`:''}</div>`).join('')||`<div class="dv-empty">${inM.length?'Nggak ada tagihan di filter ini.':'Belum ada invoice di bulan ini. Invoice yang disimpan ke Drive dari menu Invoice otomatis muncul di sini.'}</div>`}</div>`;
+  const shift=d=>{const L=months;let k=M==='all'?L.length-1:L.indexOf(M)+d;if(k<0||k>=L.length){const [y,m]=(M==='all'?todayKey.slice(0,7):M).split('-').map(Number);const t=new Date(y,m-1+d,1);MKT.m=key(t.getFullYear(),t.getMonth(),1).slice(0,7)}else MKT.m=L[k];renderMkt()};
+  v.querySelector('#mkPrev').onclick=()=>shift(-1);v.querySelector('#mkNext').onclick=()=>shift(1);
+  v.querySelector('#mkAll').onclick=()=>{MKT.m=MKT.m==='all'?todayKey.slice(0,7):'all';renderMkt()};
+  v.querySelectorAll('.mk-b').forEach(b=>b.onclick=()=>{MKT.m=b.dataset.m;renderMkt()});
+  v.querySelectorAll('[data-f]').forEach(c=>c.onclick=()=>{MKT.f=c.dataset.f;renderMkt()});
+  const qi=v.querySelector('#mkQ');qi.oninput=()=>{MKT.q=qi.value;clearTimeout(MKT.qt);MKT.qt=setTimeout(()=>{renderMkt();const n=document.getElementById('mkQ');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},250)};
+  v.querySelector('#mkRe').onclick=()=>{MKT.data=null;renderMkt()};
+  v.querySelector('#mkLock').onclick=()=>{MKT.pin='';MKT.data=null;MKT.err='';try{sessionStorage.removeItem('sp-mkt-pin')}catch(e){}renderMkt()};
+  v.querySelector('#mkAdd').onclick=()=>mktEdit(null);
+  v.querySelectorAll('.mk-it,.mk-due').forEach(el=>el.onclick=()=>mktOpen(el.dataset.id));
+}
+function mktOpen(id){
+  const i=mktCalc().find(x=>x.id===id);if(!i)return;
+  const w=document.createElement('div');w.className='back show';w.style.zIndex=60;
+  w.innerHTML=`<div class="modal mkm"><div class="bvh" style="padding:0 0 8px"><div><span class="bvj">${esc(i.no||'Tagihan')}</span><h2 style="margin:6px 0 0;font-size:19px;text-transform:none">${esc(i.brand||i.company)}</h2>
+      <small class="mut">${esc([i.company&&i.brand?i.company:'',i.pic].filter(Boolean).join(' · '))}</small></div><button class="bvx" id="mmX" aria-label="Tutup">✕</button></div>
+    <div class="mk-n big"><div><span>Total</span><b>${rpx(i.total)}</b></div><div><span>Dibayar</span><b class="g">${rpx(i.paid)}</b></div><div><span>Kurang</span><b class="${i.rest?'r':''}">${rpx(i.rest)}</b></div></div>
+    <div class="dl-p"><i style="width:${i.total?Math.min(100,i.paid/i.total*100):0}%"></i></div>
+    ${i.desc?`<div class="mk-desc">${esc(i.desc)}</div>`:''}
+    <div class="mk-meta">${i.termin?`<div><span>Termin</span>${esc(i.termin)}</div>`:''}${i.due?`<div><span>Jatuh tempo</span>${esc(fmtDate(i.due))}</div>`:''}${i.note?`<div><span>Catatan</span>${esc(i.note)}</div>`:''}${i.file?`<div><span>PDF</span><a href="${esc(i.file)}" target="_blank" rel="noopener">Buka di Drive ↗</a></div>`:''}</div>
+    <h4 class="mk-h4">Pembayaran</h4>
+    <div class="mk-pays">${i.pays.map((p,k)=>`<div class="mk-pay"><span class="mk-pn">${i.pays.length===1&&i.rest===0?'Lunas':k===0?'DP':k===i.pays.length-1&&i.rest===0?'Pelunasan':'Termin '+(k+1)}</span><div><b>${rpx(p.amount)}</b><small>${esc(fmtDate(p.date).replace(/^\w+, /,''))}${p.note?' · '+esc(p.note):''}</small></div><button class="lnk" data-del="${esc(p.id)}">Hapus</button></div>`).join('')||'<div class="plempty">Belum ada pembayaran.</div>'}</div>
+    ${i.rest>0?`<form class="mk-pf" id="mkPF"><div class="mk-q">${[['Lunasin sisa',i.rest],['DP 50%',Math.round(i.total/2)],['DP 30%',Math.round(i.total*.3)]].filter(([,n])=>n>0&&n<=i.rest).map(([l,n])=>`<button type="button" class="cp" data-n="${n}">${l} · ${rpShort(n)}</button>`).join('')}</div>
+      <div class="mk-pr"><input id="mpA" inputmode="numeric" placeholder="Nominal (Rp)"><input id="mpD" type="date" value="${todayKey}"></div>
+      <input id="mpN" placeholder="Keterangan (opsional) — mis. transfer BCA, termin 2">
+      <button class="primary">＋ Catat pembayaran</button></form>`:'<div class="mk-done">✓ Lunas</div>'}
+    <div class="row" style="display:flex;gap:8px;margin-top:14px"><button class="lnk danger" id="mmDel">Hapus tagihan</button><span style="flex:1"></span><button id="mmEd">Edit tagihan</button></div></div>`;
+  document.body.appendChild(w);const close=()=>w.remove();w.onclick=e=>{if(e.target===w)close()};w.querySelector('#mmX').onclick=close;
+  const act=async(op,msg)=>{try{await mktCall(op);toast(msg);close();MKT.data=null;renderMkt();await loadMkt()}catch(e){toast('Gagal: '+String(e.message||e).slice(0,90))}};
+  const pf=w.querySelector('#mkPF');if(pf){const a=w.querySelector('#mpA');a.oninput=()=>{const n=String(a.value).replace(/\D/g,'');a.value=n?(+n).toLocaleString('id-ID'):''};
+    pf.querySelectorAll('[data-n]').forEach(b=>b.onclick=()=>{a.value=(+b.dataset.n).toLocaleString('id-ID')});
+    pf.onsubmit=e=>{e.preventDefault();const n=+String(a.value).replace(/\D/g,'');if(!n){toast('Isi nominal dulu');return}
+      if(n>i.rest&&!confirm(`Nominal ${rpx(n)} lebih gede dari sisa ${rpx(i.rest)}. Tetap catat?`))return;
+      act({op:'mktPayAdd',rec:{id:'pay'+Date.now().toString(36),inv:i.id,amount:n,date:w.querySelector('#mpD').value,note:w.querySelector('#mpN').value.trim()}},'Pembayaran dicatat')}}
+  w.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Yakin?';return}act({op:'mktPayDelete',id:b.dataset.del},'Pembayaran dihapus')});
+  const del=w.querySelector('#mmDel');del.onclick=()=>{if(!del.dataset.sure){del.dataset.sure=1;del.textContent='Yakin hapus tagihan + pembayarannya? Klik lagi';return}act({op:'mktInvDelete',id:i.id},'Tagihan dihapus')};
+  w.querySelector('#mmEd').onclick=()=>{close();mktEdit(i)};
+}
+function mktEdit(i){
+  const isNew=!i,c=i||{no:'',date:todayKey,brand:'',company:'',pic:'',desc:'',total:'',termin:'',due:'',note:''};
+  const w=document.createElement('div');w.className='back show';w.style.zIndex=61;
+  w.innerHTML=`<div class="modal dlm"><h3>${isNew?'Tagihan baru':'Edit tagihan'}</h3>
+    ${isNew?'<p class="mut" style="margin:-6px 0 10px;font-size:12.5px">Invoice yang dibikin di menu Invoice & disimpan ke Drive udah otomatis masuk. Ini buat tagihan di luar itu.</p>':''}
+    <div class="dlm-g"><label>No. invoice<input data-k="no" value="${esc(c.no)}" placeholder="opsional"></label><label>Tanggal<input data-k="date" type="date" value="${esc(c.date)}"></label>
+      <label>Brand<input data-k="brand" value="${esc(c.brand)}"></label><label>Perusahaan<input data-k="company" value="${esc(c.company)}"></label>
+      <label class="w2">Total tagihan (Rp)<input data-k="total" inputmode="numeric" value="${c.total?(+c.total).toLocaleString('id-ID'):''}"></label>
+      <label class="w2">Termin / sistem pembayaran<input data-k="termin" value="${esc(c.termin)}" placeholder="mis. DP 50% di awal, pelunasan H+7 setelah tayang" list="mkTerm"></label>
+      <label>Jatuh tempo<input data-k="due" type="date" value="${esc(c.due)}"></label><label>PIC<input data-k="pic" value="${esc(c.pic)}"></label>
+      <label class="w2">Deskripsi<textarea data-k="desc" rows="2">${esc(c.desc)}</textarea></label><label class="w2">Catatan<textarea data-k="note" rows="2">${esc(c.note)}</textarea></label></div>
+    <datalist id="mkTerm"><option value="Full payment di awal"><option value="DP 50% di awal, pelunasan setelah tayang"><option value="DP 30%, pelunasan setelah tayang"><option value="3 termin (40/30/30)"><option value="Full payment setelah tayang"></datalist>
+    <div class="row"><span class="sp"></span><button id="meX">Batal</button><button class="primary" id="meS">Simpan</button></div></div>`;
+  document.body.appendChild(w);const close=()=>w.remove();w.onclick=e=>{if(e.target===w)close()};w.querySelector('#meX').onclick=close;
+  const tt=w.querySelector('[data-k=total]');tt.oninput=()=>{const n=String(tt.value).replace(/\D/g,'');tt.value=n?(+n).toLocaleString('id-ID'):''};
+  w.querySelector('#meS').onclick=async()=>{const rec={id:i?i.id:''};w.querySelectorAll('[data-k]').forEach(x=>rec[x.dataset.k]=x.value.trim());rec.total=+String(rec.total).replace(/\D/g,'');
+    if(!rec.brand&&!rec.company){toast('Isi brand atau perusahaan');return}if(!rec.total){toast('Isi total tagihan');return}
+    const b=w.querySelector('#meS');b.disabled=true;b.textContent='Nyimpen…';
+    try{await mktCall({op:'mktInvSave',rec});toast(isNew?'Tagihan ditambah':'Tagihan disimpan');close();MKT.data=null;renderMkt();await loadMkt()}
+    catch(e){b.disabled=false;b.textContent='Simpan';toast('Gagal: '+String(e.message||e).slice(0,90))}};
+}
+const NAVG={cal:[['cal','Bulanan'],['week','Mingguan'],['day','Harian']],ide:[['smo','Ide SP'],['nsp','Ide NSP'],['fp','Ide FP']],tim:[['todo','To-do']],data:[['stat','Ringkasan'],['ins','Insight']],deal:[['deal','Brand Deal'],['mkt','Marketing 🔒']]};
 const grpOf=v=>Object.keys(NAVG).find(g=>NAVG[g].some(x=>x[0]===v))||'cal';
 // status sambungan Sheet → titik kecil di tombol ⟳ (teks lengkapnya di tooltip)
 function syncDot(){const d=document.getElementById('syncDot'),s=statusEl(),t=s?s.textContent:'';if(!d)return;
@@ -1833,6 +1983,8 @@ function render(){
   document.getElementById('smoView').hidden=!IDE_VIEWS.includes(view);
   document.getElementById('statView').hidden=view!=='stat';
   document.getElementById('dealView').hidden=view!=='deal';
+  document.getElementById('mktView').hidden=view!=='mkt';
+  document.body.classList.toggle('v-mkt',view==='mkt');
   document.body.classList.toggle('v-deal',view==='deal');
   document.getElementById('insView').hidden=view!=='ins';
   document.getElementById('todoView').hidden=view!=='todo';
@@ -1850,6 +2002,7 @@ function render(){
   if(view==='ins')return renderIns();
   if(IDE_VIEWS.includes(view))return renderSmo();
   if(view==='deal')return renderDeal();
+  if(view==='mkt')return renderMkt();
   document.getElementById('monthLbl').textContent=`${BULAN[viewM]} ${viewY}`;
   renderFilters();
   const g=document.getElementById('grid');
@@ -2173,6 +2326,7 @@ function cleanBody(){
   <section class="statview" id="insView" hidden></section>
   <section class="statview" id="smoView" hidden></section>
   <section class="statview" id="dealView" hidden></section>
+  <section class="statview" id="mktView" hidden></section>
 </div>
 
 <div class="back" id="back">

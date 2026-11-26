@@ -203,6 +203,9 @@ if(!st)st=blank();
 if(st.refAuto||!st.ref)st.ref=nextRef(st.date);
 // data lama: "PT. X (Brand)" di satu kolom -> dipisah jadi brand + perusahaan
 function splitCo(o){if(o&&o.brand===undefined){const m=/^(.*?)\s*\(([^()]+)\)\s*$/.exec(o.company||'');o.brand=m?m[2].trim():'';if(m)o.company=m[1].trim()}return o}
+// item lama (nama + deskripsi) -> cuma deskripsi: nama item ditaruh di baris pertama deskripsi
+function itemsOneField(o){(o.items||[]).forEach(it=>{if(it.t){it.d=it.t+(it.d?'\n'+it.d:'');it.t=''}});return o}
+itemsOneField(st);
 splitCo(st);{const cl=LS.get('inv_clients',[]);if(cl.some(c=>c.brand===undefined))LS.set('inv_clients',cl.map(splitCo))}
 const coLine=o=>[o.company,o.brand&&(o.company?'('+o.brand+')':o.brand)].filter(Boolean).join(' ');
 const coShort=o=>o.brand||o.company||o.pic;
@@ -218,10 +221,8 @@ function renderItems(){
   st.items.forEach((it,i)=>{
     const el=document.createElement('div');el.className='item';
     el.innerHTML=`<div class="hd"><span>Item ${i+1}</span><span>${i>0?'<button class="btn sm ghost up" style="color:var(--d)">↑</button> ':''}<button class="btn sm del">Hapus</button></span></div>
-    <label>Nama item (boleh lebih dari 1 baris)</label><textarea class="t" rows="2" placeholder="Konten Video Panjang">${esc(it.t)}</textarea>
-    <label>Deskripsi (kecil, boleh lebih dari 1 baris)</label><textarea class="d" rows="2" placeholder="1 Video Bedah Sepatu (Youtube)">${esc(it.d)}</textarea>
+    <label>Deskripsi (boleh lebih dari 1 baris)</label><textarea class="d" rows="3" placeholder="1 Video Bedah Sepatu (Youtube)">${esc(it.d)}</textarea>
     <label>Harga (Rp)</label><input class="p" inputmode="numeric" value="${it.p?num(it.p).toLocaleString('en-US'):''}" placeholder="kosongin kalau satu paket">`;
-    el.querySelector('.t').oninput=e=>{it.t=e.target.value;render()};
     el.querySelector('.d').oninput=e=>{it.d=e.target.value;render()};
     const p=el.querySelector('.p');
     p.oninput=e=>{it.p=e.target.value;render()};
@@ -304,9 +305,9 @@ function render(){
   const c=calc();
   $('gtForm').textContent=rp(c.gt);
   const box=$('pages');box.innerHTML='';
-  const rows=st.items.filter(it=>it.t||it.d||it.p).map((it,i)=>{
+  const rows=st.items.filter(it=>it.d||it.p).map((it,i)=>{
     const r=document.createElement('div');r.className='r';
-    r.innerHTML=`<div class="no">${i+1}</div><div class="it">${esc(it.t)}${it.d?`<small>${esc(it.d)}</small>`:''}</div><div class="pr">${it.p?rp(num(it.p)):''}</div>`;return r});
+    r.innerHTML=`<div class="no">${i+1}</div><div class="it">${esc(it.d)}</div><div class="pr">${it.p?rp(num(it.p)):''}</div>`;return r});
   let cur=newPage(true);
   for(const r of rows){
     const rb=cur.querySelector('.rows');rb.appendChild(r);
@@ -407,12 +408,15 @@ async function makePdf(){
     return pdf;
   }finally{sc.style.transform=prev;fit()}
 }
+// dicatat juga di tab INVOICE (sheet TIMELINE KALENDER) buat menu Marketing: omset, DP/lunas, sisa
+function invMeta(){const c=calc();return{no:st.ref,date:st.date,brand:st.brand||'',company:st.company||'',pic:st.pic||'',
+  desc:st.items.filter(it=>it.d||it.p).map(it=>String(it.d||'').split('\n')[0]+(it.p?' — Rp'+num(it.p).toLocaleString('id-ID'):'')).join('\n'),sub:c.sub,disc:c.disc,total:c.gt}}
 async function saveToDrive(pdf,name){
   const data=pdf.output('datauristring').split(',')[1];
   for(let tries=0;tries<3;tries++){
     if(!PIN){const v=await askPin();if(!v)throw new Error('Dibatalin: PIN belum diisi.')}
     let d;
-    try{d=await post({op:'invoiceSave',pin:PIN,name,data,ref:st.ref})}
+    try{d=await post({op:'invoiceSave',pin:PIN,name,data,ref:st.ref,meta:invMeta()})}
     catch(e){throw new Error('Gagal nyambung ke Google. Cek internet lalu coba lagi.')}
     if(d&&d.ok&&d.fileId)return d;
     const m=String((d&&d.error)||'');
