@@ -25,7 +25,7 @@
  *              daftar '<nama>_hapus' = pilihan yang disembunyiin, mis. tim_hapus = orang yang dihapus dari daftar)
  */
 const TZ = 'Asia/Jakarta';
-const SCRIPT_VER = 14; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
+const SCRIPT_VER = 15; // kalender pakai fitur baru (cek bentrok, preview per kolom) cuma kalau versi ini >= 2
 const JENIS = { carousel: 'Desain', short: 'Video Pendek', long: 'Video Panjang', story: 'Story' };
 
 // key di kalender  ->  nama header di sheet
@@ -1246,6 +1246,8 @@ const MKT_INV_H = ['NO INVOICE', 'TANGGAL', 'BRAND', 'PERUSAHAAN', 'PIC', 'DESKR
 const MKT_PAY_H = ['ID', 'INVOICE ID', 'TANGGAL', 'NOMINAL', 'KETERANGAN', 'DICATAT'];
 const MKT_INV_K = ['no', 'date', 'brand', 'company', 'pic', 'desc', 'sub', 'disc', 'total', 'termin', 'due', 'note', 'file', 'id', 'created'];
 const MKT_PAY_K = ['id', 'inv', 'date', 'amount', 'note', 'created'];
+// Tab ADSENSE: omset jalur AdSense per bulan (BULAN = tanggal 1 bulan itu), boleh lebih dari 1 baris per bulan (per channel)
+const MKT_ADS = 'ADSENSE', MKT_ADS_H = ['BULAN', 'NOMINAL', 'SUMBER', 'KETERANGAN', 'ID', 'DICATAT'], MKT_ADS_K = ['date', 'amount', 'src', 'note', 'id', 'created'];
 function mktPinCheck_(pin) {
   const want = PropertiesService.getScriptProperties().getProperty('MKT_PIN');
   if (!want) throw new Error('mkt_not_set: PIN Marketing belum diatur — isi MKT_PIN di Properti skrip Apps Script');
@@ -1314,7 +1316,7 @@ function mktOp_(op) {
   const now = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
   switch (op.op) {
     case 'mktRead':
-      return { ok: true, ver: SCRIPT_VER, inv: mktRows_(MKT_INV, MKT_INV_H, MKT_INV_K), pay: mktRows_(MKT_PAY, MKT_PAY_H, MKT_PAY_K) };
+      return { ok: true, ver: SCRIPT_VER, inv: mktRows_(MKT_INV, MKT_INV_H, MKT_INV_K), pay: mktRows_(MKT_PAY, MKT_PAY_H, MKT_PAY_K), ads: mktRows_(MKT_ADS, MKT_ADS_H, MKT_ADS_K) };
     case 'mktInvSave': {
       const r = op.rec || {};
       let row = r.id ? mktFind_(MKT_INV, MKT_INV_H, MKT_INV_K, 'id', r.id) : -1;
@@ -1323,8 +1325,18 @@ function mktOp_(op) {
       const rec = {};
       ['no', 'date', 'brand', 'company', 'pic', 'desc', 'sub', 'disc', 'total', 'termin', 'due', 'note'].forEach(function (k) { if (r[k] != null) rec[k] = r[k]; });
       if (row < 0) { rec.id = r.id || ('inv' + Date.now().toString(36)); rec.created = now; if (rec.sub == null || rec.sub === '') rec.sub = rec.total; }
+      // upload invoice lama (pendataan): file PDF/gambar disimpan ke folder invoice di Drive, link-nya masuk kolom FILE
+      if (op.file && op.file.data) {
+        const nm = String(op.file.name || 'invoice').replace(/[\\/:*?"<>|]+/g, '_').trim() || 'invoice';
+        const bytes = Utilities.base64Decode(String(op.file.data).replace(/^data:[^,]*,/, ''));
+        if (bytes.length > 15 * 1024 * 1024) throw new Error('mkt_file: file kegedean (maks 15 MB)');
+        rec.file = invoiceFolder_().createFile(Utilities.newBlob(bytes, String(op.file.mime || 'application/pdf'), nm)).getUrl();
+      }
       mktWrite_(MKT_INV, MKT_INV_H, MKT_INV_K, row, rec);
-      return { ok: true, id: rec.id || r.id };
+      const invId = rec.id || r.id;
+      // langsung catat pembayaran (mis. invoice lama yang udah lunas)
+      if (op.paid && mktNum_(op.paid.amount) > 0) mktWrite_(MKT_PAY, MKT_PAY_H, MKT_PAY_K, -1, { id: 'pay' + Date.now().toString(36), inv: invId, date: op.paid.date || rec.date || now, amount: op.paid.amount, note: op.paid.note || '', created: now });
+      return { ok: true, id: invId, file: rec.file || '' };
     }
     case 'mktInvDelete': {
       const row = mktFind_(MKT_INV, MKT_INV_H, MKT_INV_K, 'id', op.id);
@@ -1345,6 +1357,21 @@ function mktOp_(op) {
     case 'mktPayDelete': {
       const row = mktFind_(MKT_PAY, MKT_PAY_H, MKT_PAY_K, 'id', op.id);
       if (row > 0) mktTab_(MKT_PAY, MKT_PAY_H).deleteRow(row);
+      return { ok: true };
+    }
+    case 'mktAdsSave': {
+      const r = op.rec || {};
+      if (!/^\d{4}-\d{2}/.test(String(r.date || ''))) throw new Error('mkt_ads: bulan wajib diisi');
+      if (!(mktNum_(r.amount) > 0)) throw new Error('mkt_ads: nominal AdSense wajib diisi');
+      const row = r.id ? mktFind_(MKT_ADS, MKT_ADS_H, MKT_ADS_K, 'id', r.id) : -1;
+      const rec = { date: String(r.date).slice(0, 7) + '-01', amount: r.amount, src: r.src || '', note: r.note || '' };
+      if (row < 0) { rec.id = r.id || ('ads' + Date.now().toString(36)); rec.created = now; }
+      mktWrite_(MKT_ADS, MKT_ADS_H, MKT_ADS_K, row, rec);
+      return { ok: true, id: rec.id || r.id };
+    }
+    case 'mktAdsDelete': {
+      const row = mktFind_(MKT_ADS, MKT_ADS_H, MKT_ADS_K, 'id', op.id);
+      if (row > 0) mktTab_(MKT_ADS, MKT_ADS_H).deleteRow(row);
       return { ok: true };
     }
     case 'mktCheck': return { ok: true, ver: SCRIPT_VER };
