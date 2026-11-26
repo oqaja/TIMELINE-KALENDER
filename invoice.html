@@ -144,7 +144,7 @@
     <label>Nama PIC</label><input id="pic" placeholder="Hendrik">
     <label>Nama Brand</label><input id="brand" placeholder="Cheetah">
     <label>Nama Perusahaan</label><input id="company" placeholder="PT. Forta Larese">
-    <label>Alamat</label><textarea id="address" rows="2" placeholder="Jl. ...&#10;Kota Kode Pos"></textarea>
+    <label>Alamat <small style="font-weight:400;color:#888">(maks 3 baris)</small></label><textarea id="address" rows="3" placeholder="Jl. ...&#10;Kelurahan, Kota&#10;Provinsi Kode Pos"></textarea>
 
     <h3>Item</h3>
     <div id="items"></div>
@@ -156,7 +156,8 @@
     <div class="total-box"><span>GRAND TOTAL</span><span id="gtForm">Rp 0</span></div>
 
     <h3>Tanda tangan</h3>
-    <label>Nama Marketing</label><input id="signer">
+    <label>Marketing</label><select id="signerPick"></select>
+    <label id="signerLbl">Nama Marketing</label><input id="signer">
     <label class="chk"><input type="checkbox" id="showStamp" checked> Tampilkan stempel + tanda tangan</label>
 
     <h3>Bank & kontak</h3>
@@ -178,6 +179,9 @@ window.addEventListener('error',e=>{const d=document.createElement('div');d.styl
 const $=id=>document.getElementById(id);
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const BULAN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+// marketing yang tanda tangan: nama + file TTD (PNG transparan) di invoice-assets/
+const SIGNERS=[{n:'Prana Rifsana',img:'invoice-assets/sign.png'},{n:'Herry Ramdani',img:'invoice-assets/sign-herry.png',css:'left:1mm;top:4.5mm;width:35mm'}];
+const signerOf=n=>SIGNERS.find(x=>x.n.toLowerCase()===String(n||'').trim().toLowerCase());
 const DEF={signer:'Prana Rifsana',bankName:'PT Kulturama Virtua Solusindo',bankAcc:'8101097943 (BCA)',npwp:'50.939.825.1-039.000',contact:'+6281320747975'};
 
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
@@ -214,6 +218,7 @@ const fields=['ref','date','pic','brand','company','address','disc','signer','ba
 function loadForm(){
   fields.forEach(f=>$(f).value=st[f]??'');
   $('showStamp').checked=st.showStamp!==false;
+  if(window.__syncSigner)__syncSigner();
   renderItems();renderClients();render();
 }
 function renderItems(){
@@ -245,12 +250,18 @@ $('saveClient').onclick=()=>{
 };
 
 fields.forEach(f=>$(f).addEventListener('input',e=>{
+  if(f==='address'){const L=e.target.value.split('\n');if(L.length>3){const p=e.target.selectionStart;e.target.value=L.slice(0,2).join('\n')+'\n'+L.slice(2).join(' ').replace(/\s+/g,' ');e.target.setSelectionRange(p,p)}}
   st[f]=e.target.value;
   if(f==='ref')st.refAuto=false;
   if(f==='date'&&st.refAuto){st.ref=nextRef(st.date);$('ref').value=st.ref}
   if(['signer','bankName','bankAcc','npwp','contact'].includes(f)){const s={};['signer','bankName','bankAcc','npwp','contact'].forEach(k=>s[k]=st[k]);LS.set('inv_settings',s)}
   render();
 }));
+(()=>{const sp=$('signerPick');sp.innerHTML=SIGNERS.map((x,i)=>`<option value="${i}">${x.n}</option>`).join('')+'<option value="x">Lainnya (ketik nama)…</option>';
+  const sync=()=>{const k=SIGNERS.indexOf(signerOf(st.signer));sp.value=k>=0?k:'x';$('signer').hidden=$('signerLbl').hidden=k>=0};
+  sp.onchange=()=>{if(sp.value!=='x'){st.signer=SIGNERS[+sp.value].n;$('signer').value=st.signer}else{st.signer='';$('signer').value=''}
+    const s={};['signer','bankName','bankAcc','npwp','contact'].forEach(k=>s[k]=st[k]);LS.set('inv_settings',s);sync();render();if(sp.value==='x')$('signer').focus()};
+  window.__syncSigner=sync;sync()})();
 $('showStamp').onchange=e=>{st.showStamp=e.target.checked;render()};
 $('addItem').onclick=()=>{st.items.push({t:'',d:'',p:''});renderItems();render()};
 $('newBtn').onclick=()=>{const keep=st;st=blank();st.ref=nextRef(st.date);loadForm();toast('Invoice baru');};
@@ -268,7 +279,7 @@ function newPage(first){
   if(first){
     h+=`<h1 class="pg-title">INVOICE</h1><div class="meta">
       <div class="l"><span>Ref</span><span>:</span><span class="v">${esc(st.ref)}</span></div>
-      <div class="l"><span>Client</span><span>:</span><span class="v"><b>${esc(st.pic)}</b><div class="addr">${esc([coLine(st),st.address].filter(Boolean).join('\n'))}</div></span></div>
+      <div class="l"><span>Client</span><span>:</span><span class="v"><b>${esc(st.pic)}</b><div class="addr">${esc([coLine(st),String(st.address||'').split('\n').slice(0,3).join('\n')].filter(Boolean).join('\n'))}</div></span></div>
       <div class="date"><span>Date</span><span style="text-align:center">:</span><b>${esc(fmtDate(st.date))}</b></div></div>`;
   }else{
     h+=`<div class="cont">INVOICE<span>(lanjutan)</span><div class="cref">Ref : ${esc(st.ref)} &nbsp;·&nbsp; ${esc(coShort(st))}</div></div>`;
@@ -290,7 +301,7 @@ function addTail(p,c){
   const totTop=Math.max(147,tblBottom(p)+2);
   const tot=add('tot',tailHTML(c),totTop);
   const sigTop=Math.max(156.5,totTop+tot.offsetHeight/MM+4);
-  add('sig',`<div class="lbl">Marketing</div>${st.showStamp?`<img class="stamp" src="${IMG.stamp}" alt=""><img class="sign" src="${IMG.sign}" alt="">`:''}<div class="nm">${esc(st.signer)}</div>`,sigTop);
+  add('sig',`<div class="lbl">Marketing</div>${st.showStamp?`<img class="stamp" src="${IMG.stamp}" alt="">${(signerOf(st.signer)||{}).img?`<img class="sign" src="${signerOf(st.signer).img}" style="${signerOf(st.signer).css||''}" alt="">`:''}`:''}<div class="nm">${esc(st.signer)}</div>`,sigTop);
   const bank=sigTop+42.5;
   add('bank',`<div class="k">Bank Name:</div><div class="v">${esc(st.bankName)}</div><div class="k">Bank Account:</div><div class="v">${esc(st.bankAcc)}</div><div class="k np">NPWP:</div><div class="v np">${esc(st.npwp)}</div>`,bank);
   add('thanks',IMG.thanks,bank+17.5,'img');
