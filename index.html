@@ -1774,7 +1774,7 @@ function renderTodo(){
 }
 // ===================== BRAND DEAL (tab SOW BRAND DEAL) =====================
 const SOW={list:null,err:'',loading:false,m:'',f:'open',q:''};
-const SOW_F=[['car','stCar','Carousel'],['vp','stVp','Video Pendek'],['vpj','stVpj','Video Panjang'],['aff','stAff','Affiliate']];
+const SOW_F=[['car','stCar','Carousel'],['vp','stVp','Video Pendek'],['vpj','stVpj','Video Panjang'],['sto','stSto','Story'],['aff','stAff','Affiliate']];
 const SOW_ST=['','Kurang','Selesai','Pending'],SOW_BARANG=['Diterima','Belum sampai','Pending','Nunggu konfirmasi','Tanpa barang'];
 const sowNum=v=>{const n=parseInt(v,10);return isNaN(n)?0:n};
 const sowTot=d=>SOW_F.reduce((a,[k,s])=>{const n=sowNum(d[k]);if(n){a.t+=n;if(d[s]==='Selesai')a.d+=n}return a},{t:0,d:0});
@@ -1836,7 +1836,7 @@ function renderDeal(){
     el.querySelectorAll('.sw').forEach(b=>b.onclick=()=>sowSetSt(d,b.dataset.st))});
 }
 function openDeal(d){
-  const isNew=!d,cur=d?{...d}:{bulan:SOW.m&&SOW.m!=='all'?SOW.m:todayKey.slice(0,7),brand:'',artikel:'',jml:'',barang:'',car:'',stCar:'',vp:'',stVp:'',vpj:'',stVpj:'',aff:'',stAff:'',ket:''};
+  const isNew=!d,cur=d?{...d}:{bulan:SOW.m&&SOW.m!=='all'?SOW.m:todayKey.slice(0,7),brand:'',artikel:'',jml:'',barang:'',car:'',stCar:'',vp:'',stVp:'',vpj:'',stVpj:'',sto:'',stSto:'',aff:'',stAff:'',ket:''};
   const months=[...new Set([...(SOW.list||[]).map(x=>x.bulan),todayKey.slice(0,7),cur.bulan])].filter(Boolean).sort().reverse();
   const nextM=(()=>{const [y,m]=todayKey.slice(0,7).split('-').map(Number);return m===12?`${y+1}-01`:`${y}-${pad(m+1)}`})();if(!months.includes(nextM))months.unshift(nextM);
   const sel=(k,opts,lbl)=>`<select data-k="${k}">${opts.map(o=>`<option value="${esc(o)}"${(cur[k]||'')===o?' selected':''}>${esc(o||lbl||'—')}</option>`).join('')}</select>`;
@@ -1851,14 +1851,24 @@ function openDeal(d){
     </div>
     <h4>Scope of work</h4>
     <div class="dlm-s">${SOW_F.map(([k,sk,lb])=>`<div><span>${lb}</span><input data-k="${k}" inputmode="numeric" value="${esc(cur[k])}" placeholder="0">${sel(sk,SOW_ST,'Belum')}</div>`).join('')}</div>
+    ${isNew?`<label class="w2">Durasi kontrak<select id="dlDur">${[1,2,3,4,5,6,12].map(n=>`<option value="${n}">${n===1?'1 bulan (sekali)':n+' bulan — bikin '+n+' baris, 1 per bulan'}</option>`).join('')}</select></label>
+    <p class="mut dl-durh" id="dlDurH" hidden style="font-size:12.5px;margin:-4px 0 8px">Isi scope of work di atas <b>per bulan</b>. Tiap bulan dapet baris sendiri dengan SOW yang sama, statusnya mulai dari Belum.</p>`:''}
     <label class="w2">Keterangan<textarea data-k="ket" rows="3">${esc(cur.ket)}</textarea></label>
     <datalist id="dlBrands">${[...new Set([...brands(),...(SOW.list||[]).map(x=>x.brand)])].map(b=>`<option value="${esc(b)}">`).join('')}</datalist>
     <div class="row">${isNew?'':'<button class="lnk danger" id="dlDel">Hapus deal</button>'}<span class="sp"></span><button id="dlX">Batal</button><button class="primary" id="dlS">Simpan</button></div></div>`;
   document.body.appendChild(w);
   w.querySelectorAll('select[data-k]').forEach(s=>{if(s.dataset.k==='bulan')[...s.options].forEach(o=>o.textContent=sowMLbl(o.value))});
   const close=()=>w.remove();w.onclick=e=>{if(e.target===w)close()};w.querySelector('#dlX').onclick=close;
+  const du=w.querySelector('#dlDur');if(du)du.onchange=()=>{w.querySelector('#dlDurH').hidden=+du.value<2};
   w.querySelector('#dlS').onclick=()=>{const rec={};w.querySelectorAll('[data-k]').forEach(i=>rec[i.dataset.k]=i.value.trim());
     if(!rec.brand){toast('Brand wajib diisi');return}
+    const dur=isNew?+(w.querySelector('#dlDur')||{}).value||1:1;
+    if(isNew&&dur>1){const [y0,m0]=rec.bulan.split('-').map(Number),ms=Array.from({length:dur},(_,k)=>{const t=new Date(y0,m0-1+k,1);return t.getFullYear()+'-'+pad(t.getMonth()+1)});
+      const tag=`Kontrak ${dur} bln (${sowMLbl(ms[0])} – ${sowMLbl(ms[dur-1])})`,base=Date.now();
+      for(let k=0;k<dur;k++){const r={...rec,id:'sow'+(base+k).toString(36),bulan:ms[k],ket:tag+' · bulan '+(k+1)+'/'+dur+(rec.ket?' — '+rec.ket:'')};
+        if(k){r.jml='';r.barang='';SOW_F.forEach(([,sk])=>r[sk]='')}
+        if(!sowSave({op:'sowAdd',rec:r},r))return;SOW.list.push({...r,row:0})}
+      close();renderDeal();toast(dur+' baris deal ditambah ('+sowMLbl(ms[0])+' – '+sowMLbl(ms[dur-1])+')');return}
     if(isNew){rec.id='sow'+Date.now().toString(36);if(!sowSave({op:'sowAdd',rec},rec))return;SOW.list.push({...rec,row:0})}
     else{const patch={};Object.keys(rec).forEach(k=>{if((d[k]||'')!==rec[k])patch[k]=rec[k]});if(!Object.keys(patch).length){close();return}
       if(!sowSave({op:'sowUpdate',id:d.id,patch},d))return;Object.assign(d,patch)}

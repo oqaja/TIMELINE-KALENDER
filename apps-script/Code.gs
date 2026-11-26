@@ -542,7 +542,7 @@ function ruleDel_(id, text) {
 // ===================== BRAND DEAL (tab SOW BRAND DEAL: 1 baris = 1 deal) =====================
 const SOW_TAB = 'SOW BRAND DEAL';
 const SOW_MAP = { bulan: 'BULAN', brand: 'BRAND', artikel: 'ARTIKEL', jml: 'JUMLAH SEPATU', barang: 'STATUS BARANG',
-  car: 'CAROUSEL', stCar: 'STATUS CAROUSEL', vp: 'VIDEO PENDEK', stVp: 'STATUS VIDEO PENDEK', vpj: 'VIDEO PANJANG', stVpj: 'STATUS VIDEO PANJANG',
+  car: 'CAROUSEL', stCar: 'STATUS CAROUSEL', vp: 'VIDEO PENDEK', stVp: 'STATUS VIDEO PENDEK', vpj: 'VIDEO PANJANG', stVpj: 'STATUS VIDEO PANJANG', sto: 'STORY', stSto: 'STATUS STORY',
   aff: 'AFFILIATE', stAff: 'STATUS AFFILIATE', ket: 'KETERANGAN', id: 'ID' };
 function sowSheet_() { const sh = kkBook_().getSheetByName(SOW_TAB); if (!sh) throw new Error('sow_tab: tab "' + SOW_TAB + '" nggak ketemu'); return sh; }
 function sowCols_(sh) {
@@ -582,7 +582,7 @@ function sowRow_(sh, c, id) {
 function sowVal_(k, v) {
   v = v == null ? '' : String(v).trim();
   if (k === 'bulan') { const m = sowMonth_(v); return m ? new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)) - 1, 1) : ''; }
-  if (['jml', 'car', 'vp', 'vpj', 'aff'].indexOf(k) >= 0) return v === '' ? '' : (isNaN(Number(v)) ? v : Number(v));
+  if (['jml', 'car', 'vp', 'vpj', 'sto', 'aff'].indexOf(k) >= 0) return v === '' ? '' : (isNaN(Number(v)) ? v : Number(v));
   return v;
 }
 function sowAdd_(rec) {
