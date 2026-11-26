@@ -171,6 +171,11 @@ b.g{color:#11734b}b.r{color:#c0392b}
 .mk-pi{font:800 24px var(--head);color:#c0392b}.mk-ab{font:800 24px var(--head);color:#2552c9;display:block}.mk-adb{margin-top:8px;width:100%;border:1px dashed #9db3ee;background:#f2f6ff;color:#2552c9;border-radius:10px;padding:8px;font:inherit;font-weight:800;font-size:13px;cursor:pointer}
 .mk-sk{display:flex;flex-direction:column;width:70%;max-width:46px;min-height:2px;gap:2px}.mk-sk u{display:block;background:#7f9ef0;border-radius:6px 6px 2px 2px;min-height:3px}.mk-sk i{display:flex;align-items:flex-end;background:#e2dfd6;border-radius:2px;overflow:hidden;min-height:3px}.mk-sk u+i{border-radius:2px}.mk-sk>:first-child{border-radius:6px 6px 2px 2px}.mk-sk em{display:block;width:100%;background:#2fa84f}.mk-lg .a{background:#7f9ef0}
 .mk-sk i{width:100%;max-width:none}.mk-b.on .mk-bc i{outline:0}.mk-b.on .mk-sk{outline:2px solid #111;outline-offset:2px;border-radius:6px}
+.mk-bh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}.mk-bh h4{margin:0}
+.mk-rng{display:flex;gap:2px;background:#f3f1ea;border-radius:99px;padding:2px}.mk-rng button{border:0;background:none;border-radius:99px;padding:4px 9px;font:inherit;font-size:12px;font-weight:700;color:#666;cursor:pointer}.mk-rng button.on{background:#111;color:#fff}
+.mk-rt{font-size:13px;margin:2px 0 10px}.mk-rt small{color:var(--muted);font-size:11.5px}
+.mk-bars.n12{gap:4px}.mk-bars.n12 .mk-b b{font-size:9.5px;letter-spacing:-.02em}.mk-bars.n12 .mk-b span{font-size:10px}.mk-bars.n12 .mk-sk{width:82%}
+@media(max-width:700px){.mk-bars.n12 .mk-b b{display:none}.mk-bars.n12{gap:3px}}
 .mk-addw{position:relative}.mk-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:6px;min-width:240px;display:grid}
 .mk-menu button{text-align:left;border:0;background:none;border-radius:10px;padding:9px 10px;font:inherit;font-weight:800;font-size:14px;cursor:pointer;color:#111}.mk-menu button:hover{background:#f3f1ea}.mk-menu small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
 .mku{max-width:900px;width:calc(100vw - 24px)}.mku-hd{display:flex;align-items:center;justify-content:space-between}.mku-hd h3{margin:0}.mku-hd small{color:var(--muted);font-size:13px;margin-left:6px}
@@ -1862,7 +1867,7 @@ function openDeal(d){
     if(!sowSave({op:'sowDelete',id:d.id},d))return;SOW.list=SOW.list.filter(x=>x!==d);close();renderDeal();toast('Deal dihapus')};
 }
 // ===================== MARKETING (dikunci PIN khusus; data cuma dikirim server kalau PIN Marketing bener) =====================
-const MKT={pin:'',data:null,err:'',loading:false,m:'',f:'all',q:'',ver:0};
+const MKT={pin:'',data:null,err:'',loading:false,m:'',f:'all',q:'',ver:0,rng:6};try{MKT.rng=+localStorage.getItem('sp-mkt-rng')||6}catch(e){}
 try{MKT.pin=sessionStorage.getItem('sp-mkt-pin')||''}catch(e){}
 const rpx=n=>'Rp'+Math.round(+n||0).toLocaleString('id-ID');
 const rpShort=n=>{n=+n||0;return n>=1e9?(n/1e9).toFixed(1).replace('.0','')+' M':n>=1e6?(n/1e6).toFixed(1).replace('.0','')+' jt':n>=1e3?Math.round(n/1e3)+' rb':String(Math.round(n))};
@@ -1898,7 +1903,8 @@ function renderMkt(){
   const adsAll=MKT.data.ads||[],adsIn=adsAll.filter(a=>M==='all'||mktMon(a.date)===M),adsM=adsIn.reduce((a,x)=>a+(+x.amount||0),0);
   const cashIn=MKT.data.pay.filter(p=>M==='all'||mktMon(p.date)===M).reduce((a,p)=>a+(+p.amount||0),0)+adsM;
   const allRest=all.reduce((a,i)=>a+i.rest,0);
-  const last6=months.slice(-6),bars=last6.map(m=>{const l=all.filter(i=>mktMon(i.date)===m);return {m,tot:l.reduce((a,i)=>a+(+i.total||0),0),paid:l.reduce((a,i)=>a+i.paid,0),ads:(MKT.data.ads||[]).filter(a=>mktMon(a.date)===m).reduce((a,x)=>a+(+x.amount||0),0)}}),mx=Math.max(1,...bars.map(b=>b.tot+b.ads));
+  const rN=[3,6,12].includes(MKT.rng)?MKT.rng:6,endM=months.length&&months[months.length-1]>todayKey.slice(0,7)?months[months.length-1]:todayKey.slice(0,7),
+    last6=Array.from({length:rN},(_,k)=>{const [y,mm]=endM.split('-').map(Number),t=new Date(y,mm-1-(rN-1-k),1);return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')}),bars=last6.map(m=>{const l=all.filter(i=>mktMon(i.date)===m);return {m,tot:l.reduce((a,i)=>a+(+i.total||0),0),paid:l.reduce((a,i)=>a+i.paid,0),ads:(MKT.data.ads||[]).filter(a=>mktMon(a.date)===m).reduce((a,x)=>a+(+x.amount||0),0)}}),mx=Math.max(1,...bars.map(b=>b.tot+b.ads));
   const q=MKT.q.trim().toLowerCase();
   const shown=inM.filter(i=>(MKT.f==='all'||i.st===MKT.f)&&(!q||(i.no+' '+i.brand+' '+i.company+' '+i.desc).toLowerCase().includes(q))).sort((a,b)=>(a.st==='lunas')-(b.st==='lunas')||b.date.localeCompare(a.date));
   const ST={belum:['Belum bayar','b'],dp:['DP','d'],lunas:['Lunas','l']};
@@ -1911,7 +1917,8 @@ function renderMkt(){
       <div><span>Kurang</span><b class="r">${rpx(S.rest)}</b><small>${S.belum} belum bayar · ${S.dp} DP</small></div>
       <div><span>Uang masuk ${M==='all'?'':'bulan ini'}</span><b>${rpx(cashIn)}</b><small>pembayaran klien${M==='all'?'':' bulan ini'} + AdSense</small></div></div>
     <div class="mk-row">
-      <div class="mk-card"><h4>Omset 6 bulan</h4><div class="mk-bars">${bars.map(b=>`<div class="mk-b${b.m===M?' on':''}" data-m="${b.m}" title="${esc(sowMLbl(b.m))}: marketing ${rpx(b.tot)} (dibayar ${rpx(b.paid)}) · AdSense ${rpx(b.ads)}"><div class="mk-bc"><div class="mk-sk" style="height:${(b.tot+b.ads)/mx*100}%">${b.ads?`<u style="flex:${b.ads}"></u>`:''}${b.tot?`<i style="flex:${b.tot}"><em style="height:${b.paid/b.tot*100}%"></em></i>`:''}</div></div><b>${rpShort(b.tot+b.ads)}</b><span>${BULAN[+b.m.slice(5)-1].slice(0,3)}</span></div>`).join('')}</div>
+      <div class="mk-card"><div class="mk-bh"><h4>Omset ${rN} bulan terakhir</h4><span class="mk-rng">${[3,6,12].map(n=>`<button data-rng="${n}"${n===rN?' class="on"':''}>${n} bln</button>`).join('')}</span></div>
+        <div class="mk-rt">Total <b>${rpx(bars.reduce((a,b)=>a+b.tot+b.ads,0))}</b> <small>· marketing ${rpShort(bars.reduce((a,b)=>a+b.tot,0))} · AdSense ${rpShort(bars.reduce((a,b)=>a+b.ads,0))} · rata-rata ${rpShort(bars.reduce((a,b)=>a+b.tot+b.ads,0)/rN)}/bln</small></div><div class="mk-bars n${rN}">${bars.map(b=>`<div class="mk-b${b.m===M?' on':''}" data-m="${b.m}" title="${esc(sowMLbl(b.m))}: marketing ${rpx(b.tot)} (dibayar ${rpx(b.paid)}) · AdSense ${rpx(b.ads)}"><div class="mk-bc"><div class="mk-sk" style="height:${(b.tot+b.ads)/mx*100}%">${b.ads?`<u style="flex:${b.ads}"></u>`:''}${b.tot?`<i style="flex:${b.tot}"><em style="height:${b.paid/b.tot*100}%"></em></i>`:''}</div></div><b>${b.tot+b.ads?rpShort(b.tot+b.ads):'–'}</b><span>${BULAN[+b.m.slice(5)-1].slice(0,3)}${rN===12&&b.m.slice(5)==='01'?' '+b.m.slice(2,4):''}</span></div>`).join('')}</div>
         <div class="mk-lg"><span><i class="o"></i>Marketing</span><span><i class="p"></i>Udah dibayar</span><span><i class="a"></i>AdSense</span></div></div>
       <div class="mk-card"><h4>Total piutang</h4><b class="mk-pi">${rpx(allRest)}</b><p>Sisa tagihan dari semua invoice yang belum lunas, semua bulan.</p>
         ${all.filter(i=>i.rest>0).sort((a,b)=>(a.due||'9').localeCompare(b.due||'9')).slice(0,4).map(i=>`<div class="mk-due" data-id="${esc(i.id)}"><span>${esc(i.brand||i.company)}</span><b>${rpx(i.rest)}</b>${i.due?`<small class="${i.due<todayKey?'late':''}">${i.due<todayKey?'telat · ':''}${esc(fmtDate(i.due).replace(/^\w+, /,''))}</small>`:''}</div>`).join('')}</div>
@@ -1928,6 +1935,7 @@ function renderMkt(){
   v.querySelector('#mkPrev').onclick=()=>shift(-1);v.querySelector('#mkNext').onclick=()=>shift(1);
   v.querySelector('#mkAll').onclick=()=>{MKT.m=MKT.m==='all'?todayKey.slice(0,7):'all';renderMkt()};
   v.querySelectorAll('.mk-b').forEach(b=>b.onclick=()=>{MKT.m=b.dataset.m;renderMkt()});
+  v.querySelectorAll('[data-rng]').forEach(b=>b.onclick=()=>{MKT.rng=+b.dataset.rng;try{localStorage.setItem('sp-mkt-rng',MKT.rng)}catch(e){}renderMkt()});
   v.querySelectorAll('[data-f]').forEach(c=>c.onclick=()=>{MKT.f=c.dataset.f;renderMkt()});
   const qi=v.querySelector('#mkQ');qi.oninput=()=>{MKT.q=qi.value;clearTimeout(MKT.qt);MKT.qt=setTimeout(()=>{renderMkt();const n=document.getElementById('mkQ');if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}},250)};
   v.querySelector('#mkRe').onclick=()=>{MKT.data=null;renderMkt()};
