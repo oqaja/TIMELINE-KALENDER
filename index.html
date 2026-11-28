@@ -241,7 +241,7 @@ b.g{color:#11734b}b.r{color:#c0392b}
 .subtabs{display:inline-flex;background:#e9e7e1;border-radius:10px;padding:3px;gap:2px}.subtabs[hidden]{display:none!important}
 .subtabs button{border:0;background:transparent;padding:6px 10px;font-size:13px;border-radius:8px;color:#555;white-space:nowrap}
 .subtabs button.on{background:#fff;color:#111;box-shadow:0 1px 2px rgba(0,0,0,.12)}
-body.v-day .main,body.v-week .main,body.v-todo .main,body.v-stat .main,body.v-ins .main,body.v-smo .main{display:none}
+body.v-day #grid,body.v-week #grid,body.v-day #brandBar,body.v-week #brandBar,body.v-todo .main,body.v-stat .main,body.v-ins .main,body.v-smo .main{display:none}
 .statview{display:flex;flex-direction:column;gap:12px}
 .st-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
 .st-top h2{font-family:var(--head);font-size:18px;margin:0;text-transform:uppercase;flex:1;min-width:220px}
@@ -312,7 +312,11 @@ body.v-day .main,body.v-week .main,body.v-todo .main,body.v-stat .main,body.v-in
 .insf-bar .grp{display:flex;flex-wrap:wrap;gap:6px}
 .insf-bar select{width:auto;max-width:200px;border:1px solid var(--line);border-radius:99px;padding:6px 10px;font:inherit;font-size:13px;background:var(--card)}
 .insf-bar .chip-f i.pf,.ihr .nm i.pf,.itbl i.pf,.itr i.pf,.insc i.pf{display:inline-block;font-style:normal;font-size:10px;padding:2px 6px;min-width:26px;border-radius:5px;margin-right:2px}
-.sidecol{width:230px;flex:none;display:flex;flex-direction:column;gap:12px;position:sticky;top:12px}.sidecol .side{width:auto;position:static}
+.calcol{flex:1;min-width:0}.side.shut{padding:0;background:none;border:0}
+.bb-tg{width:100%;display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:9px 11px;font:inherit;cursor:pointer;text-align:left}
+.bb-tg b{font-family:var(--head);font-size:11px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}.bb-tg .count{margin-left:auto;font-size:11.5px;color:var(--muted);white-space:nowrap}
+.bb-dots{display:flex;gap:3px;overflow:hidden;min-width:0}.bb-dots i{width:8px;height:8px;border-radius:50%;flex:none}
+.bb-x{border:0;background:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px 6px}.sidecol{width:230px;flex:none;display:flex;flex-direction:column;gap:12px;position:sticky;top:12px}.sidecol .side{width:auto;position:static}
 .bk-hd{display:flex;align-items:center;justify-content:space-between}.bk-hd h4 .count{font-family:var(--body,inherit);color:var(--muted);margin-left:4px;letter-spacing:0}
 .bk-add{border:1px solid var(--line);background:var(--card);border-radius:8px;width:28px;height:28px;font-size:15px;cursor:pointer;line-height:1}
 .bk-q{width:100%;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;font-size:12px;margin:0 0 6px}
@@ -554,11 +558,11 @@ svg.off .rm-t.sm{font-size:15px}
   </div>
   <div class="bar" id="filters"></div>
   <div class="main">
-    <div class="grid" id="grid"></div>
-    <div class="sidecol"><aside class="side" id="bankBar"></aside><aside class="side" id="brandBar"></aside></div>
-  </div>
+    <div class="calcol"><div class="grid" id="grid"></div>
   <section class="weekview" id="weekView" hidden></section>
-  <section class="dayview" id="dayView" hidden></section>
+  <section class="dayview" id="dayView" hidden></section></div>
+    <div class="sidecol"><aside class="side" id="bankBar"></aside><aside class="side bb-col" id="brandBar"></aside></div>
+  </div>
   <section class="dayview todoview" id="todoView" hidden></section>
   <section class="statview" id="statView" hidden></section>
   <section class="statview" id="insView" hidden></section>
@@ -925,17 +929,23 @@ function renderFilters(listAll){
   bb.style.display='';
   const names={};inMonth.forEach(i=>{if(i.brand){const k=bkey(i.brand);names[k]=names[k]||{name:i.brand,n:0};names[k].n++}});
   const noB=inMonth.filter(i=>!i.brand).length;
-  bb.innerHTML=`<h4>Brand Tap In</h4><div class="sub2">${BULAN[viewM]} ${viewY} · klik buat ganti warna</div>`
+  const brOpen=(()=>{try{return localStorage.getItem('sp-brand-open')==='1'}catch(e){return false}})(),nB=Object.keys(names).length;
+  bb.classList.toggle('shut',!brOpen);
+  if(!brOpen){bb.innerHTML=`<button class="bb-tg" id="bbTg" title="Buka daftar brand tap in"><b>Brand Tap In</b><span class="bb-dots">${Object.values(names).sort((a,b)=>b.n-a.n).slice(0,10).map(o=>`<i style="background:${brandColor(o.name)}" title="${esc(o.name)} · ${o.n}"></i>`).join('')}</span><span class="count">${nB} brand ▾</span></button>`;
+    bb.querySelector('#bbTg').onclick=()=>{try{localStorage.setItem('sp-brand-open','1')}catch(e){}renderFilters()};return}
+  bb.innerHTML=`<div class="bk-hd"><h4>Brand Tap In</h4><button class="bb-x" id="bbTg" title="Tutup">▴</button></div><div class="sub2">${BULAN[viewM]} ${viewY} · klik buat ganti warna</div>`
     +Object.values(names).sort((a,b)=>b.n-a.n).map(o=>`<div class="bi brand" data-b="${esc(o.name)}" title="Ganti warna ${esc(o.name)}"><span class="dot" style="background:${brandColor(o.name)}"></span><span class="nm">${esc(o.name)}</span><span class="count">${o.n}</span><span class="ed">✎</span></div>`).join('')
     +(noB?`<div class="bi"><span class="dot" style="background:${NOBRAND}"></span><span class="nm">Non brand</span><span class="count">${noB}</span><span class="ed" style="visibility:hidden">✎</span></div>`:'')
     +(!inMonth.length?'<div class="none">Belum ada konten bulan ini</div>':'');
   bb.querySelectorAll('.bi.brand').forEach(el=>el.onclick=()=>openBrandColor(el.dataset.b));
+  bb.querySelector('#bbTg').onclick=()=>{try{localStorage.setItem('sp-brand-open','0')}catch(e){}renderFilters()};
 }
 
 const PLAT2=[['YT','YouTube'],['IG','Instagram'],['TT','TikTok'],['FB','Facebook']];
 const jamNum=j=>{const m=String(j||'').trim().match(/^(\d{1,2})[.:,](\d{2})/);return m?(+m[1])*60+(+m[2]):null};
 function renderDay(){
   if(!dayK)dayK=todayKey;
+  document.getElementById('dayView').dataset.k=dayK;
   const [y,m,d]=dayK.split('-').map(Number);
   document.getElementById('monthLbl').textContent=`${d} ${BULAN[m-1].slice(0,3)} ${y}`;
   const f=document.getElementById('filters');
@@ -1282,7 +1292,7 @@ function renderBankBar(){
   const bb=document.getElementById('bankBar');if(!bb)return;
   const all=state.bank||[],q=bankQ.trim().toLowerCase(),L=all.filter(b=>!q||b.title.toLowerCase().includes(q));
   bb.innerHTML=`<div class="bk-hd"><h4>Bank Konten <span class="count">${all.length}</span></h4><button class="bk-add" id="bkAdd" title="Tambah ke bank">＋</button></div>
-    <div class="sub2">Drag ke tanggal, atau klik buat jadwalin</div>
+    <div class="sub2">${view==='day'?'Drag ke jadwal hari ini, atau klik buat jadwalin':'Drag ke tanggal, atau klik buat jadwalin'}</div>
     ${all.length>6?`<input class="bk-q" id="bkQ" placeholder="Cari…" value="${esc(bankQ)}">`:''}
     <div class="bk-list">${L.map(b=>{const t=TYPES.find(x=>x.id===b.type)||TYPES[0];return `<div class="bk-it" data-id="${esc(b.id)}" title="${esc(b.title)}"><span class="bk-ty" style="background:${t.color}"></span><span class="bk-tt"><b>${esc(b.title)}</b><small>${esc(t.name)}${b.segmen?' · '+esc(b.segmen):''}${b.brand?' · '+esc(b.brand):''}</small></span></div>`}).join('')
       ||`<div class="none">${all.length?'Nggak ketemu':'Belum ada. Tambah dari tab Ide SP / Ide NSP / Ide FP atau tombol ＋'}</div>`}</div>`;
@@ -1306,7 +1316,7 @@ function openBank(b){
     <div class="g2"><div><label>Akun</label><select id="bkA"><option value="">—</option>${aks.map(a=>`<option${a===b.akun?' selected':''}>${esc(a)}</option>`).join('')}</select></div>
       <div><label>Brand Tap In</label><select id="bkB"><option value="">— Bukan brand tap in</option>${[...new Set([...brs,b.brand].filter(Boolean))].map(x=>`<option${x===b.brand?' selected':''}>${esc(x)}</option>`).join('')}</select></div></div>
     <label>Catatan</label><textarea id="bkC" rows="8">${esc(b.catatan||'')}</textarea>
-    ${isNew?'':`<div class="bk-use"><b>Jadwalin</b><span>jadi Konten di KALENDER KONTEN, keluar dari bank. Catatan di sini jadi "Brief" di detail konten (CATATAN di Sheet tetap kosong)</span><input type="date" id="bkD" value="${todayKey}"><button class="primary" id="bkGo">Jadwalin</button></div>`}
+    ${isNew?'':`<div class="bk-use"><b>Jadwalin</b><span>jadi Konten di KALENDER KONTEN, keluar dari bank. Catatan di sini jadi "Brief" di detail konten (CATATAN di Sheet tetap kosong)</span><input type="date" id="bkD" value="${view==='day'&&dayK?dayK:todayKey}"><button class="primary" id="bkGo">Jadwalin</button></div>`}
     <div class="err" id="bkErr"></div>
     <div class="row">${isNew?'':'<button class="danger" id="bkDel">Hapus</button>'}<span class="sp"></span><button id="bkNo">Batal</button><button class="primary" id="bkOk">${isNew?'Tambah ke bank':'Simpan'}</button></div></div>`;
   document.body.appendChild(w);
@@ -2150,6 +2160,7 @@ function render(){
   const cs=document.getElementById('calSub');cs.innerHTML=NAVG[grp].length<2?'':NAVG[grp].map(([v,l])=>`<button data-v="${v}" class="${v===view?'on':''}">${l}</button>`).join('');
   const fab=document.getElementById('fab');if(fab)fab.hidden=grp!=='cal';
   setTimeout(syncDot,0);
+  if(view==='day'||view==='week')renderBankBar();
   if(view==='day')return renderDay();
   if(view==='week')return renderWeek();
   if(view==='todo')return renderTodo();
@@ -2206,7 +2217,7 @@ function attachDrag(el,onDrop){
     let lastX=sx,lastY=sy;
     const move=(x,y)=>{
       ghost.style.left=(x-20)+'px';ghost.style.top=(y-14)+'px';
-      const t=document.elementFromPoint(x,y);const d=t&&t.closest('.day,.wkday');
+      const t=document.elementFromPoint(x,y);const d=t&&t.closest('.day,.wkday,#dayView');
       if(d!==over){if(over)over.classList.remove('drop');over=d;if(over)over.classList.add('drop')}
     };
     // HP: harus ditahan ±0,5 detik dulu baru bisa digeser; geser jari sebelum itu = scroll biasa
@@ -2471,11 +2482,11 @@ function cleanBody(){
   </div>
   <div class="bar" id="filters"></div>
   <div class="main">
-    <div class="grid" id="grid"></div>
-    <div class="sidecol"><aside class="side" id="bankBar"></aside><aside class="side" id="brandBar"></aside></div>
-  </div>
+    <div class="calcol"><div class="grid" id="grid"></div>
   <section class="weekview" id="weekView" hidden></section>
-  <section class="dayview" id="dayView" hidden></section>
+  <section class="dayview" id="dayView" hidden></section></div>
+    <div class="sidecol"><aside class="side" id="bankBar"></aside><aside class="side bb-col" id="brandBar"></aside></div>
+  </div>
   <section class="dayview todoview" id="todoView" hidden></section>
   <section class="statview" id="statView" hidden></section>
   <section class="statview" id="insView" hidden></section>
